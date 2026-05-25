@@ -1,0 +1,127 @@
+name: Build MAUI APK
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version tag (e.g. 1.2.0)'
+        required: false
+        default: ''
+
+jobs:
+  build:
+    runs-on: windows-latest
+    permissions:
+      contents: write
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: '10.0.x'
+
+    - name: Install MAUI workloads
+      run: dotnet workload install maui-android
+
+    - name: Set version
+      shell: powershell
+      run: |
+        $versionName = '${{ github.event.inputs.version }}'
+        if ([string]::IsNullOrWhiteSpace($versionName)) {
+          $versionName = "1.0.${{ github.run_number }}"
+        }
+        $versionCode = "${{ github.run_number }}"
+        Write-Host "VersionName: $versionName, VersionCode: $versionCode"
+        echo "APP_VERSION_NAME=$versionName" >> $env:GITHUB_ENV
+        echo "APP_VERSION_CODE=$versionCode" >> $env:GITHUB_ENV
+
+    - name: Build APK
+      run: dotnet publish src/AlphaAgent.Maui/AlphaAgent.Maui.csproj -f net10.0-android -c Release -p:ApplicationVersion=${{ env.APP_VERSION_CODE }} -p:Version=${{ env.APP_VERSION_NAME }}
+
+    - name: Find APK
+      id: apk
+      shell: powershell
+      run: |
+        $apk = Get-ChildItem -Path "src/AlphaAgent.Maui/bin/Release/net10.0-android/publish" -Filter "*.apk" -Recurse | Select-Object -First 1
+        if (-not $apk) {
+          Write-Error "APK not found!"
+          exit 1
+        }
+        Write-Host "APK: $($apk.FullName)"
+        echo "apk_path=$($apk.FullName)" >> $env:GITHUB_OUTPUT
+        echo "apk_name=$($apk.Name)" >> $env:GITHUB_OUTPUT
+
+    - name: Upload APK to Release
+      uses: softprops/action-gh-release@v2
+      with:
+        tag_name: v${{ env.APP_VERSION_NAME }}
+        name: AlphaAgent v${{ env.APP_VERSION_NAME }}
+        files: ${{ steps.apk.outputs.apk_path }}
+        generate_release_notes: true
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+    - name: Deploy APK to IIS
+      shell: powershell
+      run: |
+        $siteName = '${{ secrets.IIS_SITE_NAME }}'
+        $serverHost = '${{ secrets.IIS_SERVER_HOST }}'
+        $username = '${{ secrets.IIS_USERNAME }}'
+        $password = '${{ secrets.IIS_PASSWORD }}'
+
+        $apkPath = "${{ steps.apk.outputs.apk_path }}"
+        $apkName = "${{ steps.apk.outputs.apk_name }}"
+
+        # Prepare a folder with APK + web.config for MIME type
+        $deployDir = (Get-Location).Path + "\apk-deploy"
+        New-Item -ItemType Directory -Path $deployDir -Force
+        Copy-Item $apkPath "$deployDir/$apkName" -Force
+
+        $webConfig = @"
+        <?xml version="1.0" encoding="UTF-8"?>
+        <configuration>
+          <system.webServer>
+            <staticContent>
+              <remove fileExtension=".apk" />
+              <mimeMap fileExtension=".apk" mimeType="application/vnd.android.package-archive" />
+            </staticContent>
+          </system.webServer>
+        </configuration>
+        "@
+        Set-Content -Path "$deployDir/web.config" -Value $webConfig -Encoding UTF8
+
+        Write-Host "Deploying $apkName to IIS /apk directory"
+
+        $msdeployExe = "C:\Program Files\IIS\Microsoft Web Deploy V3\msdeploy.exe"
+        $computerName = "https://$serverHost" + ":8172/msdeploy.axd?site=$siteName"
+        $destArg = "contentPath=${siteName}/apk,computerName=$computerName,userName=$username,password=$password,authType=Basic"
+        & $msdeployExe -verb:sync -source:contentPath=$deployDir "-dest:$destArg" -allowUntrusted -verbose
+
+    - name: Publish version to server
+      shell: powershell
+      run: |
+        $serverHost = '${{ secrets.IIS_SERVER_HOST }}'
+        $body = @{
+          platform = 1
+          versionCode = [int]"${{ env.APP_VERSION_CODE }}"
+          versionName = "${{ env.APP_VERSION_NAME }}"
+          updateUrl = "http://$serverHost/apk/${{ steps.apk.outputs.apk_name }}"
+          updateNote = "AlphaAgent v${{ env.APP_VERSION_NAME }}"
+          isForce = $false
+        } | ConvertTo-Json
+
+        # PowerShell 5.1 不支持 -SkipCertificateCheck，用回调忽略证书验证
+        [System.Net.ServicePointManager]::ServerCertificateValidationCallback = { $true }
+
+        try {
+          $response = Invoke-RestMethod -Uri "https://$serverHost/api/app/version-config/publish" -Method Post -Body $body -Headers @{ "X-Publish-Token" = "${{ secrets.VERSION_PUBLISH_TOKEN }}" } -ContentType "application/json"
+          Write-Host "Version published successfully"
+        } catch {
+          $statusCode = $_.Exception.Response.StatusCode.value__
+          $reader = New-Object System.IO.StreamReader($_.Exception.Response.GetResponseStream())
+          $responseBody = $reader.ReadToEnd()
+          Write-Error "Publish failed: HTTP $statusCode - $responseBody"
+          exit 1
+        }

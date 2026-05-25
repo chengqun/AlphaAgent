@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<network-security-config>
+    <!-- 默认配置：仅信任系统 CA 证书 -->
+    <base-config cleartextTrafficPermitted="false">
+        <trust-anchors>
+            <certificates src="system" />
+        </trust-anchors>
+    </base-config>
+
+    <!-- 针对服务器 IP 的域名配置：额外信任用户安装的 CA 证书（用于自签名证书） -->
+    <domain-config cleartextTrafficPermitted="false">
+        <domain includeSubdomains="true">117.72.186.128</domain>
+        <trust-anchors>
+            <certificates src="system" />
+            <certificates src="user" />
+        </trust-anchors>
+    </domain-config>
+</network-security-config>

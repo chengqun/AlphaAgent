@@ -1,0 +1,96 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             x:Class="AlphaAgent.Maui.Views.AgentContactDetailPage"
+             Title="{Binding AgentName}"
+             Shell.TabBarIsVisible="False"
+             BackgroundColor="{AppThemeBinding Light={StaticResource PageBackgroundLight}, Dark={StaticResource PageBackgroundDark}}"
+             Loaded="ContentPage_Loaded">
+
+    <ScrollView BackgroundColor="{AppThemeBinding Light={StaticResource PageBackgroundLight}, Dark={StaticResource PageBackgroundDark}}">
+        <StackLayout Padding="{StaticResource PagePadding}" Spacing="{StaticResource SpacingLarge}">
+            <!-- 头像 -->
+            <Border WidthRequest="120"
+                    HeightRequest="120"
+                    StrokeShape="RoundRectangle 60"
+                    BackgroundColor="{AppThemeBinding Light={StaticResource AvatarBackgroundLight}, Dark={StaticResource AvatarBackgroundDark}}"
+                    Padding="{StaticResource AvatarPadding}"
+                    HorizontalOptions="Center">
+                <Label Text="{Binding AgentInitial}"
+                       FontSize="48"
+                       FontAttributes="Bold"
+                       TextColor="{StaticResource TextWhite}"
+                       HorizontalOptions="Center"
+                       VerticalOptions="Center" />
+            </Border>
+
+            <!-- 名称 -->
+            <Label Text="{Binding AgentName}"
+                   FontSize="28"
+                   FontAttributes="Bold"
+                   Style="{StaticResource LabelPrimary}"
+                   HorizontalOptions="Center" />
+
+            <!-- 类型标签 -->
+            <Border WidthRequest="100"
+                    HeightRequest="30"
+                    StrokeShape="RoundRectangle 15"
+                    BackgroundColor="{StaticResource InfoColor}"
+                    HorizontalOptions="Center">
+                <Label Text="AI 助手"
+                       FontSize="14"
+                       TextColor="{StaticResource TextWhite}"
+                       HorizontalOptions="Center"
+                       VerticalOptions="Center" />
+            </Border>
+
+            <!-- 分割线 -->
+            <BoxView HeightRequest="1" BackgroundColor="{AppThemeBinding Light={StaticResource SeparatorLight}, Dark={StaticResource SeparatorDark}}" />
+
+            <!-- 描述信息 -->
+            <Border BackgroundColor="{AppThemeBinding Light={StaticResource CardBackgroundLight}, Dark={StaticResource CardBackgroundDark}}"
+                    StrokeShape="RoundRectangle 12"
+                    Padding="{StaticResource CardPadding}">
+                <Label Text="{Binding Description}"
+                       Style="{StaticResource LabelSecondary}"
+                       FontSize="16" />
+            </Border>
+
+            <!-- 可用功能 -->
+            <Border BackgroundColor="{AppThemeBinding Light={StaticResource CardBackgroundLight}, Dark={StaticResource CardBackgroundDark}}"
+                    StrokeShape="RoundRectangle 12"
+                    Padding="{StaticResource CardPadding}">
+                <StackLayout Spacing="8">
+                    <Label Text="可用功能：" FontSize="18" FontAttributes="Bold" Style="{StaticResource LabelPrimary}" />
+                    <StackLayout Spacing="8" BindableLayout.ItemsSource="{Binding AvailableTools}">
+                        <BindableLayout.ItemTemplate>
+                            <DataTemplate>
+                                <StackLayout Spacing="2">
+                                    <Label Text="{Binding Name}" FontSize="16" FontAttributes="Bold" Style="{StaticResource LabelPrimary}" />
+                                    <Label Text="{Binding Description}" FontSize="14" Style="{StaticResource LabelSecondary}" />
+                                </StackLayout>
+                            </DataTemplate>
+                        </BindableLayout.ItemTemplate>
+                    </StackLayout>
+                </StackLayout>
+            </Border>
+
+            <!-- 状态消息 -->
+            <Label Text="{Binding StatusMessage}"
+                   FontSize="14"
+                   TextColor="{StaticResource InfoColor}"
+                   HorizontalOptions="Center" />
+
+            <!-- 操作按钮 -->
+            <StackLayout Spacing="10">
+                <Button Text="发消息"
+                        Style="{StaticResource PrimaryActionButton}"
+                        Command="{Binding SendMessageCommand}" />
+                <Button Text="重置会话"
+                        Style="{StaticResource WarningActionButton}"
+                        Command="{Binding ResetSessionCommand}" />
+            </StackLayout>
+        </StackLayout>
+    </ScrollView>
+
+</ContentPage>

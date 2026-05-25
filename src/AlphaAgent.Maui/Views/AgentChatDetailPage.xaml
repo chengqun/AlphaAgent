@@ -1,0 +1,206 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:converters="clr-namespace:AlphaAgent.Maui.Converters"
+             xmlns:views="clr-namespace:AlphaAgent.Maui.Views"
+             xmlns:md="clr-namespace:Indiko.Maui.Controls.Markdown;assembly=Indiko.Maui.Controls.Markdown"
+             xmlns:models="clr-namespace:AlphaAgent.Maui.Models"
+             x:Class="AlphaAgent.Maui.Views.AgentChatDetailPage"
+             Title="{Binding Title}"
+             Shell.TabBarIsVisible="False"
+             BackgroundColor="{AppThemeBinding Light={StaticResource PageBackgroundLight}, Dark={StaticResource PageBackgroundDark}}">
+
+    <ContentPage.Resources>
+        <converters:DictToStringConverter x:Key="DictToStringConverter" />
+
+        <!-- 用户文本消息模板 -->
+        <DataTemplate x:Key="UserTextTemplate">
+            <StackLayout Padding="4,2">
+                <Border Style="{StaticResource SentMessageBorder}">
+                    <StackLayout>
+                        <Label Text="{Binding Content}"
+                               Style="{StaticResource SentMessageText}" />
+                        <Label Text="{Binding Timestamp, Converter={StaticResource UtcToLocalTimeConverter}}"
+                               Style="{StaticResource SentMessageTime}" />
+                    </StackLayout>
+                </Border>
+            </StackLayout>
+        </DataTemplate>
+
+        <!-- AI 文本回复模板：流式中纯文本，结束后 Markdown 渲染 -->
+        <DataTemplate x:Key="AssistantTextTemplate">
+            <StackLayout Padding="4,2">
+                <Border Style="{StaticResource AssistantMessageBorder}">
+                    <StackLayout>
+                        <Label Text="{Binding AgentName, Source={RelativeSource AncestorType={x:Type views:AgentChatDetailPage}}}"
+                               FontSize="11"
+                               TextColor="{AppThemeBinding Light={StaticResource TextSecondaryLight}, Dark={StaticResource TextSecondaryDark}}" />
+
+                        <!-- 流式输出中：纯文本 Label -->
+                        <Label Text="{Binding Content}"
+                               Style="{StaticResource AssistantMessageText}"
+                               IsVisible="{Binding IsStreaming}"
+                               Margin="0,4,0,0" />
+
+                        <!-- 流式结束后：Markdown 一次性渲染 -->
+                        <md:MarkdownView MarkdownText="{Binding MarkdownContent}"
+                                         TextFontSize="15"
+                                         TextColor="{AppThemeBinding Light={StaticResource AssistantMessageTextLight}, Dark={StaticResource AssistantMessageTextDark}}"
+                                         CodeBlockBackgroundColor="{AppThemeBinding Light={StaticResource MarkdownCodeBackgroundLight}, Dark={StaticResource MarkdownCodeBackgroundDark}}"
+                                         CodeBlockTextColor="{AppThemeBinding Light={StaticResource MarkdownCodeTextLight}, Dark={StaticResource MarkdownCodeTextDark}}"
+                                         CodeBlockBorderColor="{AppThemeBinding Light={StaticResource MarkdownCodeBorderLight}, Dark={StaticResource MarkdownCodeBorderDark}}"
+                                         BlockQuoteBackgroundColor="{AppThemeBinding Light={StaticResource MarkdownBlockQuoteBackgroundLight}, Dark={StaticResource MarkdownBlockQuoteBackgroundDark}}"
+                                         BlockQuoteTextColor="{AppThemeBinding Light={StaticResource MarkdownBlockQuoteTextLight}, Dark={StaticResource MarkdownBlockQuoteTextDark}}"
+                                         HyperlinkColor="{AppThemeBinding Light={StaticResource MarkdownHyperlinkLight}, Dark={StaticResource MarkdownHyperlinkDark}}"
+                                         H1Color="{AppThemeBinding Light={StaticResource AssistantMessageTextLight}, Dark={StaticResource AssistantMessageTextDark}}"
+                                         H2Color="{AppThemeBinding Light={StaticResource MarkdownHeadingLight}, Dark={StaticResource MarkdownHeadingDark}}"
+                                         H3Color="{AppThemeBinding Light={StaticResource MarkdownHeadingLight}, Dark={StaticResource MarkdownHeadingDark}}"
+                                         LineColor="{AppThemeBinding Light={StaticResource MarkdownLineLight}, Dark={StaticResource MarkdownLineDark}}"
+                                         IsVisible="{Binding IsStreaming, Converter={StaticResource InvertedBoolConverter}}"
+                                         HorizontalOptions="Fill"
+                                         VerticalOptions="Fill" />
+
+                        <Label Text="{Binding Timestamp, Converter={StaticResource UtcToLocalTimeConverter}}"
+                               Style="{StaticResource MessageTime}" />
+                    </StackLayout>
+                </Border>
+            </StackLayout>
+        </DataTemplate>
+
+        <!-- 工具调用模板 -->
+        <DataTemplate x:Key="ToolCallTemplate">
+            <StackLayout Padding="4,2">
+                <Border Style="{StaticResource ToolCallBorder}">
+                    <Border.GestureRecognizers>
+                        <TapGestureRecognizer Tapped="OnToolCardTapped" />
+                    </Border.GestureRecognizers>
+                    <StackLayout>
+                        <Label Style="{StaticResource ToolCallText}">
+                            <Label.FormattedText>
+                                <FormattedString>
+                                    <Span Text="&#x1f527; 调用: " />
+                                    <Span Text="{Binding ToolName}" />
+                                </FormattedString>
+                            </Label.FormattedText>
+                        </Label>
+                        <Label Text="{Binding Input, Converter={StaticResource DictToStringConverter}}"
+                               FontSize="11"
+                               LineBreakMode="TailTruncation"
+                               MaxLines="3"
+                               IsVisible="{Binding IsExpanded, Converter={StaticResource InvertedBoolConverter}}"
+                               TextColor="{AppThemeBinding Light={StaticResource TextSecondaryLight}, Dark={StaticResource TextSecondaryDark}}" />
+                        <Label Text="{Binding Input, Converter={StaticResource DictToStringConverter}}"
+                               FontSize="11"
+                               LineBreakMode="WordWrap"
+                               IsVisible="{Binding IsExpanded}"
+                               TextColor="{AppThemeBinding Light={StaticResource TextSecondaryLight}, Dark={StaticResource TextSecondaryDark}}" />
+                    </StackLayout>
+                </Border>
+            </StackLayout>
+        </DataTemplate>
+
+        <!-- 工具结果模板 -->
+        <DataTemplate x:Key="ToolResultTemplate">
+            <StackLayout Padding="4,2">
+                <Border Style="{StaticResource ToolResultBorder}">
+                    <Border.GestureRecognizers>
+                        <TapGestureRecognizer Tapped="OnToolCardTapped" />
+                    </Border.GestureRecognizers>
+                    <StackLayout>
+                        <Label Style="{StaticResource ToolResultText}">
+                            <Label.FormattedText>
+                                <FormattedString>
+                                    <Span Text="&#x2705; 结果: " />
+                                    <Span Text="{Binding ToolName}" />
+                                </FormattedString>
+                            </Label.FormattedText>
+                        </Label>
+                        <Label Text="{Binding Output, Converter={StaticResource DictToStringConverter}}"
+                               FontSize="11"
+                               LineBreakMode="TailTruncation"
+                               MaxLines="3"
+                               IsVisible="{Binding IsExpanded, Converter={StaticResource InvertedBoolConverter}}"
+                               TextColor="{AppThemeBinding Light={StaticResource TextSecondaryLight}, Dark={StaticResource TextSecondaryDark}}" />
+                        <Label Text="{Binding Output, Converter={StaticResource DictToStringConverter}}"
+                               FontSize="11"
+                               LineBreakMode="WordWrap"
+                               IsVisible="{Binding IsExpanded}"
+                               TextColor="{AppThemeBinding Light={StaticResource TextSecondaryLight}, Dark={StaticResource TextSecondaryDark}}" />
+                    </StackLayout>
+                </Border>
+            </StackLayout>
+        </DataTemplate>
+
+        <!-- 思考中指示模板（兼容） -->
+        <DataTemplate x:Key="ThinkingTemplate">
+            <StackLayout Padding="4,2">
+                <Border Style="{StaticResource AssistantMessageBorder}">
+                    <StackLayout Orientation="Horizontal" Spacing="6">
+                        <Label Text="{Binding AgentName, Source={RelativeSource AncestorType={x:Type views:AgentChatDetailPage}}}"
+                               FontSize="11"
+                               TextColor="{AppThemeBinding Light={StaticResource TextSecondaryLight}, Dark={StaticResource TextSecondaryDark}}" />
+                        <Label Text="思考中..."
+                               FontSize="14"
+                               Style="{StaticResource LabelSecondary}" />
+                    </StackLayout>
+                </Border>
+            </StackLayout>
+        </DataTemplate>
+
+        <views:ChatMessageTemplateSelector x:Key="ChatMessageTemplateSelector"
+                                           UserTextTemplate="{StaticResource UserTextTemplate}"
+                                           AssistantTextTemplate="{StaticResource AssistantTextTemplate}"
+                                           ToolCallTemplate="{StaticResource ToolCallTemplate}"
+                                           ToolResultTemplate="{StaticResource ToolResultTemplate}"
+                                           ThinkingTemplate="{StaticResource ThinkingTemplate}" />
+    </ContentPage.Resources>
+
+    <Grid RowDefinitions="Auto,*,Auto">
+
+        <!-- 错误信息 -->
+        <Border Grid.Row="0"
+                Style="{StaticResource ErrorBorder}"
+                IsVisible="{Binding ErrorMessage, Converter={StaticResource NullToBooleanConverter}}">
+            <Label Text="{Binding ErrorMessage}"
+                   Style="{StaticResource ErrorText}" />
+        </Border>
+
+        <!-- 消息列表 -->
+        <CollectionView x:Name="AgentMessagesList"
+                        Grid.Row="1"
+                        ItemsSource="{Binding Messages}"
+                        Margin="8,0"
+                        ItemsUpdatingScrollMode="KeepLastItemInView"
+                        VerticalScrollBarVisibility="Always"
+                        ItemTemplate="{StaticResource ChatMessageTemplateSelector}">
+            <CollectionView.ItemsLayout>
+                <LinearItemsLayout Orientation="Vertical" ItemSpacing="4" />
+            </CollectionView.ItemsLayout>
+        </CollectionView>
+
+        <!-- 底部输入栏 -->
+        <Border Grid.Row="2"
+                Style="{StaticResource MessageInputBorder}"
+                Padding="12,8">
+            <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
+                <Entry x:Name="AgentMessageEntry"
+                       Grid.Column="0"
+                       Text="{Binding MessageText}"
+                       Placeholder="输入消息..."
+                       ReturnType="Send"
+                       FontSize="16"
+                       Completed="OnEntryCompleted" />
+                <Button Grid.Column="1"
+                        Text="发送"
+                        Command="{Binding SendMessageCommand}"
+                        BackgroundColor="{StaticResource InfoColor}"
+                        TextColor="{StaticResource TextWhite}"
+                        FontSize="14"
+                        CornerRadius="20"
+                        HeightRequest="40"
+                        MinimumWidthRequest="70" />
+            </Grid>
+        </Border>
+    </Grid>
+
+</ContentPage>

@@ -1,0 +1,118 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:syncfusion="clr-namespace:Syncfusion.Maui.Toolkit.PullToRefresh;assembly=Syncfusion.Maui.Toolkit"
+             xmlns:local="clr-namespace:AlphaAgent.Maui.Views"
+             x:Class="AlphaAgent.Maui.Views.ContactsPage"
+             Title="通讯录"
+             BackgroundColor="{AppThemeBinding Light={StaticResource PageBackgroundLight}, Dark={StaticResource PageBackgroundDark}}">
+    <ContentPage.ToolbarItems>
+        <ToolbarItem IconImageSource="addfriend" Command="{Binding AddFriendCommand}" Priority="0" Order="Primary" />
+    </ContentPage.ToolbarItems>
+    
+    <!-- 联系人列表页面 -->
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+        </Grid.RowDefinitions>
+        
+        <!-- 搜索框 - 固定在顶部 -->
+        <SearchBar x:Name="SearchBarControl"
+                   Grid.Row="0"
+                   Placeholder="搜索" 
+                   Text="{Binding SearchText}"
+                   Style="{StaticResource SearchBarPrimary}"
+                   Margin="16,16,16,8" />
+        
+        <!-- 滚动内容 -->
+        <syncfusion:SfPullToRefresh Grid.Row="1" 
+                                     RefreshCommand="{Binding RefreshContactsCommand}" 
+                                     IsRefreshing="{Binding IsLoading}">
+            <syncfusion:SfPullToRefresh.PullableContent>
+                <ScrollView BackgroundColor="{AppThemeBinding Light={StaticResource PageBackgroundLight}, Dark={StaticResource PageBackgroundDark}}">
+                    <StackLayout Padding="{StaticResource SpacingNone}" Spacing="{StaticResource SpacingNone}">
+                        <StackLayout.GestureRecognizers>
+                            <TapGestureRecognizer Tapped="OnPageTapped" />
+                        </StackLayout.GestureRecognizers>
+                        
+                        <!-- 通讯录分组列表 -->
+                        <CollectionView ItemsSource="{Binding ContactGroups}">
+                            <CollectionView.ItemTemplate>
+                                <DataTemplate>
+                                    <StackLayout>
+                                        <!-- 分组标题（仅当标题不为空时显示） -->
+                                        <Grid BackgroundColor="{AppThemeBinding Light={StaticResource PageBackgroundLight}, Dark={StaticResource PageBackgroundDark}}" 
+                                              Padding="{StaticResource ListItemHeaderPadding}"
+                                              IsVisible="{Binding Title, Converter={StaticResource NullToBooleanConverter}}">
+                                            <Label Text="{Binding Title}"
+                                                   FontSize="13"
+                                                   FontAttributes="Bold"
+                                                   TextColor="{AppThemeBinding Light={StaticResource TextSecondaryLight}, Dark={StaticResource TextSecondaryDark}}" />
+                                        </Grid>
+
+                                        <!-- 分组内容 -->
+                                        <CollectionView ItemsSource="{Binding Contacts}">
+                                            <CollectionView.ItemTemplate>
+                                                <DataTemplate>
+                                                    <Grid Padding="{StaticResource ListItemPadding}" 
+                                                          BackgroundColor="{AppThemeBinding Light={StaticResource CardBackgroundLight}, Dark={StaticResource CardBackgroundDark}}" 
+                                                          ColumnDefinitions="Auto,*,Auto">
+                                                        <!-- 头像/图标 -->
+                                                        <Grid Grid.Column="0" Margin="0,0,16,0">
+                                                            <!-- 图标模式 - 有图标时显示 -->
+                                                            <Border 
+                                                                WidthRequest="48" 
+                                                                HeightRequest="48"
+                                                                StrokeShape="RoundRectangle 12"
+                                                                BackgroundColor="{AppThemeBinding Light={StaticResource PageBackgroundLight}, Dark={StaticResource PageBackgroundDark}}"
+                                                                IsVisible="{Binding IconSource, Converter={StaticResource NullToBooleanConverter}}">
+                                                                <Image 
+                                                                    Source="{Binding IconSource}" 
+                                                                    WidthRequest="24" 
+                                                                    HeightRequest="24" 
+                                                                    HorizontalOptions="Center" 
+                                                                    VerticalOptions="Center" />
+                                                            </Border>
+                                                            <!-- 字母模式 - 没有图标时显示 -->
+                                                            <Border 
+                                                                WidthRequest="48" 
+                                                                HeightRequest="48"
+                                                                StrokeShape="RoundRectangle 12"
+                                                                BackgroundColor="{AppThemeBinding Light={StaticResource AvatarBackgroundLight}, Dark={StaticResource AvatarBackgroundDark}}"
+                                                                IsVisible="{Binding IconSource, Converter={StaticResource NullToBooleanConverter}, ConverterParameter=inverse}">
+                                                                <Label 
+                                                                    Text="{Binding Initial}" 
+                                                                    Style="{StaticResource LabelAvatar}"/>
+                                                            </Border>
+                                                        </Grid>
+
+                                                        <!-- 名称 -->
+                                                        <Label 
+                                                            Grid.Column="1"
+                                                            Text="{Binding Name}" 
+                                                            Style="{StaticResource LabelPrimary}"
+                                                            LineBreakMode="TailTruncation" 
+                                                            VerticalOptions="Center" />
+
+                                                        <Grid.GestureRecognizers>
+                                                            <TapGestureRecognizer Command="{Binding Source={RelativeSource AncestorType={x:Type local:ContactsPage}}, Path=ViewModel.NavigateToContactDetailCommand}" CommandParameter="{Binding}" />
+                                                        </Grid.GestureRecognizers>
+                                                    </Grid>
+                                                </DataTemplate>
+                                            </CollectionView.ItemTemplate>
+                                        </CollectionView>
+                                    </StackLayout>
+                                </DataTemplate>
+                            </CollectionView.ItemTemplate>
+                        </CollectionView>
+                        
+                        <!-- 底部空白 -->
+                        <BoxView HeightRequest="32" BackgroundColor="{AppThemeBinding Light={StaticResource PageBackgroundLight}, Dark={StaticResource PageBackgroundDark}}" />
+                    </StackLayout>
+                </ScrollView>
+            </syncfusion:SfPullToRefresh.PullableContent>
+        </syncfusion:SfPullToRefresh>
+    </Grid>
+
+</ContentPage>

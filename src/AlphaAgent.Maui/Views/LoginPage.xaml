@@ -1,0 +1,76 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:inputLayout="clr-namespace:Syncfusion.Maui.Toolkit.TextInputLayout;assembly=Syncfusion.Maui.Toolkit"
+             xmlns:buttons="clr-namespace:Syncfusion.Maui.Toolkit.Buttons;assembly=Syncfusion.Maui.Toolkit"
+             x:Class="AlphaAgent.Maui.Views.LoginPage"
+             Title="登录"
+             BackgroundColor="{AppThemeBinding Light={StaticResource PageBackgroundLight}, Dark={StaticResource PageBackgroundDark}}">
+
+    <ScrollView BackgroundColor="{AppThemeBinding Light={StaticResource PageBackgroundLight}, Dark={StaticResource PageBackgroundDark}}">
+        <StackLayout Padding="{StaticResource SpacingExtraLarge}" Spacing="{StaticResource SpacingLarge}">
+
+            <!-- Logo -->
+            <Image Source="appicon.png"
+                   WidthRequest="100"
+                   HeightRequest="100"
+                   HorizontalOptions="Center" />
+
+            <!-- App Title -->
+            <Label Text="AlphaAgent"
+                   Style="{StaticResource LabelTitle}" />
+
+            <!-- Subtitle -->
+            <Label Text="股票社交平台"
+                   Style="{StaticResource LabelSubtitle}" />
+
+            <!-- Username Input with SfTextInputLayout -->
+            <inputLayout:SfTextInputLayout Hint="用户名"
+                                             ContainerType="Outlined">
+                <Entry Text="{Binding Username}"
+                       IsEnabled="{Binding IsLoginEnabled}"
+                       Style="{StaticResource EntryPrimary}" />
+            </inputLayout:SfTextInputLayout>
+
+            <!-- Password Input with SfTextInputLayout and Password Toggle -->
+            <inputLayout:SfTextInputLayout Hint="密码"
+                                             ContainerType="Outlined"
+                                             EnablePasswordVisibilityToggle="true">
+                <Entry Text="{Binding Password}"
+                       IsEnabled="{Binding IsLoginEnabled}"
+                       Style="{StaticResource EntryPrimary}"
+                       IsPassword="True" />
+            </inputLayout:SfTextInputLayout>
+
+            <!-- Login Button using SfButton -->
+            <buttons:SfButton Text="登录"
+                               Command="{Binding LoginCommand}"
+                               IsEnabled="{Binding IsLoginEnabled}"
+                               Background="{StaticResource ButtonPrimaryBackground}"
+                               TextColor="{StaticResource ButtonPrimaryText}"
+                               FontSize="16"
+                               HeightRequest="50"
+                               CornerRadius="8" />
+
+            <!-- Status Message -->
+            <Label Text="{Binding StatusMessage}"
+                   Style="{StaticResource LabelError}"
+                   IsVisible="{Binding HasError}" />
+
+            <!-- Loading Indicator -->
+            <ActivityIndicator IsRunning="{Binding IsLoading}"
+                               WidthRequest="30"
+                               HeightRequest="30"
+                               HorizontalOptions="Center" />
+
+            <!-- Register Link -->
+            <buttons:SfButton Text="没有账号？去注册"
+                               Command="{Binding NavigateToRegisterCommand}"
+                               Background="Transparent"
+                               TextColor="{StaticResource Primary}"
+                               FontSize="14" />
+
+        </StackLayout>
+    </ScrollView>
+
+</ContentPage>

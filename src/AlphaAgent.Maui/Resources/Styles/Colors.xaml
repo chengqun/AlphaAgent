@@ -1,0 +1,213 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<ResourceDictionary xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml">
+
+    <!-- ================================================================ -->
+    <!--  命名规则：                                                        -->
+    <!--  语义色（随主题切换）：{Name} + {Name}Light + {Name}Dark           -->
+    <!--  静态色（不随主题切换）：{Name}，无 Light/Dark 变体                  -->
+    <!--  未来换肤只需改本文件，所有页面通过 Style/Resource 引用              -->
+    <!-- ================================================================ -->
+
+    <!-- ========== 主色调 ========== -->
+    <Color x:Key="Primary">#C9A227</Color>
+    <Color x:Key="PrimaryLight">#F5E6B8</Color>
+    <Color x:Key="PrimaryDark">#F5E6B8</Color>
+
+    <!-- ========== 辅色 ========== -->
+    <Color x:Key="Secondary">#8B7355</Color>
+    <Color x:Key="SecondaryLight">#D4C4A8</Color>
+    <Color x:Key="SecondaryDark">#5C4B32</Color>
+
+    <!-- ========== 应用背景 ========== -->
+    <Color x:Key="AppBackgroundLight">#FDFBF7</Color>
+    <Color x:Key="AppBackgroundDark">#0F0F1A</Color>
+    <Color x:Key="AppBackground">#FDFBF7</Color>
+
+    <!-- ========== 页面背景 ========== -->
+    <Color x:Key="PageBackgroundLight">#F9F6F0</Color>
+    <Color x:Key="PageBackgroundDark">#12121F</Color>
+    <Color x:Key="PageBackground">#F9F6F0</Color>
+
+    <!-- ========== 卡片背景 ========== -->
+    <Color x:Key="CardBackgroundLight">#FFFFFF</Color>
+    <Color x:Key="CardBackgroundDark">#1A1A2E</Color>
+    <Color x:Key="CardBackground">#FFFFFF</Color>
+
+    <!-- ========== 文字颜色 ========== -->
+    <Color x:Key="TextPrimaryLight">#1A1A1A</Color>
+    <Color x:Key="TextPrimaryDark">#E8E0D5</Color>
+    <Color x:Key="TextPrimary">#1A1A1A</Color>
+
+    <Color x:Key="TextSecondaryLight">#5C4B32</Color>
+    <Color x:Key="TextSecondaryDark">#C9A227</Color>
+    <Color x:Key="TextSecondary">#5C4B32</Color>
+
+    <Color x:Key="TextTertiaryLight">#8B7355</Color>
+    <Color x:Key="TextTertiaryDark">#8B7355</Color>
+    <Color x:Key="TextTertiary">#8B7355</Color>
+
+    <!-- ========== 边框 & 分隔线 ========== -->
+    <Color x:Key="BorderLight">#E8E0D5</Color>
+    <Color x:Key="BorderDark">#2D2D44</Color>
+    <Color x:Key="Border">#E8E0D5</Color>
+
+    <Color x:Key="SeparatorLight">#D4C4A8</Color>
+    <Color x:Key="SeparatorDark">#3A3A52</Color>
+    <Color x:Key="Separator">#D4C4A8</Color>
+
+    <!-- ========== 通用文本颜色（静态） ========== -->
+    <Color x:Key="TextWhite">#FFFFFF</Color>
+    <Color x:Key="TextBlack">#0F0F1A</Color>
+    <Color x:Key="TextError">#C41E3A</Color>
+
+    <!-- ========== 按钮颜色 ========== -->
+    <Color x:Key="ButtonPrimaryBackground">#C9A227</Color>
+    <Color x:Key="ButtonPrimaryText">#0F0F1A</Color>
+    <Color x:Key="ButtonSecondaryBackgroundLight">#F5E6B8</Color>
+    <Color x:Key="ButtonSecondaryBackgroundDark">#2D2D44</Color>
+    <Color x:Key="ButtonSecondaryBackground">#F5E6B8</Color>
+    <Color x:Key="ButtonSecondaryText">#C9A227</Color>
+
+    <!-- ========== 状态颜色 ========== -->
+    <Color x:Key="SuccessColor">#2E7D32</Color>
+    <Color x:Key="WarningColor">#C9A227</Color>
+    <Color x:Key="ErrorColor">#C41E3A</Color>
+    <Color x:Key="InfoColor">#1E88E5</Color>
+
+    <!-- ========== 消息气泡颜色 ========== -->
+    <Color x:Key="ReceivedMessageBackgroundLight">#F0EDE6</Color>
+    <Color x:Key="ReceivedMessageBackgroundDark">#2D2D44</Color>
+    <Color x:Key="ReceivedMessageBackground">#F0EDE6</Color>
+    <Color x:Key="SentMessageBackgroundLight">#C9A227</Color>
+    <Color x:Key="SentMessageBackgroundDark">#C9A227</Color>
+    <Color x:Key="SentMessageBackground">#C9A227</Color>
+    <Color x:Key="SentMessageTextColor">#0F0F1A</Color>
+    <Color x:Key="SentMessageTimeColor">#5C4B32</Color>
+
+    <!-- ========== AI 助手消息颜色 ========== -->
+    <Color x:Key="AssistantMessageBackgroundLight">#F5F0E6</Color>
+    <Color x:Key="AssistantMessageBackgroundDark">#1E2D3D</Color>
+    <Color x:Key="AssistantMessageBackground">#F5F0E6</Color>
+    <Color x:Key="AssistantMessageTextLight">#1A1A1A</Color>
+    <Color x:Key="AssistantMessageTextDark">#E8E0D5</Color>
+    <Color x:Key="AssistantMessageText">#1A1A1A</Color>
+
+    <!-- ========== 工具调用颜色 ========== -->
+    <Color x:Key="ToolCallBackgroundLight">#E8F5F8</Color>
+    <Color x:Key="ToolCallBackgroundDark">#1A2D3D</Color>
+    <Color x:Key="ToolCallBackground">#E8F5F8</Color>
+    <Color x:Key="ToolCallTextLight">#1565C0</Color>
+    <Color x:Key="ToolCallTextDark">#64B5F6</Color>
+    <Color x:Key="ToolCallText">#1565C0</Color>
+    <Color x:Key="ToolResultBackgroundLight">#F0F5F0</Color>
+    <Color x:Key="ToolResultBackgroundDark">#1B3A26</Color>
+    <Color x:Key="ToolResultBackground">#F0F5F0</Color>
+    <Color x:Key="ToolResultTextLight">#2E7D32</Color>
+    <Color x:Key="ToolResultTextDark">#81C784</Color>
+    <Color x:Key="ToolResultText">#2E7D32</Color>
+
+    <!-- ========== 错误提示颜色 ========== -->
+    <Color x:Key="ErrorBackgroundLight">#FFF8E1</Color>
+    <Color x:Key="ErrorBackgroundDark">#FFF8E1</Color>
+    <Color x:Key="ErrorBackground">#FFF8E1</Color>
+    <Color x:Key="ErrorTextLight">#8D6E63</Color>
+    <Color x:Key="ErrorTextDark">#8D6E63</Color>
+    <Color x:Key="ErrorText">#8D6E63</Color>
+
+    <!-- ========== 头像颜色 ========== -->
+    <Color x:Key="AvatarBackgroundLight">#1E88E5</Color>
+    <Color x:Key="AvatarBackgroundDark">#7B1FA2</Color>
+    <Color x:Key="AvatarBackground">#1E88E5</Color>
+    <Color x:Key="AvatarBlue">#1E88E5</Color>
+    <Color x:Key="AvatarGreen">#2E7D32</Color>
+    <Color x:Key="AvatarOrange">#F57C00</Color>
+    <Color x:Key="AvatarPurple">#7B1FA2</Color>
+    <Color x:Key="AvatarPink">#C2185B</Color>
+    <Color x:Key="AvatarGold">#C9A227</Color>
+
+    <!-- ========== 联系人类型颜色 ========== -->
+    <Color x:Key="FriendColor">#C9A227</Color>
+    <Color x:Key="FriendColorDark">#A68523</Color>
+    <Color x:Key="DeviceColor">#F57C00</Color>
+    <Color x:Key="DeviceColorDark">#D46900</Color>
+    <Color x:Key="GroupColor">#2E7D32</Color>
+    <Color x:Key="GroupColorDark">#1B5E20</Color>
+    <Color x:Key="StockColor">#7B1FA2</Color>
+    <Color x:Key="StockColorDark">#5D107A</Color>
+
+    <!-- ========== Syncfusion 颜色 ========== -->
+    <Color x:Key="SfPrimary">#C9A227</Color>
+    <Color x:Key="SfPrimaryDarkColor">#C9A227</Color>
+    <Color x:Key="SfSecondary">#8B7355</Color>
+    <Color x:Key="SfSuccess">#2E7D32</Color>
+    <Color x:Key="SfWarning">#C9A227</Color>
+    <Color x:Key="SfError">#C41E3A</Color>
+    <Color x:Key="SfInfo">#1E88E5</Color>
+
+    <Color x:Key="SfBackgroundLight">#F9F6F0</Color>
+    <Color x:Key="SfBackgroundDark">#12121F</Color>
+    <Color x:Key="SfBackground">#F9F6F0</Color>
+
+    <Color x:Key="SfSurfaceLight">#FFFFFF</Color>
+    <Color x:Key="SfSurfaceDark">#1A1A2E</Color>
+    <Color x:Key="SfSurface">#FFFFFF</Color>
+
+    <!-- ========== 视频页颜色 ========== -->
+    <Color x:Key="VideoPageBackgroundLight">#0F0F1A</Color>
+    <Color x:Key="VideoPageBackgroundDark">#0F0F1A</Color>
+    <Color x:Key="VideoPageBackground">#0F0F1A</Color>
+
+    <Color x:Key="VideoRetryBackgroundLight">#333333</Color>
+    <Color x:Key="VideoRetryBackgroundDark">#333333</Color>
+    <Color x:Key="VideoRetryBackground">#333333</Color>
+
+    <!-- ========== Markdown 颜色 ========== -->
+    <Color x:Key="MarkdownCodeBackgroundLight">#F5F5F5</Color>
+    <Color x:Key="MarkdownCodeBackgroundDark">#2D2D2D</Color>
+    <Color x:Key="MarkdownCodeBackground">#F5F5F5</Color>
+
+    <Color x:Key="MarkdownCodeTextLight">#1A1A1A</Color>
+    <Color x:Key="MarkdownCodeTextDark">#E8E0D5</Color>
+    <Color x:Key="MarkdownCodeText">#1A1A1A</Color>
+
+    <Color x:Key="MarkdownCodeBorderLight">#D4C4A8</Color>
+    <Color x:Key="MarkdownCodeBorderDark">#3A3A52</Color>
+    <Color x:Key="MarkdownCodeBorder">#D4C4A8</Color>
+
+    <Color x:Key="MarkdownBlockQuoteBackgroundLight">#F5F0E6</Color>
+    <Color x:Key="MarkdownBlockQuoteBackgroundDark">#1E2D3D</Color>
+    <Color x:Key="MarkdownBlockQuoteBackground">#F5F0E6</Color>
+
+    <Color x:Key="MarkdownBlockQuoteTextLight">#5C4B32</Color>
+    <Color x:Key="MarkdownBlockQuoteTextDark">#C9A227</Color>
+    <Color x:Key="MarkdownBlockQuoteText">#5C4B32</Color>
+
+    <Color x:Key="MarkdownHyperlinkLight">#1E88E5</Color>
+    <Color x:Key="MarkdownHyperlinkDark">#64B5F6</Color>
+    <Color x:Key="MarkdownHyperlink">#1E88E5</Color>
+
+    <Color x:Key="MarkdownHeadingLight">#1A1A1A</Color>
+    <Color x:Key="MarkdownHeadingDark">#E8E0D5</Color>
+    <Color x:Key="MarkdownHeading">#1A1A1A</Color>
+
+    <Color x:Key="MarkdownLineLight">#E8E0D5</Color>
+    <Color x:Key="MarkdownLineDark">#3A3A52</Color>
+    <Color x:Key="MarkdownLine">#E8E0D5</Color>
+
+    <!-- ========== Shell & 灰度颜色 ========== -->
+    <Color x:Key="White">#FFFFFF</Color>
+    <Color x:Key="Black">#0F0F1A</Color>
+    <Color x:Key="OffBlack">#12121F</Color>
+    <Color x:Key="Gray100">#F9F6F0</Color>
+    <Color x:Key="Gray200">#E8E0D5</Color>
+    <Color x:Key="Gray300">#D4C4A8</Color>
+    <Color x:Key="Gray400">#8B7355</Color>
+    <Color x:Key="Gray500">#5C4B32</Color>
+    <Color x:Key="Gray600">#3D3224</Color>
+    <Color x:Key="Gray900">#1A1A1A</Color>
+    <Color x:Key="Gray950">#0F0F1A</Color>
+    <Color x:Key="Magenta">#C2185B</Color>
+    <Color x:Key="MidnightBlue">#1A1A2E</Color>
+
+</ResourceDictionary>

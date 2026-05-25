@@ -1,0 +1,87 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:local="clr-namespace:AlphaAgent.Maui.Services"
+             xmlns:viewmodel="clr-namespace:AlphaAgent.Maui.ViewModels"
+             x:Class="AlphaAgent.Maui.Views.MePage"
+             Title="我"
+             BackgroundColor="{AppThemeBinding Light={StaticResource PageBackgroundLight}, Dark={StaticResource PageBackgroundDark}}">
+
+    <ScrollView BackgroundColor="{AppThemeBinding Light={StaticResource PageBackgroundLight}, Dark={StaticResource PageBackgroundDark}}">
+        <StackLayout Padding="{StaticResource PagePadding}" Spacing="{StaticResource SpacingLarge}">
+
+            <!-- 用户信息卡片 -->
+            <Border Style="{StaticResource CardBorder}"
+                    StrokeShape="RoundRectangle 20"
+                    Padding="24">
+                <StackLayout Spacing="16">
+                    <!-- 用户头像 -->
+                    <StackLayout HorizontalOptions="Center">
+                        <Border WidthRequest="100" HeightRequest="100"
+                                StrokeShape="RoundRectangle 50"
+                                BackgroundColor="{AppThemeBinding Light={StaticResource AvatarBackgroundLight}, Dark={StaticResource AvatarBackgroundDark}}"
+                                Padding="0">
+                            <Label Text="{Binding UsernameInitial}"
+                                   FontSize="40"
+                                   FontAttributes="Bold"
+                                   TextColor="{StaticResource TextWhite}"
+                                   HorizontalOptions="Center"
+                                   VerticalOptions="Center" />
+                        </Border>
+                    </StackLayout>
+
+                    <!-- 用户名 -->
+                    <Label Text="{Binding Username}"
+                           FontSize="26"
+                           FontAttributes="Bold"
+                           Style="{StaticResource LabelPrimary}"
+                           HorizontalOptions="Center" />
+                </StackLayout>
+            </Border>
+
+
+            <!-- 主题设置卡片 -->
+            <Border Style="{StaticResource CardBorder}"
+                    StrokeShape="RoundRectangle 20"
+                    Padding="20">
+                <!-- 主题切换行 -->
+                <Grid ColumnDefinitions="*,Auto" ColumnSpacing="16">
+                    <!-- 左侧：图标和文本 -->
+                    <StackLayout Orientation="Horizontal" Spacing="12" VerticalOptions="Center">
+                        <Border WidthRequest="44" HeightRequest="44"
+                                StrokeShape="RoundRectangle 22"
+                                BackgroundColor="{AppThemeBinding Light={StaticResource AvatarBackgroundLight}, Dark={StaticResource AvatarBackgroundDark}}">
+                            <Label Text="{Binding ThemeIcon}"
+                                   FontSize="22"
+                                   TextColor="{StaticResource TextWhite}"
+                                   HorizontalOptions="Center"
+                                   VerticalOptions="Center" />
+                        </Border>
+                        <Label Text="{Binding ThemeModeText}"
+                               FontSize="18"
+                               FontAttributes="Bold"
+                               Style="{StaticResource LabelPrimary}"
+                               VerticalOptions="Center" />
+                    </StackLayout>
+
+                    <!-- 右侧：开关 -->
+                    <Switch IsToggled="{Binding IsDarkMode}"
+                            Toggled="OnThemeToggled"
+                            OnColor="{StaticResource Primary}"
+                            HorizontalOptions="End"
+                            VerticalOptions="Center" />
+                </Grid>
+            </Border>
+
+            <!-- 退出登录按钮 -->
+            <Button Text="退出登录"
+                    Command="{Binding LogoutCommand}"
+                    IsEnabled="{Binding !IsLoading}"
+                    Style="{StaticResource ErrorActionButton}"
+                    CornerRadius="20"
+                    HeightRequest="56" />
+
+        </StackLayout>
+    </ScrollView>
+
+</ContentPage>

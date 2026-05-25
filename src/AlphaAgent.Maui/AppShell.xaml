@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<Shell
+    x:Class="AlphaAgent.Maui.AppShell"
+    xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+    xmlns:views="clr-namespace:AlphaAgent.Maui.Views"
+    Shell.FlyoutBehavior="Disabled"
+    Title="天机算筹">
+
+    <!-- 启动页和登录页不在 TabBar 中 -->
+    <ShellContent
+        Title="启动页"
+        ContentTemplate="{DataTemplate views:SplashPage}"
+        Route="SplashPage" />
+
+    <ShellContent
+        Title="登录"
+        ContentTemplate="{DataTemplate views:LoginPage}"
+        Route="LoginPage" />
+
+    <!-- Agent 相关页面通过 Routing.RegisterRoute 注册，不在此处定义 -->
+
+    <!-- TabBar 包含4个主页面 -->
+    <TabBar>
+        <ShellContent
+            Title="聊天"
+            Icon="chat"
+            ContentTemplate="{DataTemplate views:ChatPage}"
+            Route="ChatPage" />
+
+        <ShellContent
+            Title="通讯录"
+            Icon="contact"
+            ContentTemplate="{DataTemplate views:ContactsPage}"
+            Route="ContactsPage" />
+
+        <ShellContent
+            Title="发现"
+            Icon="discovery"
+            ContentTemplate="{DataTemplate views:DiscoveryPage}"
+            Route="DiscoveryPage" />
+
+        <ShellContent
+            Title="我"
+            Icon="me"
+            ContentTemplate="{DataTemplate views:MePage}"
+            Route="MePage" />
+    </TabBar>
+
+</Shell>

@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             x:Class="AlphaAgent.Maui.Views.ContactDetailPage"
+             Title="{Binding ContactName}"
+            Shell.TabBarIsVisible="False"
+             BackgroundColor="{AppThemeBinding Light={StaticResource PageBackgroundLight}, Dark={StaticResource PageBackgroundDark}}">
+
+    <ScrollView BackgroundColor="{AppThemeBinding Light={StaticResource PageBackgroundLight}, Dark={StaticResource PageBackgroundDark}}">
+        <StackLayout Padding="{StaticResource PagePadding}" Spacing="{StaticResource SpacingLarge}">
+            <!-- 头像 -->
+            <Border WidthRequest="120"
+                    HeightRequest="120"
+                    StrokeShape="RoundRectangle 60"
+                    BackgroundColor="{AppThemeBinding Light={StaticResource AvatarBackgroundLight}, Dark={StaticResource AvatarBackgroundDark}}"
+                    Padding="{StaticResource AvatarPadding}"
+                    HorizontalOptions="Center">
+                <Label Text="{Binding ContactInitial}"
+                       FontSize="48"
+                       FontAttributes="Bold"
+                       TextColor="{StaticResource TextWhite}"
+                       HorizontalOptions="Center"
+                       VerticalOptions="Center" />
+            </Border>
+
+            <!-- 名称 -->
+            <Label Text="{Binding ContactName}"
+                   FontSize="28"
+                   FontAttributes="Bold"
+                   Style="{StaticResource LabelPrimary}"
+                   HorizontalOptions="Center" />
+
+            <!-- 类型 -->
+            <Label Text="{Binding ContactType}"
+                   Style="{StaticResource LabelSecondary}"
+                   HorizontalOptions="Center" />
+
+            <!-- 分割线 -->
+            <BoxView HeightRequest="1" BackgroundColor="{AppThemeBinding Light={StaticResource SeparatorLight}, Dark={StaticResource SeparatorDark}}" />
+
+
+            <!-- 操作按钮 -->
+            <StackLayout Spacing="10">
+                <Button Text="发消息"
+                        Style="{StaticResource PrimaryActionButton}"
+                        Command="{Binding SendMessageCommand}" />
+                <Button Text="查看朋友圈"
+                        Style="{StaticResource SuccessActionButton}"
+                        Command="{Binding ViewMomentsCommand}" />
+                <Button Text="删除关系"
+                        Style="{StaticResource ErrorActionButton}"
+                        Command="{Binding DeleteRelationshipCommand}" />
+            </StackLayout>
+        </StackLayout>
+    </ScrollView>
+
+</ContentPage>

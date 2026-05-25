@@ -1,0 +1,86 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:media="clr-namespace:CommunityToolkit.Maui.Views;assembly=CommunityToolkit.Maui.MediaElement"
+             xmlns:converters="clr-namespace:AlphaAgent.Maui.Converters"
+             xmlns:models="clr-namespace:AlphaAgent.Maui.Models"
+             x:Class="AlphaAgent.Maui.Views.VideoChannelsPage"
+             Shell.NavBarIsVisible="False"
+             Shell.TabBarIsVisible="False"
+             BackgroundColor="{AppThemeBinding Light={StaticResource VideoPageBackgroundLight}, Dark={StaticResource VideoPageBackgroundDark}}">
+
+    <ContentPage.Resources>
+        <converters:InvertedBoolConverter x:Key="InvertedBoolConverter" />
+    </ContentPage.Resources>
+
+    <Grid>
+        <!-- Loading overlay -->
+        <ActivityIndicator IsRunning="{Binding IsLoading}"
+                           IsVisible="{Binding IsLoading}"
+                           Color="{StaticResource TextWhite}"
+                           HorizontalOptions="Center"
+                           VerticalOptions="Center" />
+
+        <!-- Error overlay -->
+        <StackLayout IsVisible="{Binding HasError}"
+                     HorizontalOptions="Center"
+                     VerticalOptions="Center"
+                     Spacing="12">
+            <Label Text="{Binding ErrorMessage}"
+                   TextColor="{StaticResource TextWhite}"
+                   FontSize="16"
+                   HorizontalTextAlignment="Center" />
+            <Button Text="重新加载"
+                    Command="{Binding RetryLoadCommand}"
+                    BackgroundColor="{AppThemeBinding Light={StaticResource VideoRetryBackgroundLight}, Dark={StaticResource VideoRetryBackgroundDark}}"
+                    TextColor="{StaticResource TextWhite}" />
+        </StackLayout>
+
+        <!-- Single MediaElement + swipe gesture for TikTok-style feed -->
+        <Grid IsVisible="{Binding IsLoading, Converter={StaticResource InvertedBoolConverter}}">
+            <media:MediaElement x:Name="Player"
+                                ShouldAutoPlay="True"
+                                ShouldLoopPlayback="True"
+                                ShouldShowPlaybackControls="False"
+                                Aspect="AspectFill"
+                                HorizontalOptions="Fill"
+                                VerticalOptions="Fill" />
+
+            <!-- Overlay UI: author + title at bottom -->
+            <StackLayout Padding="16,0,16,24"
+                         Spacing="4"
+                         VerticalOptions="End"
+                         HorizontalOptions="Start">
+                <Label Text="{Binding CurrentVideo.Author, StringFormat='@{0}'}"
+                       FontSize="16"
+                       FontAttributes="Bold"
+                       TextColor="{StaticResource TextWhite}"
+                       Opacity="0.9" />
+                <Label Text="{Binding CurrentVideo.Title}"
+                       FontSize="14"
+                       TextColor="{StaticResource TextWhite}"
+                       Opacity="0.8"
+                       LineBreakMode="TailTruncation"
+                       MaxLines="2" />
+            </StackLayout>
+
+            <!-- Swipe up/down indicators -->
+            <StackLayout VerticalOptions="Center"
+                         HorizontalOptions="End"
+                         Margin="0,0,12,0">
+                <Label Text="▲ 上滑"
+                       TextColor="{StaticResource TextWhite}"
+                       Opacity="0.5"
+                       FontSize="12"
+                       IsVisible="{Binding HasPrevious}" />
+                <Label Text="▼ 下滑"
+                       TextColor="{StaticResource TextWhite}"
+                       Opacity="0.5"
+                       FontSize="12"
+                       IsVisible="{Binding HasNext}"
+                       Margin="0,16,0,0" />
+            </StackLayout>
+        </Grid>
+    </Grid>
+
+</ContentPage>

@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             x:Class="AlphaAgent.Maui.Views.SplashPage"
+             BackgroundColor="{AppThemeBinding Light={StaticResource AppBackgroundLight}, Dark={StaticResource AppBackgroundDark}}"
+             NavigationPage.HasNavigationBar="False"    
+             Shell.NavBarIsVisible="False">
+
+    <Grid RowDefinitions="*,Auto,*">
+        <StackLayout Grid.Row="1"
+                     HorizontalOptions="Center"
+                     VerticalOptions="Center"
+                     Spacing="20">
+
+            <Image Source="appicon.png"
+                   WidthRequest="120"
+                   HeightRequest="120"
+                   HorizontalOptions="Center" />
+
+            <Label Text="AlphaAgent"
+                   FontSize="32"
+                   FontAttributes="Bold"
+                   TextColor="{StaticResource Primary}"
+                   HorizontalOptions="Center" />
+
+            <ActivityIndicator IsRunning="{Binding IsLoading}"
+                               Color="{StaticResource Primary}"
+                               WidthRequest="40"
+                               HeightRequest="40" />
+
+            <Label Text="{Binding StatusMessage}"
+                   FontSize="14"
+                   TextColor="{AppThemeBinding Light={StaticResource TextSecondaryLight}, Dark={StaticResource TextSecondaryDark}}"
+                   Opacity="0.8"
+                   HorizontalOptions="Center" />
+
+        </StackLayout>
+    </Grid>
+
+</ContentPage>

@@ -1,0 +1,30 @@
+{
+  "culture": "en",
+  "texts": {
+    "AppName": "Abp",
+    "Menu:Home": "Home",
+    "Menu:Chat": "Security Analysis Assistant",
+    "UserManagement": "User Management",
+    "Friends": "Friends Management",
+    "Devices": "Devices Management",
+    "Groups": "Groups Management",
+    "Stocks": "Stocks Management",
+    "Contacts": "Contacts",
+    "AdminManagement": "Admin Management",
+    "SecurityManagement": "Security Management",
+    "Permission:VersionConfigs": "App Version Management",
+    "Permission:VersionConfigs.Manage": "Manage App Versions",
+    "Permission:VersionConfigs.Create": "Create App Version",
+    "Permission:VersionConfigs.Update": "Update App Version",
+    "Permission:VersionConfigs.Delete": "Delete App Version",
+    "VersionConfigManagement": "App Version Management",
+    "Permission:AgentConfigs": "Agent Config Management",
+    "Permission:AgentConfigs.Manage": "Manage Agent Configs",
+    "Permission:AgentConfigs.Create": "Create Agent Config",
+    "Permission:AgentConfigs.Update": "Update Agent Config",
+    "Permission:AgentConfigs.Delete": "Delete Agent Config",
+    "AgentConfigManagement": "Agent Config Management",
+    "Welcome": "Welcome",
+    "LongWelcomeMessage": "Welcome to the application. This is a startup project based on the ABP framework. For more information, visit abp.io."
+  }
+}

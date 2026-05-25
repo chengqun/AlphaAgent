@@ -1,0 +1,80 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:local="clr-namespace:AlphaAgent.Maui.Views"
+             x:Class="AlphaAgent.Maui.Views.AddFriendPage"
+             Title="添加好友"
+             BackgroundColor="{AppThemeBinding Light={StaticResource PageBackgroundLight}, Dark={StaticResource PageBackgroundDark}}">
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+        </Grid.RowDefinitions>
+        
+        <!-- 搜索框 -->
+        <Grid Grid.Row="0" BackgroundColor="{AppThemeBinding Light={StaticResource PageBackgroundLight}, Dark={StaticResource PageBackgroundDark}}" Padding="16,16,16,8">
+            <SearchBar 
+                Placeholder="搜索用户名或手机号" 
+                Text="{Binding SearchText}"
+                Style="{StaticResource SearchBarPrimary}"
+                SearchCommand="{Binding SearchCommand}" />
+        </Grid>
+        
+        <!-- 搜索结果 -->
+        <ScrollView Grid.Row="1" BackgroundColor="{AppThemeBinding Light={StaticResource PageBackgroundLight}, Dark={StaticResource PageBackgroundDark}}">
+            <StackLayout Padding="{StaticResource SectionPadding}" Spacing="{StaticResource SpacingSmall}">
+                <!-- 状态消息 -->
+                <Label Text="{Binding StatusMessage}" 
+                       TextColor="{StaticResource ErrorColor}" 
+                       FontSize="14" 
+                       Margin="0,8,0,0" 
+                       IsVisible="{Binding StatusMessage, Converter={StaticResource NullToBooleanConverter}}" />
+                
+                <!-- 搜索结果列表 -->
+                <CollectionView ItemsSource="{Binding SearchResults}" BackgroundColor="{AppThemeBinding Light={StaticResource CardBackgroundLight}, Dark={StaticResource CardBackgroundDark}}" Margin="0">
+                    <CollectionView.ItemTemplate>
+                        <DataTemplate>
+                            <Grid Padding="{StaticResource ListItemPadding}" ColumnDefinitions="Auto,*,Auto">
+                                <!-- 头像 -->
+                                <Grid Grid.Column="0" Margin="0,0,16,0">
+                                    <Border 
+                                        Style="{StaticResource AvatarBorder}">
+                                        <Label 
+                                            Text="{Binding Initial}" 
+                                            Style="{StaticResource LabelAvatar}"/>
+                                    </Border>
+                                </Grid>
+                                
+                                <!-- 信息 -->
+                                <Grid Grid.Column="1" RowDefinitions="Auto,Auto">
+                                    <Label
+                                        Grid.Row="0"
+                                        Text="{Binding Name}"
+                                        Style="{StaticResource LabelPrimary}"
+                                        VerticalOptions="Center" />
+                                    <Label
+                                        Grid.Row="1"
+                                        Text="{Binding Type}"
+                                        Style="{StaticResource LabelSecondary}"
+                                        VerticalOptions="Center" />
+                                </Grid>
+                                
+                                <!-- 添加按钮 -->
+                                <Button 
+                                    Grid.Column="2"
+                                    Text="添加" 
+                                    FontSize="14"
+                                    TextColor="{StaticResource InfoColor}"
+                                    BackgroundColor="Transparent"
+                                    HeightRequest="32"
+                                    WidthRequest="64"
+                                    Command="{Binding Source={RelativeSource AncestorType={x:Type local:AddFriendPage}}, Path=BindingContext.AddFriendCommand}"
+                                    CommandParameter="{Binding}" />
+                            </Grid>
+                        </DataTemplate>
+                    </CollectionView.ItemTemplate>
+                </CollectionView>
+            </StackLayout>
+        </ScrollView>
+    </Grid>
+</ContentPage>

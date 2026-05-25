@@ -1,0 +1,95 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:inputLayout="clr-namespace:Syncfusion.Maui.Toolkit.TextInputLayout;assembly=Syncfusion.Maui.Toolkit"
+             xmlns:buttons="clr-namespace:Syncfusion.Maui.Toolkit.Buttons;assembly=Syncfusion.Maui.Toolkit"
+             x:Class="AlphaAgent.Maui.Views.RegisterPage"
+             Title="注册"
+             BackgroundColor="{AppThemeBinding Light={StaticResource PageBackgroundLight}, Dark={StaticResource PageBackgroundDark}}">
+
+    <ScrollView BackgroundColor="{AppThemeBinding Light={StaticResource PageBackgroundLight}, Dark={StaticResource PageBackgroundDark}}">
+        <StackLayout Padding="{StaticResource SpacingExtraLarge}" Spacing="{StaticResource SpacingLarge}">
+
+            <!-- Logo -->
+            <Image Source="appicon.png"
+                   WidthRequest="100"
+                   HeightRequest="100"
+                   HorizontalOptions="Center" />
+
+            <!-- Title -->
+            <Label Text="创建账号"
+                   Style="{StaticResource LabelTitle}" />
+
+            <!-- Subtitle -->
+            <Label Text="注册后即可开始使用"
+                   Style="{StaticResource LabelSubtitle}" />
+
+            <!-- Username Input -->
+            <inputLayout:SfTextInputLayout Hint="用户名"
+                                             ContainerType="Outlined">
+                <Entry Text="{Binding Username}"
+                       IsEnabled="{Binding IsRegisterEnabled}"
+                       Style="{StaticResource EntryPrimary}" />
+            </inputLayout:SfTextInputLayout>
+
+            <!-- Email Input -->
+            <inputLayout:SfTextInputLayout Hint="邮箱地址"
+                                             ContainerType="Outlined">
+                <Entry Text="{Binding EmailAddress}"
+                       IsEnabled="{Binding IsRegisterEnabled}"
+                       Style="{StaticResource EntryPrimary}"
+                       Keyboard="Email" />
+            </inputLayout:SfTextInputLayout>
+
+            <!-- Password Input -->
+            <inputLayout:SfTextInputLayout Hint="密码"
+                                             ContainerType="Outlined"
+                                             EnablePasswordVisibilityToggle="true">
+                <Entry Text="{Binding Password}"
+                       IsEnabled="{Binding IsRegisterEnabled}"
+                       Style="{StaticResource EntryPrimary}"
+                       IsPassword="True" />
+            </inputLayout:SfTextInputLayout>
+
+            <!-- Confirm Password Input -->
+            <inputLayout:SfTextInputLayout Hint="确认密码"
+                                             ContainerType="Outlined"
+                                             EnablePasswordVisibilityToggle="true">
+                <Entry Text="{Binding ConfirmPassword}"
+                       IsEnabled="{Binding IsRegisterEnabled}"
+                       Style="{StaticResource EntryPrimary}"
+                       IsPassword="True" />
+            </inputLayout:SfTextInputLayout>
+
+            <!-- Register Button -->
+            <buttons:SfButton Text="注册"
+                               Command="{Binding RegisterCommand}"
+                               IsEnabled="{Binding IsRegisterEnabled}"
+                               Background="{StaticResource ButtonPrimaryBackground}"
+                               TextColor="{StaticResource ButtonPrimaryText}"
+                               FontSize="16"
+                               HeightRequest="50"
+                               CornerRadius="8" />
+
+            <!-- Status Message -->
+            <Label Text="{Binding StatusMessage}"
+                   Style="{StaticResource LabelError}"
+                   IsVisible="{Binding HasError}" />
+
+            <!-- Loading Indicator -->
+            <ActivityIndicator IsRunning="{Binding IsLoading}"
+                               WidthRequest="30"
+                               HeightRequest="30"
+                               HorizontalOptions="Center" />
+
+            <!-- Link to Login -->
+            <buttons:SfButton Text="已有账号？去登录"
+                               Command="{Binding GoToLoginCommand}"
+                               Background="Transparent"
+                               TextColor="{StaticResource Primary}"
+                               FontSize="14" />
+
+        </StackLayout>
+    </ScrollView>
+
+</ContentPage>

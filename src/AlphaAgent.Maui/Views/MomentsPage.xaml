@@ -1,0 +1,66 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:syncfusion="clr-namespace:Syncfusion.Maui.Toolkit.PullToRefresh;assembly=Syncfusion.Maui.Toolkit"
+             x:Class="AlphaAgent.Maui.Views.MomentsPage"
+             Title="朋友圈"
+             Shell.TabBarIsVisible="False"
+             BackgroundColor="{AppThemeBinding Light={StaticResource PageBackgroundLight}, Dark={StaticResource PageBackgroundDark}}">
+
+    <ContentPage.ToolbarItems>
+        <ToolbarItem IconImageSource="camera" Command="{Binding AddMomentCommand}" Priority="0" Order="Primary" />
+    </ContentPage.ToolbarItems>
+
+    <syncfusion:SfPullToRefresh RefreshCommand="{Binding RefreshMomentsCommand}" IsRefreshing="{Binding IsLoading}">
+        <syncfusion:SfPullToRefresh.PullableContent>
+        <ScrollView BackgroundColor="{AppThemeBinding Light={StaticResource PageBackgroundLight}, Dark={StaticResource PageBackgroundDark}}">
+            <StackLayout Padding="{StaticResource SpacingNone}" Spacing="{StaticResource SpacingMedium}">
+                <!-- 动态列表 -->
+                <CollectionView ItemsSource="{Binding Moments}">
+                    <CollectionView.ItemTemplate>
+                        <DataTemplate>
+                            <Border BackgroundColor="{AppThemeBinding Light={StaticResource CardBackgroundLight}, Dark={StaticResource CardBackgroundDark}}"
+                                    StrokeShape="RoundRectangle 16"
+                                    Margin="0,0,0,10">
+                                <StackLayout Padding="{StaticResource CardPadding}" Spacing="{StaticResource SpacingStandard}">
+                                    <!-- 用户信息 -->
+                                    <Grid>
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="Auto" />
+                                            <ColumnDefinition Width="*" />
+                                        </Grid.ColumnDefinitions>
+                                        <Border WidthRequest="48" HeightRequest="48" 
+                                                StrokeShape="RoundRectangle 24" 
+                                                BackgroundColor="{AppThemeBinding Light={StaticResource AvatarBackgroundLight}, Dark={StaticResource AvatarBackgroundDark}}"
+                                                Padding="{StaticResource AvatarPadding}">
+                                            <Label Text="{Binding Avatar}" FontSize="18" FontAttributes="Bold" TextColor="{StaticResource TextWhite}" HorizontalOptions="Center" VerticalOptions="Center" />
+                                        </Border>
+                                        <StackLayout Grid.Column="1" Margin="12,0,0,0">
+                                            <Label Text="{Binding Username}" FontSize="16" FontAttributes="Bold" Style="{StaticResource LabelPrimary}" />
+                                            <Label Text="{Binding Time}" Style="{StaticResource LabelTertiary}" />
+                                        </StackLayout>
+                                    </Grid>
+
+                                    <!-- 动态内容 -->
+                                    <Label Text="{Binding Content}" FontSize="15" Style="{StaticResource LabelPrimary}" />
+
+                                    <!-- 图片（如果有） -->
+                                    <Image Source="{Binding ImageUrl}" HeightRequest="200" Aspect="AspectFill" IsVisible="{Binding HasImage}" />
+
+                                    <!-- 点赞和评论数 -->
+                                    <Grid Padding="{StaticResource MessagePadding}" ColumnDefinitions="Auto, *, Auto">
+                                        <Label Grid.Column="0" Text="{Binding Likes, StringFormat='{0} 赞'}" Style="{StaticResource LabelTertiary}" />
+                                        <Label Grid.Column="2" Text="{Binding Comments, StringFormat='{0} 评论'}" Style="{StaticResource LabelTertiary}" />
+                                    </Grid>
+                                </StackLayout>
+                            </Border>
+                        </DataTemplate>
+                    </CollectionView.ItemTemplate>
+                </CollectionView>
+                <!-- 底部提示 -->
+                <Label Text="已经到底了" Style="{StaticResource LabelSecondary}" HorizontalOptions="Center" Padding="{StaticResource PagePadding}" />
+            </StackLayout>
+        </ScrollView>
+        </syncfusion:SfPullToRefresh.PullableContent>
+    </syncfusion:SfPullToRefresh>
+</ContentPage>

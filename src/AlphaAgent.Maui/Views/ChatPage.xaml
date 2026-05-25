@@ -1,0 +1,114 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:views="clr-namespace:AlphaAgent.Maui.Views"
+             xmlns:syncfusion="clr-namespace:Syncfusion.Maui.Toolkit.PullToRefresh;assembly=Syncfusion.Maui.Toolkit"
+             x:Class="AlphaAgent.Maui.Views.ChatPage"
+             Title="聊天"
+             BackgroundColor="{AppThemeBinding Light={StaticResource PageBackgroundLight}, Dark={StaticResource PageBackgroundDark}}">
+
+    <Grid RowDefinitions="*">
+        <!-- 下拉刷新 -->
+        <syncfusion:SfPullToRefresh Grid.Row="0"
+                                     RefreshCommand="{Binding RefreshConversationsCommand}"
+                                     IsRefreshing="{Binding IsLoading}">
+            <syncfusion:SfPullToRefresh.PullableContent>
+                <!-- 会话列表 -->
+                <CollectionView ItemsSource="{Binding Conversations}"
+                                SelectionMode="Single"
+                                SelectedItem="{Binding SelectedConversation}"
+                                SelectionChangedCommand="{Binding NavigateToChatDetailCommand}">
+                    <CollectionView.EmptyView>
+                        <StackLayout Padding="20" HorizontalOptions="Center" VerticalOptions="Center">
+                            <Label Text="{Binding StatusMessage}"
+                                   Style="{StaticResource LabelSecondary}"
+                                   HorizontalOptions="Center" />
+                        </StackLayout>
+                    </CollectionView.EmptyView>
+                    <CollectionView.ItemTemplate>
+                        <DataTemplate>
+                            <SwipeView>
+                                <SwipeView.RightItems>
+                                    <SwipeItems>
+                                        <SwipeItem Text="删除"
+                                                   BackgroundColor="{StaticResource ErrorColor}"
+                                                   Command="{Binding Source={RelativeSource AncestorType={x:Type views:ChatPage}}, Path=BindingContext.DeleteConversationCommand}"
+                                                   CommandParameter="{Binding Id}" />
+                                    </SwipeItems>
+                                </SwipeView.RightItems>
+                                <Grid Padding="16,12"
+                                      BackgroundColor="{AppThemeBinding Light={StaticResource CardBackgroundLight}, Dark={StaticResource CardBackgroundDark}}"
+                                      ColumnDefinitions="64,*,Auto">
+                                    <!-- 头像/图标 -->
+                                    <Grid Grid.Column="0" Margin="0,0,16,0">
+                                        <!-- 图标模式 - 有图标时显示 -->
+                                        <Border 
+                                            WidthRequest="48" 
+                                            HeightRequest="48"
+                                            StrokeShape="RoundRectangle 12"
+                                            BackgroundColor="{AppThemeBinding Light={StaticResource PageBackgroundLight}, Dark={StaticResource PageBackgroundDark}}"
+                                            IsVisible="{Binding IconSource, Converter={StaticResource NullToBooleanConverter}}">
+                                            <Image 
+                                                Source="{Binding IconSource}" 
+                                                WidthRequest="24" 
+                                                HeightRequest="24" 
+                                                HorizontalOptions="Center" 
+                                                VerticalOptions="Center" />
+                                        </Border>
+                                        <!-- 字母模式 - 没有图标时显示 -->
+                                        <Border 
+                                            WidthRequest="48" 
+                                            HeightRequest="48"
+                                            StrokeShape="RoundRectangle 12"
+                                            BackgroundColor="{AppThemeBinding Light={StaticResource AvatarBackgroundLight}, Dark={StaticResource AvatarBackgroundDark}}"
+                                            IsVisible="{Binding IconSource, Converter={StaticResource NullToBooleanConverter}, ConverterParameter=inverse}">
+                                            <Label 
+                                                Text="{Binding Initial}" 
+                                                Style="{StaticResource LabelAvatar}"/>
+                                        </Border>
+                                    </Grid>
+
+                                    <!-- 名称和最后一条消息 -->
+                                    <StackLayout Grid.Column="1" Padding="0,0,0,0" VerticalOptions="Center">
+                                        <Label Text="{Binding DisplayName}"
+                                               FontSize="16"
+                                               FontAttributes="Bold"
+                                               Style="{StaticResource LabelPrimary}"
+                                               LineBreakMode="TailTruncation" />
+                                        <Label Text="{Binding LastMessage}"
+                                               FontSize="13"
+                                               Style="{StaticResource LabelSecondary}"
+                                               LineBreakMode="TailTruncation"
+                                               MaxLines="1" />
+                                    </StackLayout>
+
+                                    <!-- 时间和未读数 -->
+                                    <StackLayout Grid.Column="2" VerticalOptions="Center" HorizontalOptions="End" WidthRequest="60">
+                                        <Label Text="{Binding LastMessageTime, Converter={StaticResource UtcToLocalTimeConverter}}"
+                                               FontSize="11"
+                                               Style="{StaticResource LabelSecondary}"
+                                               HorizontalOptions="End" />
+                                        <Border WidthRequest="20"
+                                                HeightRequest="20"
+                                                StrokeShape="RoundRectangle 10"
+                                                BackgroundColor="{StaticResource ErrorColor}"
+                                                IsVisible="{Binding UnreadCount, Converter={StaticResource GreaterThanZeroConverter}}"
+                                                HorizontalOptions="End"
+                                                Margin="0,4,0,0">
+                                            <Label Text="{Binding UnreadCount}"
+                                                   FontSize="11"
+                                                   TextColor="{StaticResource TextWhite}"
+                                                   HorizontalOptions="Center"
+                                                   VerticalOptions="Center" />
+                                        </Border>
+                                    </StackLayout>
+                                </Grid>
+                            </SwipeView>
+                        </DataTemplate>
+                    </CollectionView.ItemTemplate>
+                </CollectionView>
+            </syncfusion:SfPullToRefresh.PullableContent>
+        </syncfusion:SfPullToRefresh>
+    </Grid>
+
+</ContentPage>

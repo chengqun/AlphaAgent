@@ -1,0 +1,10 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(dotnet ildasm *)",
+      "Bash(dotnet tool *)",
+      "Read(//private/tmp/_typeinspect/TypeInspect/**)",
+      "Bash(dotnet restore *)"
+    ]
+  }
+}

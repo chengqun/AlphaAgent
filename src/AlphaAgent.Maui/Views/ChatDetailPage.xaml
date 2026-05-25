@@ -1,0 +1,94 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             x:Class="AlphaAgent.Maui.Views.ChatDetailPage"
+             Title="{Binding ConversationName}"
+             Shell.TabBarIsVisible="False"
+             BackgroundColor="{AppThemeBinding Light={StaticResource PageBackgroundLight}, Dark={StaticResource PageBackgroundDark}}">
+
+    <Grid RowDefinitions="*,Auto">
+
+        <!-- 消息列表 -->
+        <CollectionView x:Name="MessagesList"
+                        Grid.Row="0"
+                        ItemsSource="{Binding Messages}"
+                        ItemsUpdatingScrollMode="KeepLastItemInView"
+                        Margin="8,4"
+                        VerticalOptions="FillAndExpand">
+
+            <CollectionView.Footer>
+                <StackLayout HeightRequest="40" />
+            </CollectionView.Footer>
+
+            <CollectionView.ItemTemplate>
+                <DataTemplate>
+                    <!-- 消息行：整行可点击区域，内部根据 IsMine 左右对齐 -->
+                    <Grid Padding="2,2" RowDefinitions="Auto">
+
+                        <!-- 收到的消息（左侧气泡） -->
+                        <Border Grid.Row="0"
+                                Style="{StaticResource ReceivedMessageBorder}"
+                                IsVisible="{Binding IsMine, Converter={StaticResource InvertedBoolConverter}}">
+                            <StackLayout Spacing="2">
+                                <Label Text="{Binding Content}"
+                                       Style="{StaticResource LabelPrimary}"
+                                       FontSize="15"
+                                       LineBreakMode="WordWrap" />
+                                <Label Text="{Binding SentAt, Converter={StaticResource UtcToLocalTimeConverter}}"
+                                       Style="{StaticResource MessageTime}" />
+                            </StackLayout>
+                        </Border>
+
+                        <!-- 发送的消息（右侧气泡） -->
+                        <Border Grid.Row="0"
+                                Style="{StaticResource SentMessageBorder}"
+                                IsVisible="{Binding IsMine}">
+                            <StackLayout Spacing="2">
+                                <Label Text="{Binding Content}"
+                                       Style="{StaticResource SentMessageText}" />
+                                <Label Text="{Binding SentAt, Converter={StaticResource UtcToLocalTimeConverter}}"
+                                       Style="{StaticResource SentMessageTime}" />
+                            </StackLayout>
+                        </Border>
+
+                    </Grid>
+                </DataTemplate>
+            </CollectionView.ItemTemplate>
+        </CollectionView>
+
+        <!-- 加载指示器 -->
+        <ActivityIndicator Grid.Row="0"
+                           IsRunning="{Binding IsLoading}"
+                           IsVisible="{Binding IsLoading}"
+                           Color="{StaticResource InfoColor}"
+                           HorizontalOptions="Center"
+                           VerticalOptions="Center"
+                           WidthRequest="40"
+                           HeightRequest="40" />
+
+        <!-- 底部输入栏 -->
+        <Border Grid.Row="1"
+                Style="{StaticResource MessageInputBorder}">
+            <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
+                <Entry Grid.Column="0"
+                       x:Name="MessageEntry"
+                       Text="{Binding MessageInput}"
+                       Placeholder="输入消息..."
+                       ReturnType="Send"
+                       FontSize="16"
+                       Completed="OnEntryCompleted" />
+                <Button Grid.Column="1"
+                        Text="发送"
+                        Command="{Binding SendMessageCommand}"
+                        BackgroundColor="{StaticResource InfoColor}"
+                        TextColor="{StaticResource TextWhite}"
+                        FontSize="14"
+                        CornerRadius="20"
+                        HeightRequest="36"
+                        WidthRequest="64"
+                        Padding="0" />
+            </Grid>
+        </Border>
+    </Grid>
+
+</ContentPage>
