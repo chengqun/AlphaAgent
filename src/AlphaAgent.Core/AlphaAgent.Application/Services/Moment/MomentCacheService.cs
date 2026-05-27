@@ -24,6 +24,12 @@ public class MomentCacheService : IMomentCacheService
         return items.Select(ToDto).ToList();
     }
 
+    public async Task<List<MomentDto>> GetCachedMomentsAsync(string targetId)
+    {
+        var items = await _repository.GetAllAsync();
+        return items.Where(i => i.TargetId == targetId).Select(ToDto).ToList();
+    }
+
     public async Task<DateTime?> GetLatestCachedCreatedAtAsync()
     {
         return await _repository.GetLatestCreatedAtAsync();
@@ -54,7 +60,8 @@ public class MomentCacheService : IMomentCacheService
         ImageUrl = item.ImageUrl,
         CreatedAt = item.CreatedAt,
         Type = item.Type,
-        Visibility = item.Visibility
+        Visibility = item.Visibility,
+        TargetId = item.TargetId
     };
 
     private static MomentCacheItem ToItem(MomentDto dto) => new()
@@ -66,6 +73,7 @@ public class MomentCacheService : IMomentCacheService
         ImageUrl = dto.ImageUrl,
         CreatedAt = dto.CreatedAt,
         Type = dto.Type,
-        Visibility = dto.Visibility
+        Visibility = dto.Visibility,
+        TargetId = dto.TargetId
     };
 }

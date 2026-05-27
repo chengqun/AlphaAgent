@@ -3,6 +3,7 @@ using CommunityToolkit.Mvvm.Input;
 using AlphaAgent.Application.Interfaces.Moment;
 using AlphaAgent.Application.Dtos.Moment;
 using System.Collections.ObjectModel;
+using System.Diagnostics;
 
 namespace AlphaAgent.Maui.ViewModels;
 
@@ -41,11 +42,6 @@ public partial class ContactMomentsViewModel : ObservableObject, IQueryAttributa
 
     public void ApplyQueryAttributes(IDictionary<string, object> query)
     {
-        foreach (var kvp in query)
-        {
-            Console.WriteLine($"[ContactMomentsVM]   {kvp.Key} = {kvp.Value}");
-        }
-
         if (query.TryGetValue("targetId", out var targetId))
             TargetId = targetId?.ToString() ?? string.Empty;
 
@@ -76,50 +72,76 @@ public partial class ContactMomentsViewModel : ObservableObject, IQueryAttributa
 
     private async void LoadMomentsAsync()
     {
-        IsLoading = true;
         try
         {
-            // 单个联系人/股票的朋友圈直接走 API，缓存无法按目标过滤
-            await SyncIncrementalAsync();
+            // 1. 从缓存加载（瞬间完成）
+            await LoadCachedMomentsAsync();
 
-            StatusMessage = Moments.Count == 0 ? "暂无动态" : "加载完成";
+            StatusMessage = Moments.Count == 0 ? "暂无动态" : string.Empty;
         }
         catch (Exception ex)
         {
             StatusMessage = $"加载失败: {ex.Message}";
         }
-        finally
+
+        // 2. 后台增量同步（不阻塞 UI）
+        _ = SyncInBackgroundAsync();
+    }
+
+    private async Task LoadCachedMomentsAsync()
+    {
+        if (_momentCacheService == null || string.IsNullOrEmpty(TargetId)) return;
+
+        var cached = await _momentCacheService.GetCachedMomentsAsync(TargetId);
+        foreach (var dto in cached)
         {
-            IsLoading = false;
+            if (_displayedMomentIds.Add(dto.Id.ToString()))
+            {
+                Moments.Add(ToMomentItem(dto));
+            }
         }
     }
 
-    private async Task SyncIncrementalAsync()
+    private async Task SyncInBackgroundAsync()
     {
         if (_momentService == null || string.IsNullOrEmpty(TargetId)) return;
 
-        // 单个目标的朋友圈做全量加载，不传 since（缓存时间是全局的，不适合按目标增量）
-        var response = await _momentService.GetMomentsAsync(TargetId, TargetType, 50, 0);
-        if (response.Success && response.Data != null && response.Data.Count > 0)
+        try
         {
-            var newItems = new List<MomentDto>();
-            foreach (var dto in response.Data)
+            IsLoading = true;
+            var response = await _momentService.GetMomentsAsync(TargetId, TargetType, 50, 0);
+            if (response.Success && response.Data != null && response.Data.Count > 0)
             {
-                if (_displayedMomentIds.Add(dto.Id.ToString()))
+                var newItems = new List<MomentDto>();
+                foreach (var dto in response.Data)
                 {
-                    newItems.Add(dto);
+                    if (_displayedMomentIds.Add(dto.Id.ToString()))
+                    {
+                        newItems.Add(dto);
+                    }
+                }
+
+                for (int i = newItems.Count - 1; i >= 0; i--)
+                {
+                    Moments.Insert(0, ToMomentItem(newItems[i]));
+                }
+
+                if (_momentCacheService != null)
+                {
+                    await _momentCacheService.UpdateCacheAsync(response.Data);
                 }
             }
 
-            for (int i = newItems.Count - 1; i >= 0; i--)
-            {
-                Moments.Insert(0, ToMomentItem(newItems[i]));
-            }
-
-            if (_momentCacheService != null)
-            {
-                await _momentCacheService.UpdateCacheAsync(response.Data);
-            }
+            if (Moments.Count == 0)
+                StatusMessage = "暂无动态";
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine($"[ContactMomentsViewModel] 后台同步失败: {ex.Message}");
+        }
+        finally
+        {
+            IsLoading = false;
         }
     }
 
@@ -165,7 +187,29 @@ public partial class ContactMomentsViewModel : ObservableObject, IQueryAttributa
         IsLoading = true;
         try
         {
-            await SyncIncrementalAsync();
+            if (_momentService == null || string.IsNullOrEmpty(TargetId)) return;
+            var response = await _momentService.GetMomentsAsync(TargetId, TargetType, 50, 0);
+            if (response.Success && response.Data != null && response.Data.Count > 0)
+            {
+                var newItems = new List<MomentDto>();
+                foreach (var dto in response.Data)
+                {
+                    if (_displayedMomentIds.Add(dto.Id.ToString()))
+                    {
+                        newItems.Add(dto);
+                    }
+                }
+
+                for (int i = newItems.Count - 1; i >= 0; i--)
+                {
+                    Moments.Insert(0, ToMomentItem(newItems[i]));
+                }
+
+                if (_momentCacheService != null)
+                {
+                    await _momentCacheService.UpdateCacheAsync(response.Data);
+                }
+            }
         }
         finally
         {

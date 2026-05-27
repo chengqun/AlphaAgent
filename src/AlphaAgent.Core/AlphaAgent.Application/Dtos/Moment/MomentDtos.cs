@@ -12,6 +12,7 @@ public class MomentDto
     public DateTime CreatedAt { get; set; }
     public string Type { get; set; } = "Text";
     public string Visibility { get; set; } = "Friends";
+    public string? TargetId { get; set; }
 }
 
 public class CreateMomentDto

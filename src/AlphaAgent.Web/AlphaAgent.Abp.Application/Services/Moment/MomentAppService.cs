@@ -191,7 +191,8 @@ namespace AlphaAgent.Abp.Application.Services.Moment
                 ImageUrl = m.ImageUrl,
                 CreatedAt = m.CreatedAt,
                 Type = m.Type,
-                Visibility = m.Visibility
+                Visibility = m.Visibility,
+                TargetId = GetTargetId(m)
             }).ToList();
         }
 
@@ -199,8 +200,23 @@ namespace AlphaAgent.Abp.Application.Services.Moment
         {
             Id = m.Id, UserId = m.UserId, Username = username,
             Content = m.Content, ImageUrl = m.ImageUrl,
-            CreatedAt = m.CreatedAt, Type = m.Type, Visibility = m.Visibility
+            CreatedAt = m.CreatedAt, Type = m.Type, Visibility = m.Visibility,
+            TargetId = GetTargetId(m)
         };
+
+        private static string? GetTargetId(AppMoment m)
+        {
+            try
+            {
+                return m.Type switch
+                {
+                    "Stock" => Convert.ToInt32(m.UserId.ToString()[..8], 16).ToString(),
+                    "Device" or "Group" => m.UserId.ToString(),
+                    _ => m.UserId.ToString()
+                };
+            }
+            catch { return null; }
+        }
 
         private static string GetStockName(Guid userId, List<AppSecurity> stocks)
         {

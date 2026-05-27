@@ -105,6 +105,15 @@ public class DatabaseInitializer : IDatabaseInitializer
                 cmd.CommandText = "ALTER TABLE Securities ADD COLUMN \"UpdatedAt\" TEXT NOT NULL DEFAULT '0001-01-01T00:00:00.0000000Z'";
                 await cmd.ExecuteNonQueryAsync();
             }
+
+            // MomentCaches.TargetId
+            cmd.CommandText = "SELECT COUNT(*) FROM pragma_table_info('MomentCaches') WHERE name='TargetId'";
+            result = (long?)await cmd.ExecuteScalarAsync();
+            if (result == 0)
+            {
+                cmd.CommandText = "ALTER TABLE MomentCaches ADD COLUMN \"TargetId\" TEXT";
+                await cmd.ExecuteNonQueryAsync();
+            }
         }
         finally
         {

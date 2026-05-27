@@ -48,6 +48,7 @@ public class SharesDbContext : DbContext
 
         modelBuilder.Entity<MomentCacheItem>().HasKey(m => m.Id);
         modelBuilder.Entity<MomentCacheItem>().HasIndex(m => m.CreatedAt);
+        modelBuilder.Entity<MomentCacheItem>().HasIndex(m => m.TargetId);
 
         modelBuilder.Entity<VideoFeed>().HasKey(v => v.Id);
         modelBuilder.Entity<VideoFeed>().HasIndex(v => v.CreatedAt);
