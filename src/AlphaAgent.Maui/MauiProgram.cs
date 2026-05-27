@@ -73,6 +73,7 @@ public static class MauiProgram
 		builder.Services.AddScoped<ChatDetailViewModel>();
 		builder.Services.AddScoped<AgentChatDetailViewModel>();
 		builder.Services.AddScoped<AgentContactDetailViewModel>();
+        builder.Services.AddScoped<InitializingViewModel>();
 
 #if DEBUG
 		builder.Logging.AddDebug();

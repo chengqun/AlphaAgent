@@ -74,7 +74,7 @@ public partial class SplashPage : ContentPage
     {
         if (e.IsLoggedIn)
         {
-            Shell.Current.GoToAsync("//ChatPage");
+            Shell.Current.GoToAsync("InitializingPage");
         }
         else
         {

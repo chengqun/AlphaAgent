@@ -35,13 +35,21 @@ public class PostLoginInitializer : IPostLoginInitializer
         _securityClientSyncService = securityClientSyncService;
     }
 
-    public async Task<PostLoginResult> InitializeAsync(string serverBaseAddress)
+    public async Task<PostLoginResult> InitializeAsync(string serverBaseAddress, IProgress<PostLoginProgress>? progress = null)
     {
         var result = new PostLoginResult();
 
+        progress?.Report(new PostLoginProgress { Step = "SignalR", Message = "正在连接服务器...", Completed = false });
         result.SignalRConnected = await TryConnectSignalRAsync(serverBaseAddress);
+        progress?.Report(new PostLoginProgress { Step = "SignalR", Message = "服务器连接完成", Completed = true, Success = result.SignalRConnected });
+
+        progress?.Report(new PostLoginProgress { Step = "AgentConfig", Message = "正在加载AI配置...", Completed = false });
         result.AgentConfigLoaded = await LoadAndApplyAgentConfigAsync();
+        progress?.Report(new PostLoginProgress { Step = "AgentConfig", Message = "AI配置加载完成", Completed = true, Success = result.AgentConfigLoaded });
+
+        progress?.Report(new PostLoginProgress { Step = "SecuritySync", Message = "正在同步股票数据...", Completed = false });
         result.SecuritySynced = await SyncSecuritiesAsync();
+        progress?.Report(new PostLoginProgress { Step = "SecuritySync", Message = "股票数据同步完成", Completed = true, Success = result.SecuritySynced });
 
         return result;
     }

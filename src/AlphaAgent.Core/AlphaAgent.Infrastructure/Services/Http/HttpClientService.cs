@@ -139,6 +139,26 @@ public class HttpClientService : IHttpClientService
         }
     }
 
+    public async Task<HttpResponseMessage?> DeleteRawAsync(string endpoint)
+    {
+        try
+        {
+            var fullUrl = $"{_httpClient.BaseAddress}{endpoint}";
+            var hasAuth = _httpClient.DefaultRequestHeaders.Authorization != null;
+            _logger.LogInformation("DELETE (raw) {Url}", fullUrl);
+            _logger.LogDebug("Has Authorization: {HasAuth}", hasAuth);
+
+            var response = await _httpClient.DeleteAsync(endpoint);
+            _logger.LogInformation("DELETE (raw) {Url} - Status: {StatusCode} ({StatusCodeValue})", fullUrl, response.StatusCode, (int)response.StatusCode);
+            return response;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "DELETE (raw) request exception: {ExceptionType}: {Message}", ex.GetType().Name, ex.Message);
+            return null;
+        }
+    }
+
     public async Task<TResponse?> SendAsync<TResponse>(string endpoint, object? data = null) where TResponse : class
     {
         try

@@ -58,10 +58,10 @@ public class RelationshipService : IRelationshipService
     public async Task<ApiResponse<object>> RemoveRelationshipAsync(int relationshipType, string relationshipId)
     {
         await EnsureTokenAsync();
-        var response = await _httpClientService.DeleteAsync<object>($"api/app/relationship/relationship/{relationshipId}?type={relationshipType}");
-        return response != null
-            ? new ApiResponse<object> { Success = true, Data = response }
-            : new ApiResponse<object> { Success = false };
+        var response = await _httpClientService.DeleteRawAsync($"api/app/relationship/relationship/{relationshipId}?type={relationshipType}");
+        return response != null && response.IsSuccessStatusCode
+            ? new ApiResponse<object> { Success = true }
+            : new ApiResponse<object> { Success = false, Error = "删除失败" };
     }
 
     public async Task<ApiResponse<ContactBookDto>> GetAcceptedContactsAsync()

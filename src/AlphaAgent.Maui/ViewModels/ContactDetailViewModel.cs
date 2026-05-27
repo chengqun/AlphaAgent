@@ -155,10 +155,9 @@ public partial class ContactDetailViewModel : ObservableObject, IQueryAttributab
 
             if (result.Success)
             {
-                StatusMessage = $"已成功删除与 {ContactName} 的关系";
                 System.Diagnostics.Debug.WriteLine($"[DeleteRelationship] 删除成功，准备返回上一页");
                 _eventBusService?.Publish(new ContactChangedEvent("deleted"));
-                await Shell.Current.GoToAsync("..");
+                await Shell.Current.Navigation.PopAsync();
             }
             else
             {

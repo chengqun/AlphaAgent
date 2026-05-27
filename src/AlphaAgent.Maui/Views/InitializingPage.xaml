@@ -1,0 +1,78 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             x:Class="AlphaAgent.Maui.Views.InitializingPage"
+             BackgroundColor="{AppThemeBinding Light={StaticResource AppBackgroundLight}, Dark={StaticResource AppBackgroundDark}}"
+             NavigationPage.HasNavigationBar="False"
+             Shell.NavBarIsVisible="False"
+             Shell.TabBarIsVisible="False">
+
+    <Grid RowDefinitions="*,Auto,*">
+        <StackLayout Grid.Row="1"
+                     HorizontalOptions="Center"
+                     VerticalOptions="Center"
+                     Spacing="24"
+                     Padding="40,0">
+
+            <Image Source="appicon.png"
+                   WidthRequest="100"
+                   HeightRequest="100"
+                   HorizontalOptions="Center" />
+
+            <Label Text="正在初始化"
+                   FontSize="28"
+                   FontAttributes="Bold"
+                   Style="{StaticResource LabelPrimary}"
+                   HorizontalOptions="Center" />
+
+            <!-- 初始化步骤列表 -->
+            <VerticalStackLayout Spacing="16" HorizontalOptions="Center">
+
+                <!-- SignalR 连接 -->
+                <Grid ColumnDefinitions="30,Auto" RowDefinitions="Auto">
+                    <ActivityIndicator Grid.Column="0" IsRunning="True" Color="{StaticResource Primary}" WidthRequest="20" HeightRequest="20"
+                                       IsVisible="{Binding SignalRState, Converter={StaticResource InitStepInProgressConverter}, ConverterParameter=InProgress}" />
+                    <Label Grid.Column="0" Text="&#x2713;" FontSize="20" TextColor="{StaticResource SuccessColor}" HorizontalOptions="Center" VerticalOptions="Center"
+                           IsVisible="{Binding SignalRState, Converter={StaticResource InitStepSuccessConverter}, ConverterParameter=Success}" />
+                    <Label Grid.Column="0" Text="&#x2717;" FontSize="20" TextColor="{StaticResource ErrorColor}" HorizontalOptions="Center" VerticalOptions="Center"
+                           IsVisible="{Binding SignalRState, Converter={StaticResource InitStepFailedConverter}, ConverterParameter=Failed}" />
+                    <Label Grid.Column="1" Text="连接服务器" FontSize="16" VerticalOptions="Center"
+                           Style="{StaticResource LabelSecondary}" />
+                </Grid>
+
+                <!-- Agent 配置加载 -->
+                <Grid ColumnDefinitions="30,Auto" RowDefinitions="Auto">
+                    <ActivityIndicator Grid.Column="0" IsRunning="True" Color="{StaticResource Primary}" WidthRequest="20" HeightRequest="20"
+                                       IsVisible="{Binding AgentConfigState, Converter={StaticResource InitStepInProgressConverter}, ConverterParameter=InProgress}" />
+                    <Label Grid.Column="0" Text="&#x2713;" FontSize="20" TextColor="{StaticResource SuccessColor}" HorizontalOptions="Center" VerticalOptions="Center"
+                           IsVisible="{Binding AgentConfigState, Converter={StaticResource InitStepSuccessConverter}, ConverterParameter=Success}" />
+                    <Label Grid.Column="0" Text="&#x2717;" FontSize="20" TextColor="{StaticResource ErrorColor}" HorizontalOptions="Center" VerticalOptions="Center"
+                           IsVisible="{Binding AgentConfigState, Converter={StaticResource InitStepFailedConverter}, ConverterParameter=Failed}" />
+                    <Label Grid.Column="1" Text="加载AI配置" FontSize="16" VerticalOptions="Center"
+                           Style="{StaticResource LabelSecondary}" />
+                </Grid>
+
+                <!-- 股票数据同步 -->
+                <Grid ColumnDefinitions="30,Auto" RowDefinitions="Auto">
+                    <ActivityIndicator Grid.Column="0" IsRunning="True" Color="{StaticResource Primary}" WidthRequest="20" HeightRequest="20"
+                                       IsVisible="{Binding SecuritySyncState, Converter={StaticResource InitStepInProgressConverter}, ConverterParameter=InProgress}" />
+                    <Label Grid.Column="0" Text="&#x2713;" FontSize="20" TextColor="{StaticResource SuccessColor}" HorizontalOptions="Center" VerticalOptions="Center"
+                           IsVisible="{Binding SecuritySyncState, Converter={StaticResource InitStepSuccessConverter}, ConverterParameter=Success}" />
+                    <Label Grid.Column="0" Text="&#x2717;" FontSize="20" TextColor="{StaticResource ErrorColor}" HorizontalOptions="Center" VerticalOptions="Center"
+                           IsVisible="{Binding SecuritySyncState, Converter={StaticResource InitStepFailedConverter}, ConverterParameter=Failed}" />
+                    <Label Grid.Column="1" Text="同步股票数据" FontSize="16" VerticalOptions="Center"
+                           Style="{StaticResource LabelSecondary}" />
+                </Grid>
+
+            </VerticalStackLayout>
+
+            <Label Text="{Binding StatusMessage}"
+                   FontSize="14"
+                   Style="{StaticResource LabelSecondary}"
+                   Opacity="0.8"
+                   HorizontalOptions="Center" />
+
+        </StackLayout>
+    </Grid>
+
+</ContentPage>

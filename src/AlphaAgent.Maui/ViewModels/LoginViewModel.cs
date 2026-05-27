@@ -1,15 +1,12 @@
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using AlphaAgent.Application.Interfaces.Auth;
-using AlphaAgent.Maui.Services;
 
 namespace AlphaAgent.Maui.ViewModels;
 
 public partial class LoginViewModel : ObservableObject
 {
     private readonly IAuthService? _authService;
-    private readonly IPostLoginInitializer? _postLoginInitializer;
-    private readonly IGlobalMessageHandler? _globalMessageHandler;
 
     [ObservableProperty]
     private string _username = string.Empty;
@@ -33,13 +30,9 @@ public partial class LoginViewModel : ObservableObject
     {
     }
 
-    public LoginViewModel(IAuthService authService,
-        IPostLoginInitializer? postLoginInitializer = null,
-        IGlobalMessageHandler? globalMessageHandler = null)
+    public LoginViewModel(IAuthService authService)
     {
         _authService = authService;
-        _postLoginInitializer = postLoginInitializer;
-        _globalMessageHandler = globalMessageHandler;
     }
 
     [RelayCommand]
@@ -64,18 +57,9 @@ public partial class LoginViewModel : ObservableObject
                 var response = await _authService.LoginAsync(Username, Password);
                 if (response.Success && response.Data != null)
                 {
-                    StatusMessage = "正在初始化...";
-                    if (_postLoginInitializer != null)
-                    {
-                        await _postLoginInitializer.InitializeAsync(AppSettings.ServerBaseAddress);
-                    }
-
-                    StatusMessage = "正在启动消息处理器...";
-                    _globalMessageHandler?.StartListening();
-
                     StatusMessage = "登录成功";
                     HasError = false;
-                    await Shell.Current.GoToAsync("//ChatPage");
+                    await Shell.Current.GoToAsync("InitializingPage");
                 }
                 else
                 {

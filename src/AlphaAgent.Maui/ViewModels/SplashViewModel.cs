@@ -1,6 +1,5 @@
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
-using AlphaAgent.Application.Interfaces.Agent;
 using AlphaAgent.Application.Interfaces.Auth;
 using AlphaAgent.Application.Interfaces.Common;
 using AlphaAgent.Application.Interfaces.Update;
@@ -17,8 +16,6 @@ public partial class SplashViewModel : ObservableObject
     private readonly IAuthService _authService;
     private readonly ICoreInitializer _coreInitializer;
     private readonly IThemeManager _themeManager;
-    private readonly IPostLoginInitializer _postLoginInitializer;
-    private readonly IGlobalMessageHandler? _globalMessageHandler;
     private readonly IUpdateService? _updateService;
 
     [ObservableProperty]
@@ -38,15 +35,11 @@ public partial class SplashViewModel : ObservableObject
     public SplashViewModel(IAuthService authService,
                           ICoreInitializer coreInitializer,
                           IThemeManager themeManager,
-                          IPostLoginInitializer postLoginInitializer,
-                          IGlobalMessageHandler? globalMessageHandler = null,
                           IUpdateService? updateService = null)
     {
         _authService = authService;
         _coreInitializer = coreInitializer;
         _themeManager = themeManager;
-        _postLoginInitializer = postLoginInitializer;
-        _globalMessageHandler = globalMessageHandler;
         _updateService = updateService;
     }
 
@@ -74,19 +67,9 @@ public partial class SplashViewModel : ObservableObject
             StatusMessage = "正在自动登录...";
             isLoggedIn = await _authService.IsLoggedInAsync();
 
-            if (isLoggedIn)
-            {
-                StatusMessage = "正在连接服务器...";
-                await _postLoginInitializer.InitializeAsync(AppSettings.ServerBaseAddress);
-
-                StatusMessage = "正在启动消息处理器...";
-                _globalMessageHandler?.StartListening();
-            }
-
             StatusMessage = "初始化完成";
             await Task.Delay(300);
 
-            // 检查应用更新
             await CheckUpdateAsync();
         }
         catch (Exception ex)

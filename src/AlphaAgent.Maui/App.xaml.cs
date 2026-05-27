@@ -45,6 +45,7 @@ public partial class App : Microsoft.Maui.Controls.Application
         Routing.RegisterRoute("ChatDetailPage", typeof(Views.ChatDetailPage));
         Routing.RegisterRoute("AgentChatDetailPage", typeof(Views.AgentChatDetailPage));
         Routing.RegisterRoute("AgentContactDetailPage", typeof(Views.AgentContactDetailPage));
+        Routing.RegisterRoute("InitializingPage", typeof(Views.InitializingPage));
 
         return new Window(new AppShell());
     }

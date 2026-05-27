@@ -19,6 +19,9 @@
             <converters:RoleToBoolConverter x:Key="RoleToBoolConverter" />
             <converters:UtcToLocalTimeConverter x:Key="UtcToLocalTimeConverter" />
             <converters:IntEqualsConverter x:Key="IntEqualsConverter" />
+            <converters:InitStepStateConverter x:Key="InitStepInProgressConverter" />
+            <converters:InitStepStateConverter x:Key="InitStepSuccessConverter" />
+            <converters:InitStepStateConverter x:Key="InitStepFailedConverter" />
         </ResourceDictionary>
     </Application.Resources>
 </Application>

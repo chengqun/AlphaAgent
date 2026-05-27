@@ -19,6 +19,7 @@ public partial class ContactsViewModel : ObservableObject
     private readonly IContactSyncService? _contactSyncService;
     private bool _isLoaded = false;
     private bool _isSubscribed = false;
+    private bool _forceRefresh = false;
     private DateTime _lastSyncTime = DateTime.MinValue;
     private static readonly TimeSpan _minSyncInterval = TimeSpan.FromSeconds(30);
 
@@ -60,8 +61,9 @@ public partial class ContactsViewModel : ObservableObject
             _ = SyncInBackgroundAsync();
             _isLoaded = true;
         }
-        else if (ShouldBackgroundSync())
+        else if (_forceRefresh || ShouldBackgroundSync())
         {
+            _forceRefresh = false;
             _ = SyncInBackgroundAsync();
         }
     }
@@ -269,6 +271,7 @@ public partial class ContactsViewModel : ObservableObject
 
     private async void OnContactChanged(ContactChangedEvent @event)
     {
+        _forceRefresh = true;
         _lastSyncTime = DateTime.MinValue;
         await SyncInBackgroundAsync();
     }
