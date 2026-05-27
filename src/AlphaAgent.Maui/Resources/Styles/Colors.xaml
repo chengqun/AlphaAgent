@@ -3,10 +3,10 @@
                     xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml">
 
     <!-- ================================================================ -->
-    <!--  极简双主题 — Apple HIG                                            -->
-    <!--  Light: #FFFFFF 纯白 + #000000 纯黑                                -->
-    <!--  Dark:  #000000 纯黑 + #1C1C1E 系统灰提升面                        -->
-    <!--  品牌色: #C9A227                                                   -->
+    <!--  双主题 — 两种性格                                                -->
+    <!--  Light: Apple 纯白优雅，圆角克制，暖灰文字                          -->
+    <!--  Dark:  科技感深空，蓝黑底+霓虹强调，数据可视化质感                  -->
+    <!--  品牌色: #C9A227 金色                                             -->
     <!-- ================================================================ -->
 
     <!-- ========== 品牌色 ========== -->
@@ -15,51 +15,61 @@
     <Color x:Key="Secondary">#8E8E93</Color>
 
     <!-- ========== 背景 ========== -->
+    <!-- Light: Apple 纯白 -->
+    <!-- Dark:  深空蓝黑 #0A0E1A，卡片 #111827 带蓝调 -->
     <Color x:Key="AppBackgroundLight">#FFFFFF</Color>
-    <Color x:Key="AppBackgroundDark">#000000</Color>
+    <Color x:Key="AppBackgroundDark">#0A0E1A</Color>
 
     <Color x:Key="PageBackgroundLight">#FFFFFF</Color>
-    <Color x:Key="PageBackgroundDark">#000000</Color>
+    <Color x:Key="PageBackgroundDark">#0A0E1A</Color>
 
     <Color x:Key="CardBackgroundLight">#FFFFFF</Color>
-    <Color x:Key="CardBackgroundDark">#1C1C1E</Color>
+    <Color x:Key="CardBackgroundDark">#111827</Color>
 
     <!-- ========== 文字 ========== -->
-    <Color x:Key="TextPrimaryLight">#000000</Color>
-    <Color x:Key="TextPrimaryDark">#FFFFFF</Color>
+    <!-- Light: Apple 暖灰层级 -->
+    <!-- Dark:  冷白+蓝灰，科技感 -->
+    <Color x:Key="TextPrimaryLight">#1D1D1F</Color>
+    <Color x:Key="TextPrimaryDark">#E2E8F0</Color>
 
-    <Color x:Key="TextSecondaryLight">#3C3C43</Color>
-    <Color x:Key="TextSecondaryDark">#8E8E93</Color>
+    <Color x:Key="TextSecondaryLight">#6E6E73</Color>
+    <Color x:Key="TextSecondaryDark">#94A3B8</Color>
 
-    <Color x:Key="TextTertiaryLight">#8E8E93</Color>
-    <Color x:Key="TextTertiaryDark">#636366</Color>
+    <Color x:Key="TextTertiaryLight">#AEAEB2</Color>
+    <Color x:Key="TextTertiaryDark">#64748B</Color>
 
     <Color x:Key="TextWhite">#FFFFFF</Color>
     <Color x:Key="TextError">#FF3B30</Color>
 
     <!-- ========== 边框 & 分隔线 ========== -->
-    <Color x:Key="BorderLight">#C6C6C8</Color>
-    <Color x:Key="BorderDark">#38383A</Color>
+    <!-- Light: Apple 细线 -->
+    <!-- Dark:  深空蓝灰边框 -->
+    <Color x:Key="BorderLight">#D2D2D7</Color>
+    <Color x:Key="BorderDark">#1E293B</Color>
 
     <Color x:Key="SeparatorLight">#E5E5EA</Color>
-    <Color x:Key="SeparatorDark">#2C2C2E</Color>
+    <Color x:Key="SeparatorDark">#1E293B</Color>
 
     <!-- ========== 按钮 ========== -->
     <Color x:Key="ButtonPrimaryBackground">#C9A227</Color>
     <Color x:Key="ButtonPrimaryText">#000000</Color>
     <Color x:Key="ButtonSecondaryBackgroundLight">#F5E6B8</Color>
-    <Color x:Key="ButtonSecondaryBackgroundDark">#2C2C2E</Color>
+    <Color x:Key="ButtonSecondaryBackgroundDark">#1E293B</Color>
     <Color x:Key="ButtonSecondaryText">#C9A227</Color>
 
     <!-- ========== 状态色 ========== -->
+    <!-- Light: Apple 系统色 -->
+    <!-- Dark:  霓虹色，发光感 -->
     <Color x:Key="SuccessColor">#34C759</Color>
     <Color x:Key="WarningColor">#C9A227</Color>
     <Color x:Key="ErrorColor">#FF3B30</Color>
     <Color x:Key="InfoColor">#007AFF</Color>
 
     <!-- ========== 消息气泡 ========== -->
+    <!-- Light: Apple iMessage 风 -->
+    <!-- Dark:  深空层次感 -->
     <Color x:Key="ReceivedMessageBackgroundLight">#E5E5EA</Color>
-    <Color x:Key="ReceivedMessageBackgroundDark">#2C2C2E</Color>
+    <Color x:Key="ReceivedMessageBackgroundDark">#1E293B</Color>
 
     <Color x:Key="SentMessageBackgroundLight">#C9A227</Color>
     <Color x:Key="SentMessageBackgroundDark">#C9A227</Color>
@@ -69,71 +79,81 @@
     <Color x:Key="SentMessageTimeColorDark">#000000</Color>
 
     <!-- ========== AI 助手消息 ========== -->
+    <!-- Light: 淡蓝，Apple 风格 -->
+    <!-- Dark:  深蓝舱室，科技感 -->
     <Color x:Key="AssistantMessageBackgroundLight">#E8F0FE</Color>
-    <Color x:Key="AssistantMessageBackgroundDark">#1C2D4A</Color>
-    <Color x:Key="AssistantMessageTextLight">#000000</Color>
-    <Color x:Key="AssistantMessageTextDark">#D4E3F5</Color>
+    <Color x:Key="AssistantMessageBackgroundDark">#0F1A2E</Color>
+    <Color x:Key="AssistantMessageTextLight">#1D1D1F</Color>
+    <Color x:Key="AssistantMessageTextDark">#CBD5E1</Color>
 
     <!-- ========== 工具调用 ========== -->
+    <!-- Light: Apple 蓝/绿 -->
+    <!-- Dark:  霓虹蓝/霓虹绿 -->
     <Color x:Key="ToolCallBackgroundLight">#E8F0FE</Color>
-    <Color x:Key="ToolCallBackgroundDark">#1A2A40</Color>
+    <Color x:Key="ToolCallBackgroundDark">#0D1B2A</Color>
     <Color x:Key="ToolCallTextLight">#0055CC</Color>
-    <Color x:Key="ToolCallTextDark">#6EA8FE</Color>
+    <Color x:Key="ToolCallTextDark">#60A5FA</Color>
     <Color x:Key="ToolCallText">#0055CC</Color>
     <Color x:Key="ToolResultBackgroundLight">#E6F9E6</Color>
-    <Color x:Key="ToolResultBackgroundDark">#1A2E1A</Color>
+    <Color x:Key="ToolResultBackgroundDark">#0D1F0D</Color>
     <Color x:Key="ToolResultTextLight">#1B7A1B</Color>
-    <Color x:Key="ToolResultTextDark">#6FCF6F</Color>
+    <Color x:Key="ToolResultTextDark">#4ADE80</Color>
     <Color x:Key="ToolResultText">#1B7A1B</Color>
 
     <!-- ========== 错误提示 ========== -->
     <Color x:Key="ErrorBackgroundLight">#FFE5E5</Color>
-    <Color x:Key="ErrorBackgroundDark">#2A1010</Color>
+    <Color x:Key="ErrorBackgroundDark">#1A0A0A</Color>
     <Color x:Key="ErrorTextLight">#FF3B30</Color>
-    <Color x:Key="ErrorTextDark">#FF6B6B</Color>
+    <Color x:Key="ErrorTextDark">#F87171</Color>
     <Color x:Key="ErrorText">#FF3B30</Color>
 
     <!-- ========== 头像 ========== -->
+    <!-- Light: Apple 系统色，深饱和 -->
+    <!-- Dark:  霓虹色，在深空底上发光 -->
     <Color x:Key="AvatarBackgroundLight">#007AFF</Color>
-    <Color x:Key="AvatarBackgroundDark">#0A84FF</Color>
+    <Color x:Key="AvatarBackgroundDark">#3B82F6</Color>
 
     <!-- ========== 视频页（始终深色） ========== -->
     <Color x:Key="VideoPageBackgroundLight">#000000</Color>
     <Color x:Key="VideoPageBackgroundDark">#000000</Color>
-    <Color x:Key="VideoRetryBackgroundLight">#2C2C2E</Color>
-    <Color x:Key="VideoRetryBackgroundDark">#2C2C2E</Color>
+    <Color x:Key="VideoRetryBackgroundLight">#1E293B</Color>
+    <Color x:Key="VideoRetryBackgroundDark">#1E293B</Color>
 
     <!-- ========== Markdown ========== -->
+    <!-- Light: Apple 系统灰 + 蓝 -->
+    <!-- Dark:  深空层次，代码块带紫调，引用块带蓝调 -->
     <Color x:Key="MarkdownCodeBackgroundLight">#F2F2F7</Color>
-    <Color x:Key="MarkdownCodeBackgroundDark">#2C2C2E</Color>
-    <Color x:Key="MarkdownCodeTextLight">#000000</Color>
-    <Color x:Key="MarkdownCodeTextDark">#EBEBF5</Color>
-    <Color x:Key="MarkdownCodeBorderLight">#C6C6C8</Color>
-    <Color x:Key="MarkdownCodeBorderDark">#48484A</Color>
+    <Color x:Key="MarkdownCodeBackgroundDark">#1A1B2E</Color>
+    <Color x:Key="MarkdownCodeTextLight">#1D1D1F</Color>
+    <Color x:Key="MarkdownCodeTextDark">#C8D0E0</Color>
+    <Color x:Key="MarkdownCodeBorderLight">#D2D2D7</Color>
+    <Color x:Key="MarkdownCodeBorderDark">#2D2E45</Color>
 
     <Color x:Key="MarkdownBlockQuoteBackgroundLight">#EAF4FC</Color>
-    <Color x:Key="MarkdownBlockQuoteBackgroundDark">#1C3048</Color>
-    <Color x:Key="MarkdownBlockQuoteTextLight">#3C3C43</Color>
-    <Color x:Key="MarkdownBlockQuoteTextDark">#8E8E93</Color>
+    <Color x:Key="MarkdownBlockQuoteBackgroundDark">#0F1E2E</Color>
+    <Color x:Key="MarkdownBlockQuoteTextLight">#6E6E73</Color>
+    <Color x:Key="MarkdownBlockQuoteTextDark">#94A3B8</Color>
 
     <Color x:Key="MarkdownHyperlinkLight">#007AFF</Color>
-    <Color x:Key="MarkdownHyperlinkDark">#0A84FF</Color>
-    <Color x:Key="MarkdownHeadingLight">#000000</Color>
-    <Color x:Key="MarkdownHeadingDark">#FFFFFF</Color>
-    <Color x:Key="MarkdownLineLight">#C6C6C8</Color>
-    <Color x:Key="MarkdownLineDark">#38383A</Color>
+    <Color x:Key="MarkdownHyperlinkDark">#60A5FA</Color>
+    <Color x:Key="MarkdownHeadingLight">#1D1D1F</Color>
+    <Color x:Key="MarkdownHeadingDark">#E2E8F0</Color>
+    <Color x:Key="MarkdownLineLight">#D2D2D7</Color>
+    <Color x:Key="MarkdownLineDark">#1E293B</Color>
 
     <!-- ========== 灰度 ========== -->
+    <!-- Light: Apple 系统灰 -->
+    <!-- Dark:  Tailwind Slate 灰（蓝调，科技感） -->
     <Color x:Key="White">#FFFFFF</Color>
     <Color x:Key="Black">#000000</Color>
     <Color x:Key="Gray100">#F2F2F7</Color>
     <Color x:Key="Gray200">#E5E5EA</Color>
     <Color x:Key="Gray300">#C7C7CC</Color>
     <Color x:Key="Gray400">#8E8E93</Color>
-    <Color x:Key="Gray500">#636366</Color>
+    <Color x:Key="Gray500">#6E6E73</Color>
     <Color x:Key="Gray600">#48484A</Color>
-    <Color x:Key="Gray900">#2C2C2E</Color>
-    <Color x:Key="Gray950">#1C1C1E</Color>
+    <Color x:Key="Gray900">#1E293B</Color>
+    <Color x:Key="Gray950">#0F172A</Color>
     <Color x:Key="MidnightBlue">#007AFF</Color>
 
 </ResourceDictionary>
