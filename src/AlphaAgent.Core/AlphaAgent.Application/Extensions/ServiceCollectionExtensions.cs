@@ -45,6 +45,7 @@ public static class ServiceCollectionExtensions
         services.AddScoped<IUpdateService, UpdateService>();
         services.AddScoped<ISecurityClientSyncService, SecurityClientSyncService>();
         services.AddScoped<IAgentConfigService, AgentConfigService>();
+        services.AddScoped<IPostLoginInitializer, PostLoginInitializer>();
 
         return services;
     }

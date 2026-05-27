@@ -44,7 +44,7 @@ public class MomentService : IMomentService
     public async Task<ApiResponse<List<MomentDto>>> GetMomentsAsync(string targetId, string type, int limit = 50, int offset = 0, DateTime? since = null)
     {
         await EnsureTokenAsync();
-        var url = $"api/app/moment/{targetId}?type={type}&limit={limit}&offset={offset}";
+        var url = $"api/app/moment/moments/{targetId}?type={type}&limit={limit}&offset={offset}";
         if (since.HasValue)
             url += $"&since={since.Value:O}";
         var response = await _httpClientService.GetAsync<List<MomentDto>>(url);

@@ -120,7 +120,7 @@ public partial class ContactMomentsViewModel : ObservableObject, IQueryAttributa
             "stock" => dto.Type == "Stock",
             "device" => dto.Type == "Device",
             "group" => dto.Type == "Group",
-            _ => dto.UserId.ToString() == TargetId || dto.Type == "User"
+            _ => dto.UserId.ToString() == TargetId
         };
     }
 
