@@ -1,11 +1,6 @@
 name: Deploy to IIS
 
 on:
-  push:
-    branches: [ master ]
-    paths:
-      - 'src/AlphaAgent.Web/**'
-      - '.github/workflows/deploy-iis.yml'
   workflow_dispatch:
 
 jobs:
