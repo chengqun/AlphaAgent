@@ -108,7 +108,6 @@ public partial class ContactMomentsViewModel : ObservableObject, IQueryAttributa
 
         try
         {
-            IsLoading = true;
             var response = await _momentService.GetMomentsAsync(TargetId, TargetType, 50, 0);
             if (response.Success && response.Data != null && response.Data.Count > 0)
             {
@@ -128,20 +127,23 @@ public partial class ContactMomentsViewModel : ObservableObject, IQueryAttributa
 
                 if (_momentCacheService != null)
                 {
+                    foreach (var dto in response.Data)
+                    {
+                        if (string.IsNullOrEmpty(dto.TargetId))
+                            dto.TargetId = TargetId;
+                    }
                     await _momentCacheService.UpdateCacheAsync(response.Data);
                 }
             }
 
             if (Moments.Count == 0)
                 StatusMessage = "暂无动态";
+            else
+                StatusMessage = string.Empty;
         }
         catch (Exception ex)
         {
             Debug.WriteLine($"[ContactMomentsViewModel] 后台同步失败: {ex.Message}");
-        }
-        finally
-        {
-            IsLoading = false;
         }
     }
 
@@ -207,6 +209,11 @@ public partial class ContactMomentsViewModel : ObservableObject, IQueryAttributa
 
                 if (_momentCacheService != null)
                 {
+                    foreach (var dto in response.Data)
+                    {
+                        if (string.IsNullOrEmpty(dto.TargetId))
+                            dto.TargetId = TargetId;
+                    }
                     await _momentCacheService.UpdateCacheAsync(response.Data);
                 }
             }
