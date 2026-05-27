@@ -5,6 +5,7 @@ using AlphaAgent.Application.Dtos.Security;
 using AlphaAgent.Application.Interfaces.Security;
 using AlphaAgent.Domain.Abstractions.Interfaces;
 using AlphaAgent.Domain.Interfaces;
+using AlphaAgent.Domain.Services.Auth;
 
 namespace AlphaAgent.Application.Services.Security;
 
@@ -16,19 +17,24 @@ public class SecurityClientSyncService : ISecurityClientSyncService
     private readonly ISecurityRepository _securityRepository;
     private readonly IHttpClientService _httpClientService;
     private readonly ISyncMetadataStore _syncMetadataStore;
+    private readonly ITokenManager _tokenManager;
 
     public SecurityClientSyncService(
         ISecurityRepository securityRepository,
         IHttpClientService httpClientService,
-        ISyncMetadataStore syncMetadataStore)
+        ISyncMetadataStore syncMetadataStore,
+        ITokenManager tokenManager)
     {
         _securityRepository = securityRepository;
         _httpClientService = httpClientService;
         _syncMetadataStore = syncMetadataStore;
+        _tokenManager = tokenManager;
     }
 
     public async Task<SecuritySyncResult> SyncFromServerAsync()
     {
+        await EnsureTokenAsync();
+
         var lastSyncTime = await _syncMetadataStore.GetLastSyncTimeAsync(SyncTimeKey);
         Console.WriteLine($"[SecuritySync] lastSyncTime={lastSyncTime}");
 
@@ -75,6 +81,15 @@ public class SecurityClientSyncService : ISecurityClientSyncService
         {
             Console.WriteLine($"[SecuritySync] FAILED: {ex.GetType().Name}: {ex.Message}");
             return new SecuritySyncResult { LastSyncTime = lastSyncTime };
+        }
+    }
+
+    private async Task EnsureTokenAsync()
+    {
+        var token = await _tokenManager.GetTokenByUsernameAsync(await _tokenManager.GetUsernameAsync() ?? string.Empty);
+        if (token != null && !token.IsExpired())
+        {
+            _httpClientService.SetAuthorizationToken(token.AccessToken);
         }
     }
 }
