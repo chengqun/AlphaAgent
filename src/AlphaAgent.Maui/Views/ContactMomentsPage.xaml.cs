@@ -17,6 +17,11 @@ public partial class ContactMomentsPage : ContentPage, IQueryAttributable
     {
         _viewModel?.ResetLoadState();
         _viewModel?.ApplyQueryAttributes(query);
+    }
+
+    protected override void OnAppearing()
+    {
+        base.OnAppearing();
         _viewModel?.LoadMoments();
     }
 }

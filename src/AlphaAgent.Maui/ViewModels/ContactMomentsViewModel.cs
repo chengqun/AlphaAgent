@@ -77,10 +77,7 @@ public partial class ContactMomentsViewModel : ObservableObject, IQueryAttributa
         IsLoading = true;
         try
         {
-            // 1. 先从缓存加载
-            await LoadCachedMomentsAsync();
-
-            // 2. 再从网络增量同步
+            // 单个联系人/股票的朋友圈直接走 API，缓存无法按目标过滤
             await SyncIncrementalAsync();
 
             StatusMessage = Moments.Count == 0 ? "暂无动态" : "加载完成";
@@ -95,46 +92,12 @@ public partial class ContactMomentsViewModel : ObservableObject, IQueryAttributa
         }
     }
 
-    private async Task LoadCachedMomentsAsync()
-    {
-        if (_momentCacheService == null) return;
-
-        var cached = await _momentCacheService.GetCachedMomentsAsync();
-        // 过滤出当前目标的动态
-        var filtered = cached.Where(m => MatchesTarget(m)).ToList();
-        foreach (var dto in filtered)
-        {
-            if (_displayedMomentIds.Add(dto.Id.ToString()))
-            {
-                Moments.Add(ToMomentItem(dto));
-            }
-        }
-    }
-
-    private bool MatchesTarget(MomentDto dto)
-    {
-        if (string.IsNullOrEmpty(TargetId)) return true;
-
-        return TargetType?.ToLower() switch
-        {
-            "stock" => dto.Type == "Stock",
-            "device" => dto.Type == "Device",
-            "group" => dto.Type == "Group",
-            _ => dto.UserId.ToString() == TargetId
-        };
-    }
-
     private async Task SyncIncrementalAsync()
     {
         if (_momentService == null || string.IsNullOrEmpty(TargetId)) return;
 
-        DateTime? since = null;
-        if (_momentCacheService != null)
-        {
-            since = await _momentCacheService.GetLatestCachedCreatedAtAsync();
-        }
-
-        var response = await _momentService.GetMomentsAsync(TargetId, TargetType, 50, 0, since);
+        // 单个目标的朋友圈做全量加载，不传 since（缓存时间是全局的，不适合按目标增量）
+        var response = await _momentService.GetMomentsAsync(TargetId, TargetType, 50, 0);
         if (response.Success && response.Data != null && response.Data.Count > 0)
         {
             var newItems = new List<MomentDto>();
