@@ -537,7 +537,7 @@
     </Style>
 
     <Style TargetType="Border" x:Key="SentMessageBorder">
-        <Setter Property="BackgroundColor" Value="{StaticResource SentMessageBackgroundLight}" />
+        <Setter Property="BackgroundColor" Value="{AppThemeBinding Light={StaticResource SentMessageBackgroundLight}, Dark={StaticResource SentMessageBackgroundDark}}" />
         <Setter Property="StrokeShape" Value="RoundRectangle 16,16,4,16" />
         <Setter Property="Padding" Value="12,8" />
         <Setter Property="HorizontalOptions" Value="End" />
@@ -573,7 +573,7 @@
 
     <Style TargetType="Label" x:Key="SentMessageText">
         <Setter Property="FontSize" Value="15" />
-        <Setter Property="TextColor" Value="{StaticResource SentMessageTextColor}" />
+        <Setter Property="TextColor" Value="{AppThemeBinding Light={StaticResource SentMessageTextColorLight}, Dark={StaticResource SentMessageTextColorDark}}" />
         <Setter Property="LineBreakMode" Value="WordWrap" />
     </Style>
 
@@ -590,7 +590,7 @@
 
     <Style TargetType="Label" x:Key="SentMessageTime">
         <Setter Property="FontSize" Value="10" />
-        <Setter Property="TextColor" Value="{StaticResource SentMessageTimeColor}" />
+        <Setter Property="TextColor" Value="{AppThemeBinding Light={StaticResource SentMessageTimeColorLight}, Dark={StaticResource SentMessageTimeColorDark}}" />
         <Setter Property="HorizontalOptions" Value="End" />
     </Style>
 
