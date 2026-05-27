@@ -143,7 +143,7 @@ The Agent system spans all four Core layers, using `Microsoft.Extensions.AI` + `
 | Workflow | Trigger | Purpose |
 |----------|---------|---------|
 | `deploy-iis.yml` | Push to master (Web changes) or manual | Build + deploy HttpApi.Host to IIS via msdeploy |
-| `build-maui.yml` | Manual (`workflow_dispatch`) only | Build APK → GitHub Release → deploy to IIS → register version |
+| `build-maui.yml` | Push to master (Core/Maui changes) or manual | Build APK → GitHub Release → deploy to IIS → register version |
 
 ### deploy-iis.yml Flow
 

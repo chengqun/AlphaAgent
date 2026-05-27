@@ -82,7 +82,7 @@ Triggers on push to `master` when files under `src/AlphaAgent.Web/` change, or v
 
 ### build-maui.yml — APK Build + Deploy + Version Registration
 
-Triggers via manual `workflow_dispatch` only (with optional `version` input, e.g., `1.2.0`). Does not auto-trigger on push — use when ready to release a new APK.
+Triggers on push to `master` when files under `src/AlphaAgent.Core/` or `src/AlphaAgent.Maui/` change, or via manual `workflow_dispatch` (with optional `version` input, e.g., `1.2.0`). Auto-triggers on Core/Maui code changes.
 
 **Steps:**
 1. Install .NET 10 + MAUI Android workloads

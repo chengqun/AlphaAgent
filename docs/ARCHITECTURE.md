@@ -778,7 +778,7 @@ Two GitHub Actions workflows handle automated deployment:
    - AppOffline rule: automatically places `app_offline.htm` before deploy (releases DLL locks), removes after deploy
 
 2. **build-maui.yml** — MAUI APK build + deploy + version registration
-   - Trigger: manual `workflow_dispatch` only (with optional version input)
+   - Trigger: push to master (paths: `src/AlphaAgent.Core/**`, `src/AlphaAgent.Maui/**`) or manual `workflow_dispatch` (with optional version input)
    - Runner: windows-latest
    - Flow: set version → `dotnet publish` net10.0-android → upload to GitHub Release → deploy APK to IIS `/apk` via msdeploy → call Publish API to register version
    - APK MIME type: `web.config` with `application/vnd.android.package-archive` deployed alongside APK
