@@ -153,6 +153,8 @@ public class AbpDbContext :
             b.HasKey(m => m.Id);
             b.HasIndex(m => m.UserId);
             b.HasIndex(m => m.CreatedAt);
+            b.HasIndex(m => new { m.UserId, m.Type });
+            b.HasIndex(m => new { m.Type, m.CreatedAt });
             b.Property(m => m.Content).HasMaxLength(1000).IsRequired();
             b.Property(m => m.ImageUrl).HasMaxLength(500);
             b.Property(m => m.Type).HasMaxLength(50).IsRequired();

@@ -8,14 +8,12 @@ using AlphaAgent.Abp.Domain.Entities;
 using AlphaAgent.Abp.Domain.Shared.Enums;
 using AlphaAgent.Abp.Domain.Services.Moment;
 using AlphaAgent.Abp.Domain.Services.Securities;
-using Microsoft.Extensions.Logging;
 using Volo.Abp.Application.Services;
 using Volo.Abp.Domain.Repositories;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Volo.Abp.Identity;
 using Volo.Abp;
-using AlphaAgent.Abp.Permissions;
 
 namespace AlphaAgent.Abp.Application.Services.Moment
 {
@@ -24,19 +22,22 @@ namespace AlphaAgent.Abp.Application.Services.Moment
     public class MomentAppService : ApplicationService, IMomentAppService
     {
         private readonly IMomentManager _momentManager;
-        private readonly IRepository<IdentityUser, Guid> _userRepository;
         private readonly IRepository<AppMoment, Guid> _momentRepository;
+        private readonly IRepository<AppRelationship, Guid> _relationshipRepository;
+        private readonly IRepository<IdentityUser, Guid> _userRepository;
         private readonly ISecurityManager _securityManager;
 
         public MomentAppService(
             IMomentManager momentManager,
-            IRepository<IdentityUser, Guid> userRepository,
             IRepository<AppMoment, Guid> momentRepository,
+            IRepository<AppRelationship, Guid> relationshipRepository,
+            IRepository<IdentityUser, Guid> userRepository,
             ISecurityManager securityManager)
         {
             _momentManager = momentManager;
-            _userRepository = userRepository;
             _momentRepository = momentRepository;
+            _relationshipRepository = relationshipRepository;
+            _userRepository = userRepository;
             _securityManager = securityManager;
         }
 
@@ -45,226 +46,43 @@ namespace AlphaAgent.Abp.Application.Services.Moment
         {
             var currentUserId = CurrentUser.Id ?? throw new BusinessException("AlphaAgent:UserNotLoggedIn");
 
-            // 如果有 StockId，创建股票动态
             if (input.StockId.HasValue)
             {
-                var moment = await _momentManager.CreateStockMomentAsync(
-                    input.StockId.Value,
-                    input.Content,
-                    input.ImageUrl
-                );
-
-                // 获取股票信息
+                var moment = await _momentManager.CreateStockMomentAsync(input.StockId.Value, input.Content, input.ImageUrl);
                 var stock = await _securityManager.GetByIdAsync(input.StockId.Value);
-                var stockName = stock?.Name ?? "";
-
-                return new MomentDto
-                {
-                    Id = moment.Id,
-                    UserId = moment.UserId,
-                    Username = stockName, // 使用股票名称作为Username
-                    Content = moment.Content,
-                    ImageUrl = moment.ImageUrl,
-                    CreatedAt = moment.CreatedAt,
-                    Type = moment.Type,
-                    Visibility = moment.Visibility
-                };
+                return MapDto(moment, stock?.Name ?? "");
             }
             else
             {
-                // 创建普通动态
-                var moment = await _momentManager.CreateMomentAsync(
-                    currentUserId,
-                    input.Content,
-                    input.ImageUrl,
-                    input.Type,
-                    input.Visibility
-                );
-
+                var moment = await _momentManager.CreateMomentAsync(currentUserId, input.Content, input.ImageUrl, input.Type, input.Visibility);
                 var user = await _userRepository.GetAsync(currentUserId);
-
-                return new MomentDto
-                {
-                    Id = moment.Id,
-                    UserId = moment.UserId,
-                    Username = user.UserName,
-                    Content = moment.Content,
-                    ImageUrl = moment.ImageUrl,
-                    CreatedAt = moment.CreatedAt,
-                    Type = moment.Type,
-                    Visibility = moment.Visibility
-                };
+                return MapDto(moment, user.UserName);
             }
         }
 
+        /// <summary>
+        /// 我的朋友圈：好友+关注股票+自己的动态
+        /// </summary>
         [HttpGet("friends-moments")]
         public async Task<List<MomentDto>> GetFriendsMomentsAsync(int limit = 50, int offset = 0, DateTime? since = null)
         {
             var currentUserId = CurrentUser.Id ?? throw new BusinessException("AlphaAgent:UserNotLoggedIn");
-
-            var moments = await _momentManager.GetFriendsMomentsAsync(currentUserId, limit, offset, since);
-
-            var securities = await _securityManager.GetAllAsync();
-            var stockMap = securities.ToDictionary(s => s.Id, s => s.Name);
-            var allUsers = await _userRepository.GetListAsync();
-            var userMap = allUsers.ToDictionary(u => u.Id, u => u.UserName);
-
-            return moments.Select(m => new MomentDto
-            {
-                Id = m.Id,
-                UserId = m.UserId,
-                Username = m.Type == "Stock" ? GetStockName(m.UserId, stockMap) : userMap.TryGetValue(m.UserId, out var username) ? username : "",
-                Content = m.Content,
-                ImageUrl = m.ImageUrl,
-                CreatedAt = m.CreatedAt,
-                Type = m.Type,
-                Visibility = m.Visibility
-            }).ToList();
+            var moments = await QueryFriendsMomentsAsync(currentUserId, null, null, limit, offset, since);
+            return await MapDtosAsync(moments);
         }
 
+        /// <summary>
+        /// 我的朋友圈中某对象的动态（2是1的子集）
+        /// </summary>
         [HttpGet("moments/{targetId}")]
         public async Task<List<MomentDto>> GetMomentsAsync([FromRoute] string targetId, string type, int limit = 50, int offset = 0, DateTime? since = null)
         {
             var currentUserId = CurrentUser.Id ?? throw new BusinessException("AlphaAgent:UserNotLoggedIn");
+            var (filterUserId, filterType) = await ResolveTargetAsync(targetId, type);
+            if (filterUserId == null) return new List<MomentDto>();
 
-            switch (type?.ToLower())
-            {
-                case "friendship":
-                case "user":
-                    var targetUserId = Guid.Parse(targetId);
-                    var targetUser = await _userRepository.FindAsync(targetUserId);
-                    if (targetUser == null) return new List<MomentDto>();
-
-                    var userMoments = await _momentManager.GetMomentsAsync(targetUserId, "User", limit, offset, since);
-                    return userMoments.Select(m => new MomentDto
-                    {
-                        Id = m.Id,
-                        UserId = m.UserId,
-                        Username = targetUser.UserName,
-                        Content = m.Content,
-                        ImageUrl = m.ImageUrl,
-                        CreatedAt = m.CreatedAt,
-                        Type = m.Type,
-                        Visibility = m.Visibility
-                    }).ToList();
-
-                case "stock":
-                    if (int.TryParse(targetId, out var stockId))
-                    {
-                        var stock = await _securityManager.GetByIdAsync(stockId);
-                        var stockUsername = stock?.Name ?? "";
-                        var stockMoments = await _momentManager.GetMomentsAsync(_momentManager.CreateStockGuid(stockId), "Stock", limit, offset, since);
-                        return stockMoments.Select(m => new MomentDto
-                        {
-                            Id = m.Id,
-                            UserId = m.UserId,
-                            Username = stockUsername,
-                            Content = m.Content,
-                            ImageUrl = m.ImageUrl,
-                            CreatedAt = m.CreatedAt,
-                            Type = m.Type,
-                            Visibility = m.Visibility
-                        }).ToList();
-                    }
-                    else
-                    {
-                        var stockByCode = await _securityManager.FindAsync(targetId);
-                        if (stockByCode == null) return new List<MomentDto>();
-                        var stockCodeMoments = await _momentManager.GetMomentsAsync(_momentManager.CreateStockGuid(stockByCode.Id), "Stock", limit, offset, since);
-                        return stockCodeMoments.Select(m => new MomentDto
-                        {
-                            Id = m.Id,
-                            UserId = m.UserId,
-                            Username = stockByCode.Name,
-                            Content = m.Content,
-                            ImageUrl = m.ImageUrl,
-                            CreatedAt = m.CreatedAt,
-                            Type = m.Type,
-                            Visibility = m.Visibility
-                        }).ToList();
-                    }
-
-                case "device":
-                    var deviceMoments = await _momentManager.GetMomentsAsync(_momentManager.CreateTargetGuid(targetId), "Device", limit, offset, since);
-                    return deviceMoments.Select(m => new MomentDto
-                    {
-                        Id = m.Id,
-                        UserId = m.UserId,
-                        Username = "设备",
-                        Content = m.Content,
-                        ImageUrl = m.ImageUrl,
-                        CreatedAt = m.CreatedAt,
-                        Type = m.Type,
-                        Visibility = m.Visibility
-                    }).ToList();
-
-                case "group":
-                    var groupMoments = await _momentManager.GetMomentsAsync(_momentManager.CreateTargetGuid(targetId), "Group", limit, offset, since);
-                    return groupMoments.Select(m => new MomentDto
-                    {
-                        Id = m.Id,
-                        UserId = m.UserId,
-                        Username = "群组",
-                        Content = m.Content,
-                        ImageUrl = m.ImageUrl,
-                        CreatedAt = m.CreatedAt,
-                        Type = m.Type,
-                        Visibility = m.Visibility
-                    }).ToList();
-
-                default:
-                    if (int.TryParse(targetId, out var numStockId))
-                    {
-                        var stockDefault = await _securityManager.GetByIdAsync(numStockId);
-                        var stockDefaultUsername = stockDefault?.Name ?? "";
-                        var stockDefaultMoments = await _momentManager.GetMomentsAsync(_momentManager.CreateStockGuid(numStockId), "Stock", limit, offset, since);
-                        return stockDefaultMoments.Select(m => new MomentDto
-                        {
-                            Id = m.Id,
-                            UserId = m.UserId,
-                            Username = stockDefaultUsername,
-                            Content = m.Content,
-                            ImageUrl = m.ImageUrl,
-                            CreatedAt = m.CreatedAt,
-                            Type = m.Type,
-                            Visibility = m.Visibility
-                        }).ToList();
-                    }
-                    else if (targetId.Contains("-"))
-                    {
-                        var guidUserId = Guid.Parse(targetId);
-                        var user = await _userRepository.FindAsync(guidUserId);
-                        if (user != null)
-                        {
-                            var defaultUserMoments = await _momentManager.GetMomentsAsync(guidUserId, "User", limit, offset, since);
-                            return defaultUserMoments.Select(m => new MomentDto
-                            {
-                                Id = m.Id,
-                                UserId = m.UserId,
-                                Username = user.UserName,
-                                Content = m.Content,
-                                ImageUrl = m.ImageUrl,
-                                CreatedAt = m.CreatedAt,
-                                Type = m.Type,
-                                Visibility = m.Visibility
-                            }).ToList();
-                        }
-                    }
-                    var stockByCodeDefault = await _securityManager.FindAsync(targetId);
-                    if (stockByCodeDefault == null) return new List<MomentDto>();
-                    var stockCodeDefaultMoments = await _momentManager.GetMomentsAsync(_momentManager.CreateStockGuid(stockByCodeDefault.Id), "Stock", limit, offset, since);
-                    return stockCodeDefaultMoments.Select(m => new MomentDto
-                    {
-                        Id = m.Id,
-                        UserId = m.UserId,
-                        Username = stockByCodeDefault.Name,
-                        Content = m.Content,
-                        ImageUrl = m.ImageUrl,
-                        CreatedAt = m.CreatedAt,
-                        Type = m.Type,
-                        Visibility = m.Visibility
-                    }).ToList();
-            }
+            var moments = await QueryFriendsMomentsAsync(currentUserId, filterUserId, filterType, limit, offset, since);
+            return await MapDtosAsync(moments);
         }
 
         [HttpDelete("moment/{id}")]
@@ -274,18 +92,124 @@ namespace AlphaAgent.Abp.Application.Services.Moment
             await _momentManager.DeleteMomentAsync(id, currentUserId);
         }
 
-        private string GetStockName(Guid userId, Dictionary<int, string> stockMap)
+        // --- 核心：查我的朋友圈，可选按 targetId+type 过滤 ---
+
+        private async Task<List<AppMoment>> QueryFriendsMomentsAsync(
+            Guid currentUserId, Guid? filterUserId, string? filterType,
+            int limit, int offset, DateTime? since)
+        {
+            // 好友ID + 关注的股票Guid
+            var rels = await _relationshipRepository.GetListAsync(r =>
+                r.UserId == currentUserId && r.Status == RelationshipStatus.Accepted);
+
+            var friendIds = rels
+                .Where(r => r.TargetType == RelationshipType.Friendship)
+                .Select(r => Guid.Parse(r.TargetId))
+                .Append(currentUserId)
+                .ToList();
+
+            var stockGuids = rels
+                .Where(r => r.TargetType == RelationshipType.Stock)
+                .Select(r => int.Parse(r.TargetId))
+                .Select(id => _momentManager.CreateStockGuid(id))
+                .ToList();
+
+            // 所有可见的 UserId 集合 = 好友 + 关注的股票
+            var visibleUserIds = friendIds.Concat(stockGuids).ToList();
+
+            // 数据库级查询：好友动态(Visibility=Friends) + 关注股票动态(Type=Stock)
+            var query = await _momentRepository.GetQueryableAsync();
+            query = query.Where(m => visibleUserIds.Contains(m.UserId))
+                .Where(m => m.Visibility == "Friends" || m.Type == "Stock");
+
+            if (filterUserId != null)
+                query = query.Where(m => m.UserId == filterUserId.Value);
+            if (filterType != null)
+                query = query.Where(m => m.Type == filterType);
+            if (since != null)
+                query = query.Where(m => m.CreatedAt > since.Value);
+
+            return await AsyncExecuter.ToListAsync(
+                query.OrderByDescending(m => m.CreatedAt).Skip(offset).Take(limit));
+        }
+
+        // --- targetId/type → Guid + Type ---
+
+        private async Task<(Guid? userId, string? type)> ResolveTargetAsync(string targetId, string type)
+        {
+            return type?.ToLower() switch
+            {
+                "friendship" or "user" => (Guid.Parse(targetId), "User"),
+                "stock" => (await ResolveStockGuidAsync(targetId), "Stock"),
+                "device" => (_momentManager.CreateTargetGuid(targetId), "Device"),
+                "group" => (_momentManager.CreateTargetGuid(targetId), "Group"),
+                _ => await ResolveTargetDefaultAsync(targetId)
+            };
+        }
+
+        private async Task<(Guid?, string?)> ResolveTargetDefaultAsync(string targetId)
+        {
+            if (int.TryParse(targetId, out var stockId))
+                return (_momentManager.CreateStockGuid(stockId), "Stock");
+            if (targetId.Contains('-'))
+                return (Guid.Parse(targetId), "User");
+            var stock = await _securityManager.FindAsync(targetId);
+            return stock != null ? (_momentManager.CreateStockGuid(stock.Id), "Stock") : (null, null);
+        }
+
+        private async Task<Guid?> ResolveStockGuidAsync(string targetId)
+        {
+            if (int.TryParse(targetId, out var stockId))
+                return _momentManager.CreateStockGuid(stockId);
+            var stock = await _securityManager.FindAsync(targetId);
+            return stock != null ? _momentManager.CreateStockGuid(stock.Id) : null;
+        }
+
+        // --- DTO 映射 ---
+
+        private async Task<List<MomentDto>> MapDtosAsync(List<AppMoment> moments)
+        {
+            if (moments.Count == 0) return new List<MomentDto>();
+
+            // 只查涉及的用户和股票
+            var userIds = moments.Where(m => m.Type != "Stock").Select(m => m.UserId).Distinct().ToList();
+            var users = userIds.Count > 0
+                ? (await _userRepository.GetListAsync(u => userIds.Contains(u.Id))).ToDictionary(u => u.Id, u => u.UserName)
+                : new Dictionary<Guid, string>();
+
+            var stockGuids = moments.Where(m => m.Type == "Stock").Select(m => m.UserId).Distinct().ToList();
+            var stocks = stockGuids.Count > 0
+                ? (await _securityManager.GetAllAsync()).ToList()
+                : new List<AppSecurity>();
+
+            return moments.Select(m => new MomentDto
+            {
+                Id = m.Id,
+                UserId = m.UserId,
+                Username = m.Type == "Stock" ? GetStockName(m.UserId, stocks) : users.GetValueOrDefault(m.UserId, ""),
+                Content = m.Content,
+                ImageUrl = m.ImageUrl,
+                CreatedAt = m.CreatedAt,
+                Type = m.Type,
+                Visibility = m.Visibility
+            }).ToList();
+        }
+
+        private static MomentDto MapDto(AppMoment m, string username) => new()
+        {
+            Id = m.Id, UserId = m.UserId, Username = username,
+            Content = m.Content, ImageUrl = m.ImageUrl,
+            CreatedAt = m.CreatedAt, Type = m.Type, Visibility = m.Visibility
+        };
+
+        private static string GetStockName(Guid userId, List<AppSecurity> stocks)
         {
             try
             {
-                int stockId = Convert.ToInt32(userId.ToString().Substring(0, 8), 16);
-                return stockMap.TryGetValue(stockId, out var stockName) ? stockName : "";
+                var id = Convert.ToInt32(userId.ToString()[..8], 16);
+                return stocks.FirstOrDefault(s => s.Id == id)?.Name ?? "";
             }
-            catch
-            {
-                return "";
-            }
+            catch { return ""; }
         }
-
     }
 }
