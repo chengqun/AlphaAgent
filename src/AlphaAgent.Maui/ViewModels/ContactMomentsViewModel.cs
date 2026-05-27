@@ -70,6 +70,8 @@ public partial class ContactMomentsViewModel : ObservableObject, IQueryAttributa
     public void ResetLoadState()
     {
         _isLoaded = false;
+        Moments.Clear();
+        _displayedMomentIds.Clear();
     }
 
     private async void LoadMomentsAsync()
@@ -158,7 +160,7 @@ public partial class ContactMomentsViewModel : ObservableObject, IQueryAttributa
     }
 
     [RelayCommand]
-    private async Task RefreshMomentsCommandAsync()
+    private async Task RefreshMomentsAsync()
     {
         IsLoading = true;
         try
