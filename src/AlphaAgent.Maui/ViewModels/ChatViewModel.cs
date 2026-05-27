@@ -374,8 +374,8 @@ public partial class ChatViewModel : ObservableObject, IPageLifecycleAware
     {
         var conv = @event.Conversation;
 
-        // 非Agent会话保存到本地缓存（Agent会话已有独立存储）
-        if (_conversationSyncService != null && conv.Type != 3 && conv.Type != 4)
+        // 保存到本地缓存（包括 Agent 会话，确保 APP 重启后仍可见）
+        if (_conversationSyncService != null)
         {
             try
             {
@@ -440,6 +440,10 @@ public partial class ChatViewModel : ObservableObject, IPageLifecycleAware
             foreach (var session in agentSessions)
             {
                 if (session.Status == AgentSessionStatus.Closed)
+                    continue;
+
+                // 跳过已在缓存列表中的会话（避免重复）
+                if (Conversations.Any(c => c.Id == session.Id))
                     continue;
 
                 var isStock = !string.IsNullOrEmpty(session.Context) && session.Context.StartsWith("stock:");

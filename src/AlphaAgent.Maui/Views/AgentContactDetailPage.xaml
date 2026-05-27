@@ -86,9 +86,6 @@
                 <Button Text="发消息"
                         Style="{StaticResource PrimaryActionButton}"
                         Command="{Binding SendMessageCommand}" />
-                <Button Text="重置会话"
-                        Style="{StaticResource WarningActionButton}"
-                        Command="{Binding ResetSessionCommand}" />
             </StackLayout>
         </StackLayout>
     </ScrollView>

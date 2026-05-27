@@ -70,40 +70,4 @@ public partial class AgentContactDetailViewModel : ObservableObject, IQueryAttri
         await Shell.Current.GoToAsync(
             $"AgentChatDetailPage?agentName={Uri.EscapeDataString(AgentName)}");
     }
-
-    [RelayCommand]
-    private async Task ResetSessionAsync()
-    {
-        if (_agentService == null)
-        {
-            StatusMessage = "服务未初始化";
-            return;
-        }
-
-        try
-        {
-            StatusMessage = "正在重置会话...";
-
-            var userId = await GetCurrentUserIdAsync();
-            var session = await _agentService.GetActiveSessionAsync(userId, AgentName);
-
-            if (session != null)
-            {
-                await _agentService.CloseSessionAsync(session.Id);
-            }
-
-            StatusMessage = "会话已重置";
-            await Task.Delay(1500);
-            StatusMessage = string.Empty;
-        }
-        catch (Exception ex)
-        {
-            StatusMessage = $"重置失败: {ex.Message}";
-        }
-    }
-
-    private async Task<Guid> GetCurrentUserIdAsync()
-    {
-        return new Guid("11111111-1111-1111-1111-111111111111");
-    }
 }

@@ -45,10 +45,10 @@ public class ConversationSyncService : IConversationSyncService
             var cacheItems = serverConversations.Select(c => MapToCacheItem(c, userId)).ToList();
             await _cacheRepository.UpsertRangeAsync(cacheItems);
 
-            // 删除服务端已不存在的本地缓存
+            // 删除服务端已不存在的本地缓存（保留 Agent 会话 Type 3/4，它们由本地管理）
             var serverIds = serverConversations.Select(c => c.Id).ToHashSet();
             var cached = await _cacheRepository.GetAllAsync(userId);
-            var deleted = cached.Where(c => !serverIds.Contains(c.Id)).ToList();
+            var deleted = cached.Where(c => !serverIds.Contains(c.Id) && c.Type != 3 && c.Type != 4).ToList();
             foreach (var item in deleted)
             {
                 await _cacheRepository.DeleteAsync(item.Id);
@@ -65,7 +65,6 @@ public class ConversationSyncService : IConversationSyncService
 
     public async Task UpsertConversationAsync(Conversation conversation, Guid userId)
     {
-        if (conversation.Type == 3 || conversation.Type == 4) return;
         var item = MapToCacheItem(conversation, userId);
         await _cacheRepository.UpsertAsync(item);
     }
