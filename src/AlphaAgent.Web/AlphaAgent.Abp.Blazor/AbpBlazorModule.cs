@@ -102,10 +102,10 @@ public class AbpBlazorModule : AbpModule
             builder.SetIntrospectionEndpointUris("connect/introspect");
             
             // 配置Token生命周期
-            // AccessToken有效期：1小时
-            builder.Configure(options => options.AccessTokenLifetime = TimeSpan.FromHours(1));
-            // RefreshToken有效期：7天
-            builder.Configure(options => options.RefreshTokenLifetime = TimeSpan.FromDays(7));
+            // AccessToken有效期：30天
+            builder.Configure(options => options.AccessTokenLifetime = TimeSpan.FromDays(30));
+            // RefreshToken有效期：365天
+            builder.Configure(options => options.RefreshTokenLifetime = TimeSpan.FromDays(365));
         });
 
         if (!hostingEnvironment.IsDevelopment())

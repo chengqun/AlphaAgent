@@ -1,5 +1,6 @@
 using AlphaAgent.Domain.Abstractions.Interfaces;
 using AlphaAgent.Domain.Abstractions.Chat;
+using AlphaAgent.Domain.Services.Auth;
 using Microsoft.AspNetCore.SignalR.Client;
 using System;
 using System.Net.Http;
@@ -11,12 +12,11 @@ public class SignalRChatService : ISignalRChatService
 {
     private HubConnection? _hubConnection;
     private readonly Func<HttpMessageHandler>? _httpMessageHandlerFactory;
+    private readonly ITokenManager _tokenManager;
 
-    /// <summary>
-    /// 创建 SignalRChatService，可选传入 HttpMessageHandler 工厂用于自定义 SSL 证书验证
-    /// </summary>
-    public SignalRChatService(Func<HttpMessageHandler>? httpMessageHandlerFactory = null)
+    public SignalRChatService(ITokenManager tokenManager, Func<HttpMessageHandler>? httpMessageHandlerFactory = null)
     {
+        _tokenManager = tokenManager;
         _httpMessageHandlerFactory = httpMessageHandlerFactory;
     }
 
@@ -25,9 +25,8 @@ public class SignalRChatService : ISignalRChatService
     public event Func<Guid, Guid, int, Task>? OnUnreadCountUpdated;
     public event Func<Task>? OnReconnected;
 
-    public async Task ConnectAsync(string accessToken, string baseUrl)
+    public async Task ConnectAsync(string baseUrl)
     {
-        // 复用已存在的连接：仅在 Disconnected 或 null 时才重建
         if (_hubConnection != null && _hubConnection.State != HubConnectionState.Disconnected)
         {
             System.Diagnostics.Debug.WriteLine($"[SignalR] 连接已存在，状态: {_hubConnection.State}，跳过重建");
@@ -44,7 +43,7 @@ public class SignalRChatService : ISignalRChatService
         _hubConnection = new HubConnectionBuilder()
             .WithUrl(hubUrl, options =>
             {
-                options.AccessTokenProvider = () => Task.FromResult(accessToken);
+                options.AccessTokenProvider = async () => await _tokenManager.GetAccessTokenAsync();
                 if (_httpMessageHandlerFactory != null)
                 {
                     options.HttpMessageHandlerFactory = _ => _httpMessageHandlerFactory();

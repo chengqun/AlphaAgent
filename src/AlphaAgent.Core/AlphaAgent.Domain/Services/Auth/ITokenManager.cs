@@ -17,4 +17,5 @@ public interface ITokenManager
     Task LogoutAsync();
     Task<Token?> GetTokenByUsernameAsync(string username);
     Task<DateTime?> GetActiveTokenExpirationDateTimeAsync();
+    Task<bool> TryRefreshTokenAsync();
 }

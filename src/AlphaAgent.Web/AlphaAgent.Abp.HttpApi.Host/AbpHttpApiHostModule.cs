@@ -73,8 +73,8 @@ public class AbpHttpApiHostModule : AbpModule
             builder.SetRevocationEndpointUris("connect/revocation");
             builder.SetIntrospectionEndpointUris("connect/introspect");
             
-            builder.Configure(options => options.AccessTokenLifetime = TimeSpan.FromHours(1));
-            builder.Configure(options => options.RefreshTokenLifetime = TimeSpan.FromDays(7));
+            builder.Configure(options => options.AccessTokenLifetime = TimeSpan.FromDays(30));
+            builder.Configure(options => options.RefreshTokenLifetime = TimeSpan.FromDays(365));
         });
 
         if (!hostingEnvironment.IsDevelopment())

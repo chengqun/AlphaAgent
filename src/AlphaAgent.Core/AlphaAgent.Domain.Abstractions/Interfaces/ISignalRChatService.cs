@@ -11,7 +11,7 @@ public interface ISignalRChatService
     event Func<Guid, Guid, int, Task>? OnUnreadCountUpdated;
     event Func<Task>? OnReconnected;
 
-    Task ConnectAsync(string accessToken, string baseUrl);
+    Task ConnectAsync(string baseUrl);
     Task DisconnectAsync();
     Task JoinConversationAsync(Guid conversationId);
 }

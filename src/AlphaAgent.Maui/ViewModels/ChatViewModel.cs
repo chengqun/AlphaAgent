@@ -292,10 +292,7 @@ public partial class ChatViewModel : ObservableObject, IPageLifecycleAware
 
         try
         {
-            var token = await _tokenManager.GetTokenByUsernameAsync(await _tokenManager.GetUsernameAsync() ?? string.Empty);
-            if (token == null || token.IsExpired()) return;
-
-            await _signalRChatService.ConnectAsync(token.AccessToken, AppSettings.ServerBaseAddress);
+            await _signalRChatService.ConnectAsync(AppSettings.ServerBaseAddress);
         }
         catch (Exception ex)
         {

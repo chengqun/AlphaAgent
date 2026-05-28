@@ -65,7 +65,8 @@ public partial class SplashViewModel : ObservableObject
             await Task.Delay(300);
 
             StatusMessage = "正在自动登录...";
-            isLoggedIn = await _authService.IsLoggedInAsync();
+            var autoLoginResult = await _authService.AutoLoginAsync();
+            isLoggedIn = autoLoginResult.Success;
 
             StatusMessage = "初始化完成";
             await Task.Delay(300);

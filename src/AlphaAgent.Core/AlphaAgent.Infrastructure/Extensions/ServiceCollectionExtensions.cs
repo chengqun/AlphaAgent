@@ -2,6 +2,7 @@ using AlphaAgent.Domain.Abstractions;
 using AlphaAgent.Domain.Abstractions.AiAgent;
 using AlphaAgent.Domain.Abstractions.Interfaces;
 using AlphaAgent.Domain.Interfaces;
+using AlphaAgent.Domain.Services.Auth;
 using AlphaAgent.Domain.Services.Security;
 using AlphaAgent.Infrastructure.Interfaces;
 using AlphaAgent.Infrastructure.Data;
@@ -85,7 +86,8 @@ public static class ServiceCollectionExtensions
 
         services.AddSingleton<ISignalRChatService>(sp =>
         {
-            return new SignalRChatService(httpMessageHandlerFactory);
+            var tokenManager = sp.GetRequiredService<ITokenManager>();
+            return new SignalRChatService(tokenManager, httpMessageHandlerFactory);
         });
 
         return services;

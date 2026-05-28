@@ -60,13 +60,8 @@ public class PostLoginInitializer : IPostLoginInitializer
 
         try
         {
-            var token = await _tokenManager.GetTokenByUsernameAsync(
-                await _tokenManager.GetUsernameAsync() ?? string.Empty);
-            if (token != null && !token.IsExpired())
-            {
-                await _signalRChatService.ConnectAsync(token.AccessToken, serverBaseAddress);
-                return true;
-            }
+            await _signalRChatService.ConnectAsync(serverBaseAddress);
+            return true;
         }
         catch (Exception)
         {

@@ -1,5 +1,9 @@
 using System;
+using System.Text.Json;
+using System.Text.Json.Serialization;
+using System.Threading;
 using System.Threading.Tasks;
+using AlphaAgent.Domain.Abstractions.Interfaces;
 using AlphaAgent.Domain.Entities;
 using AlphaAgent.Domain.Interfaces;
 
@@ -8,10 +12,13 @@ namespace AlphaAgent.Domain.Services.Auth;
 public class TokenManager : ITokenManager
 {
     private readonly ITokenRepository _tokenRepository;
+    private readonly IHttpClientService _httpClientService;
+    private readonly SemaphoreSlim _refreshLock = new(1, 1);
 
-    public TokenManager(ITokenRepository tokenRepository)
+    public TokenManager(ITokenRepository tokenRepository, IHttpClientService httpClientService)
     {
         _tokenRepository = tokenRepository;
+        _httpClientService = httpClientService;
     }
 
     public async Task SaveTokensAsync(string accessToken, string refreshToken, int? expiresIn, string username, string? password = null, bool rememberMe = false)
@@ -107,6 +114,44 @@ public class TokenManager : ITokenManager
         return DateTime.Parse(token.TokenExpiration);
     }
 
+    public async Task<bool> TryRefreshTokenAsync()
+    {
+        await _refreshLock.WaitAsync();
+        try
+        {
+            var refreshToken = await GetRefreshTokenAsync();
+            if (string.IsNullOrEmpty(refreshToken))
+                return false;
+
+            var formData = new
+            {
+                grant_type = "refresh_token",
+                client_id = "alphaagent_chat",
+                client_secret = "chat_secret",
+                refresh_token = refreshToken
+            };
+
+            var response = await _httpClientService.SendAsync<TokenRefreshResponse>("connect/token", formData);
+            if (response == null)
+                return false;
+
+            var username = await GetUsernameAsync();
+            if (string.IsNullOrEmpty(username))
+                return false;
+
+            await SaveTokensAsync(response.AccessToken, response.RefreshToken, response.ExpiresIn, username);
+            return true;
+        }
+        catch
+        {
+            return false;
+        }
+        finally
+        {
+            _refreshLock.Release();
+        }
+    }
+
     private void ValidateTokenData(string accessToken, string username)
     {
         if (string.IsNullOrWhiteSpace(accessToken))
@@ -136,5 +181,17 @@ public class TokenManager : ITokenManager
         }
 
         return new Token(0, accessToken, refreshToken, expiration, username);
+    }
+
+    private class TokenRefreshResponse
+    {
+        [JsonPropertyName("access_token")]
+        public string AccessToken { get; set; } = string.Empty;
+
+        [JsonPropertyName("expires_in")]
+        public int ExpiresIn { get; set; }
+
+        [JsonPropertyName("refresh_token")]
+        public string RefreshToken { get; set; } = string.Empty;
     }
 }
