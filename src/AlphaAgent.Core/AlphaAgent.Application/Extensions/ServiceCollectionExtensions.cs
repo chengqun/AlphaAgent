@@ -19,7 +19,6 @@ using AlphaAgent.Application.Services.Video;
 using AlphaAgent.Application.Services.Update;
 using AlphaAgent.Application.Services.Device;
 using AlphaAgent.Domain.Services.Security;
-using AlphaAgent.Domain.Services.Auth;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace AlphaAgent.Application.Extensions;
@@ -30,7 +29,6 @@ public static class ServiceCollectionExtensions
     {
         // 无状态服务：Singleton 语义明确，避免 AddScoped 在 MAUI 中的歧义
         services.AddSingleton<ISecurityManager, SecurityManager>();
-        services.AddSingleton<ITokenManager, TokenManager>();
 
         services.AddSingleton<ISecurityService, SecurityService>();
         services.AddSingleton<IAuthService, AuthService>();

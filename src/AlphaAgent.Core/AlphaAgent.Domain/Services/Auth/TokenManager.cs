@@ -1,9 +1,12 @@
 using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Net.Http;
+using System.Net.Http.Json;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using System.Threading;
 using System.Threading.Tasks;
-using AlphaAgent.Domain.Abstractions.Interfaces;
 using AlphaAgent.Domain.Entities;
 using AlphaAgent.Domain.Interfaces;
 
@@ -12,13 +15,14 @@ namespace AlphaAgent.Domain.Services.Auth;
 public class TokenManager : ITokenManager
 {
     private readonly ITokenRepository _tokenRepository;
-    private readonly IHttpClientService _httpClientService;
+    private readonly HttpClient _httpClient;
     private readonly SemaphoreSlim _refreshLock = new(1, 1);
+    private static readonly JsonSerializerOptions _jsonOptions = new() { PropertyNameCaseInsensitive = true };
 
-    public TokenManager(ITokenRepository tokenRepository, IHttpClientService httpClientService)
+    public TokenManager(ITokenRepository tokenRepository, HttpClient httpClient)
     {
         _tokenRepository = tokenRepository;
-        _httpClientService = httpClientService;
+        _httpClient = httpClient;
     }
 
     public async Task SaveTokensAsync(string accessToken, string refreshToken, int? expiresIn, string username, string? password = null, bool rememberMe = false)
@@ -123,23 +127,27 @@ public class TokenManager : ITokenManager
             if (string.IsNullOrEmpty(refreshToken))
                 return false;
 
-            var formData = new
+            var formData = new Dictionary<string, string>
             {
-                grant_type = "refresh_token",
-                client_id = "alphaagent_chat",
-                client_secret = "chat_secret",
-                refresh_token = refreshToken
+                ["grant_type"] = "refresh_token",
+                ["client_id"] = "alphaagent_chat",
+                ["client_secret"] = "chat_secret",
+                ["refresh_token"] = refreshToken
             };
 
-            var response = await _httpClientService.SendAsync<TokenRefreshResponse>("connect/token", formData);
-            if (response == null)
+            var response = await _httpClient.PostAsync("connect/token", new FormUrlEncodedContent(formData));
+            if (!response.IsSuccessStatusCode)
+                return false;
+
+            var result = await response.Content.ReadFromJsonAsync<TokenRefreshResponse>(_jsonOptions);
+            if (result == null)
                 return false;
 
             var username = await GetUsernameAsync();
             if (string.IsNullOrEmpty(username))
                 return false;
 
-            await SaveTokensAsync(response.AccessToken, response.RefreshToken, response.ExpiresIn, username);
+            await SaveTokensAsync(result.AccessToken, result.RefreshToken, result.ExpiresIn, username);
             return true;
         }
         catch

@@ -54,6 +54,17 @@ public static class ServiceCollectionExtensions
         services.AddTransient<IDatabaseInitializer, DatabaseInitializer>();
         services.AddTransient<ISyncMetadataStore, SyncMetadataStore>();
 
+        // TokenManager: 使用独立 HttpClient（不带 BearerTokenDelegatingHandler，避免循环依赖）
+        services.AddSingleton<ITokenManager>(sp =>
+        {
+            var tokenRepository = sp.GetRequiredService<ITokenRepository>();
+            HttpMessageHandler handler = httpMessageHandlerFactory != null
+                ? httpMessageHandlerFactory()
+                : new SocketsHttpHandler();
+            var httpClient = new HttpClient(handler) { BaseAddress = new Uri(baseAddress) };
+            return new TokenManager(tokenRepository, httpClient);
+        });
+
         services.AddSingleton<BearerTokenDelegatingHandler>();
 
         var httpClientBuilder = services.AddHttpClient<IHttpClientService, HttpClientService>(client =>
