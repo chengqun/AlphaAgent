@@ -358,6 +358,7 @@ public partial class ChatDetailViewModel : ObservableObject, IQueryAttributable,
     private async Task SyncFromServerAsync()
     {
         var version = _loadVersion;
+        var conversationId = _currentConversationId;
         try
         {
             // 首次无任何缓存时显示转圈；有缓存时后台静默同步
@@ -365,16 +366,16 @@ public partial class ChatDetailViewModel : ObservableObject, IQueryAttributable,
                 IsLoading = true;
 
             // 增量补漏：从服务端拉取可能缺少的最新消息
-            await LoadNetworkMessagesAsync(version);
+            await LoadNetworkMessagesAsync(version, conversationId);
             if (version != _loadVersion) return;
 
             // 标记已读 + 通知会话列表
-            await MarkAsReadAndNotifyAsync();
+            await MarkAsReadAndNotifyAsync(conversationId);
 
             // 连接 SignalR 并加入会话组
             await EnsureConnectedAsync(version);
             if (version != _loadVersion) return;
-            await JoinConversationGroupAsync();
+            await JoinConversationGroupAsync(conversationId);
         }
         catch (Exception ex)
         {
@@ -390,13 +391,13 @@ public partial class ChatDetailViewModel : ObservableObject, IQueryAttributable,
     /// <summary>
     /// REST 网络加载：增量插入新消息，避免 Clear+re-add 导致 UI 闪烁
     /// </summary>
-    private async Task LoadNetworkMessagesAsync(int version)
+    private async Task LoadNetworkMessagesAsync(int version, Guid conversationId)
     {
         if (_chatService == null) return;
 
-        var response = await _chatService.GetMessagesAsync(_currentConversationId, 0, MaxMessagesPerLoad);
+        var response = await _chatService.GetMessagesAsync(conversationId, 0, MaxMessagesPerLoad);
         if (version != _loadVersion) return;
-        System.Diagnostics.Debug.WriteLine($"[ChatDetail] 网络加载: convId={_currentConversationId}, Success={response.Success}, count={response.Data?.Count ?? 0}");
+        System.Diagnostics.Debug.WriteLine($"[ChatDetail] 网络加载: convId={conversationId}, Success={response.Success}, count={response.Data?.Count ?? 0}");
         if (!response.Success || response.Data == null)
         {
             System.Diagnostics.Debug.WriteLine($"[ChatDetail] 网络加载失败: Error={response.Error}");
@@ -431,16 +432,16 @@ public partial class ChatDetailViewModel : ObservableObject, IQueryAttributable,
         // 更新本地缓存
         if (_messageCacheService != null && Messages.Any())
         {
-            await _messageCacheService.CacheMessagesAsync(_currentConversationId, Messages.ToList(), MaxMessagesPerLoad);
+            await _messageCacheService.CacheMessagesAsync(conversationId, Messages.ToList(), MaxMessagesPerLoad);
         }
     }
 
-    private async Task MarkAsReadAndNotifyAsync()
+    private async Task MarkAsReadAndNotifyAsync(Guid conversationId)
     {
         if (_chatService != null)
-            await _chatService.MarkAsReadAsync(_currentConversationId);
+            await _chatService.MarkAsReadAsync(conversationId);
 
-        _eventBusService?.Publish(new ConversationReadEvent(_currentConversationId));
+        _eventBusService?.Publish(new ConversationReadEvent(conversationId));
     }
 
     private async Task EnsureConnectedAsync(int version)
@@ -499,13 +500,13 @@ public partial class ChatDetailViewModel : ObservableObject, IQueryAttributable,
     /// <summary>
     /// 加入 SignalR 会话组，确保能收到该会话的实时消息
     /// </summary>
-    private async Task JoinConversationGroupAsync()
+    private async Task JoinConversationGroupAsync(Guid conversationId)
     {
-        if (_signalRChatService == null || _currentConversationId == Guid.Empty) return;
+        if (_signalRChatService == null || conversationId == Guid.Empty) return;
 
         try
         {
-            await _signalRChatService.JoinConversationAsync(_currentConversationId);
+            await _signalRChatService.JoinConversationAsync(conversationId);
         }
         catch (Exception ex)
         {
@@ -521,6 +522,7 @@ public partial class ChatDetailViewModel : ObservableObject, IQueryAttributable,
         if (message.ConversationId != _currentConversationId) return;
         if (message.SenderId == _currentUserId) return;
 
+        var conversationId = _currentConversationId;
         var version = _loadVersion;
 
         if (_displayedMessageIds.Add(message.Id))
@@ -528,25 +530,26 @@ public partial class ChatDetailViewModel : ObservableObject, IQueryAttributable,
             _lastMessageTime = message.SentAt;
             MainThread.BeginInvokeOnMainThread(() =>
             {
-                Messages.Add(FixMessage(message));
+                if (version == _loadVersion)
+                    Messages.Add(FixMessage(message));
             });
 
             if (_messageCacheService != null)
             {
-                await _messageCacheService.AppendMessageAsync(_currentConversationId, message);
+                await _messageCacheService.AppendMessageAsync(conversationId, message);
             }
 
-            // 实时消息也要标记已读，确保服务端和会话列表同步
-            await MarkAsReadAndNotifyAsync();
+            await MarkAsReadAndNotifyAsync(conversationId);
         }
     }
 
     [RelayCommand]
     private async Task RefreshMessagesAsync()
     {
-        if (_chatService == null || string.IsNullOrEmpty(ConversationId)) return;
+        if (_chatService == null || _currentConversationId == Guid.Empty) return;
 
         var version = ++_loadVersion;
+        var conversationId = _currentConversationId;
         try
         {
             IsLoading = true;
@@ -556,7 +559,7 @@ public partial class ChatDetailViewModel : ObservableObject, IQueryAttributable,
             _displayedMessageIds.Clear();
             _lastMessageTime = DateTime.MinValue;
 
-            var response = await _chatService.GetMessagesAsync(_currentConversationId, 0, MaxMessagesPerLoad);
+            var response = await _chatService.GetMessagesAsync(conversationId, 0, MaxMessagesPerLoad);
             if (version != _loadVersion) return;
             if (response.Success && response.Data != null)
             {
@@ -569,11 +572,11 @@ public partial class ChatDetailViewModel : ObservableObject, IQueryAttributable,
 
                 if (_messageCacheService != null && Messages.Any())
                 {
-                    await _messageCacheService.CacheMessagesAsync(_currentConversationId, Messages.ToList(), MaxMessagesPerLoad);
+                    await _messageCacheService.CacheMessagesAsync(conversationId, Messages.ToList(), MaxMessagesPerLoad);
                 }
             }
 
-            await MarkAsReadAndNotifyAsync();
+            await MarkAsReadAndNotifyAsync(conversationId);
         }
         catch (Exception ex)
         {
@@ -581,7 +584,8 @@ public partial class ChatDetailViewModel : ObservableObject, IQueryAttributable,
         }
         finally
         {
-            IsLoading = false;
+            if (version == _loadVersion)
+                IsLoading = false;
         }
     }
 
