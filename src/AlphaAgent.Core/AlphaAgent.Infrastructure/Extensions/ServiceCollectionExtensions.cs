@@ -61,7 +61,7 @@ public static class ServiceCollectionExtensions
             client.Timeout = TimeSpan.FromSeconds(30);
         });
 
-        httpClientBuilder.AddHttpMessageHandler<BearerTokenDelegatingHandler>();
+        httpClientBuilder.AddHttpMessageHandler(sp => sp.GetRequiredService<BearerTokenDelegatingHandler>());
 
         if (httpMessageHandlerFactory != null)
         {

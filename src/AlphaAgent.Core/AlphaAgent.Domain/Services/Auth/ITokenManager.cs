@@ -1,5 +1,4 @@
 using System;
-using System.Collections.Generic;
 using System.Threading.Tasks;
 using AlphaAgent.Domain.Entities;
 
@@ -16,12 +15,6 @@ public interface ITokenManager
     Task<bool> IsTokenExpiredAsync();
     Task<bool> IsTokenAboutToExpireAsync(TimeSpan threshold);
     Task LogoutAsync();
-    Task LogoutAllAsync();
-    Task<List<Token>> GetStoredAccountsAsync();
     Task<Token?> GetTokenByUsernameAsync(string username);
-    Task SetActiveAsync(string username);
-    Task<bool> ExistsAsync(string username);
-    Task DeleteTokenAsync(string username);
-    Task<int> GetStoredAccountCountAsync();
     Task<DateTime?> GetActiveTokenExpirationDateTimeAsync();
 }

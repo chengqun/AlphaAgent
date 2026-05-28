@@ -71,18 +71,7 @@ public class Token
         UpdatedAt = DateTime.UtcNow;
     }
 
-    public void SetActive()
-    {
-        IsActive = true;
-        UpdatedAt = DateTime.UtcNow;
-    }
-
-    public void SetInactive()
-    {
-        IsActive = false;
-        UpdatedAt = DateTime.UtcNow;
-    }
-
+    
     public bool IsExpired()
     {
         if (string.IsNullOrEmpty(TokenExpiration))

@@ -29,10 +29,15 @@ public class BearerTokenDelegatingHandler : DelegatingHandler
         if (!IsNoAuthEndpoint(request.RequestUri))
         {
             var token = await _tokenManager.GetAccessTokenAsync();
+            System.Diagnostics.Debug.WriteLine($"[BearerTokenHandler] Path={request.RequestUri?.AbsolutePath}, Token={(!string.IsNullOrEmpty(token) ? token.Substring(0, Math.Min(token.Length, 20)) + "..." : "null/empty")}");
             if (!string.IsNullOrEmpty(token))
             {
                 request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token);
             }
+        }
+        else
+        {
+            System.Diagnostics.Debug.WriteLine($"[BearerTokenHandler] Skipped no-auth endpoint: {request.RequestUri?.AbsolutePath}");
         }
 
         return await base.SendAsync(request, cancellationToken);

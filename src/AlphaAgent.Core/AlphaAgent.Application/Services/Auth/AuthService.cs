@@ -4,9 +4,6 @@ using AlphaAgent.Application.Dtos.Common;
 using AlphaAgent.Application.Dtos.Auth;
 using AlphaAgent.Domain.Services.Auth;
 using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Net.Http;
 using System.Text.Json;
 using System.Threading.Tasks;
 
@@ -61,17 +58,6 @@ public class AuthService : IAuthService
     public async Task LogoutAsync()
     {
         await _tokenManager.LogoutAsync();
-    }
-
-    public async Task<List<AccountInfoDto>> GetStoredAccountsAsync()
-    {
-        var tokens = await _tokenManager.GetStoredAccountsAsync();
-        return tokens.Select(t => new AccountInfoDto
-        {
-            Username = t.Username,
-            IsActive = t.IsActive,
-            LastUpdated = t.UpdatedAt
-        }).ToList();
     }
 
     public async Task<ApiResponse<LoginResponse>> RefreshTokenAsync(string refreshToken)
@@ -158,27 +144,6 @@ public class AuthService : IAuthService
         }
 
         return new ApiResponse<LoginResponse> { Success = false, Error = "登录状态已过期" };
-    }
-
-    public async Task<ApiResponse<LoginResponse>> SwitchAccountAsync(string username, string? password = null)
-    {
-        var token = await _tokenManager.GetTokenByUsernameAsync(username);
-
-        if (token != null && !token.IsExpired())
-        {
-            await _tokenManager.SetActiveAsync(username);
-            return new ApiResponse<LoginResponse>
-            {
-                Success = true,
-                Data = new LoginResponse
-                {
-                    AccessToken = token.AccessToken,
-                    RefreshToken = token.RefreshToken
-                }
-            };
-        }
-
-        return new ApiResponse<LoginResponse> { Success = false, Error = "需要重新登录" };
     }
 
     public string GetBaseAddress()

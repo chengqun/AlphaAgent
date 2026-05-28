@@ -1,9 +1,7 @@
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using AlphaAgent.Application.Interfaces.Auth;
-using AlphaAgent.Application.Dtos.Auth;
 using AlphaAgent.Maui.Services;
-using System.Collections.ObjectModel;
 
 namespace AlphaAgent.Maui.ViewModels;
 
@@ -26,9 +24,6 @@ public partial class MeViewModel : ObservableObject
 
     [ObservableProperty]
     private bool _isDarkMode;
-
-    [ObservableProperty]
-    private ObservableCollection<AccountInfoDto> _storedAccounts = [];
 
     public string ThemeModeText => IsDarkMode ? "深色模式" : "浅色模式";
 
@@ -75,21 +70,6 @@ public partial class MeViewModel : ObservableObject
                 UsernameInitial = !string.IsNullOrEmpty(username) && username.Length > 0
                     ? username.Trim().ToUpper().FirstOrDefault().ToString()
                     : "?";
-
-                // 加载已保存的账号列表
-                var accounts = await _authService.GetStoredAccountsAsync();
-                Console.WriteLine($"[MeViewModel] Found {accounts.Count} stored accounts");
-                foreach (var account in accounts)
-                {
-                    Console.WriteLine($"[MeViewModel]   - {account.Username} (Active: {account.IsActive})");
-                }
-                
-                // 确保正确更新 ObservableCollection
-                StoredAccounts.Clear();
-                foreach (var account in accounts)
-                {
-                    StoredAccounts.Add(account);
-                }
             }
         }
         catch (Exception ex)
@@ -113,36 +93,14 @@ public partial class MeViewModel : ObservableObject
                 await _authService.LogoutAsync();
             }
 
-            // 无论如何，导航到登录页面
             Username = "未登录";
             UsernameInitial = "?";
-            StoredAccounts.Clear();
 
             await Shell.Current.GoToAsync("//LoginPage");
         }
         catch (Exception ex)
         {
             Console.WriteLine($"[MeViewModel] Error during logout: {ex.Message}");
-        }
-        finally
-        {
-            IsLoading = false;
-        }
-    }
-
-    [RelayCommand]
-    private async Task SwitchAccountAsync(string username)
-    {
-        if (_authService == null) return;
-
-        IsLoading = true;
-        try
-        {
-            var response = await _authService.SwitchAccountAsync(username);
-            if (response.Success)
-            {
-                await LoadUserInfoAsync();
-            }
         }
         finally
         {

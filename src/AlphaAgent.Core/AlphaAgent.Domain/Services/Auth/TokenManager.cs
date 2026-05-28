@@ -1,6 +1,4 @@
 using System;
-using System.Collections.Generic;
-using System.Linq;
 using System.Threading.Tasks;
 using AlphaAgent.Domain.Entities;
 using AlphaAgent.Domain.Interfaces;
@@ -10,7 +8,6 @@ namespace AlphaAgent.Domain.Services.Auth;
 public class TokenManager : ITokenManager
 {
     private readonly ITokenRepository _tokenRepository;
-    private const int MaxStoredAccounts = 10;
 
     public TokenManager(ITokenRepository tokenRepository)
     {
@@ -20,12 +17,6 @@ public class TokenManager : ITokenManager
     public async Task SaveTokensAsync(string accessToken, string refreshToken, int? expiresIn, string username, string? password = null, bool rememberMe = false)
     {
         ValidateTokenData(accessToken, username);
-
-        var existingTokens = await _tokenRepository.GetAllAsync();
-        if (existingTokens.Count >= MaxStoredAccounts && !await ExistsAsync(username))
-        {
-            await RemoveOldestInactiveTokenAsync();
-        }
 
         var token = await _tokenRepository.GetByUsernameAsync(username);
 
@@ -42,7 +33,6 @@ public class TokenManager : ITokenManager
             await _tokenRepository.UpdateAsync(token);
         }
 
-        await _tokenRepository.SetActiveAsync(username);
     }
 
     public async Task<string> GetAccessTokenAsync()
@@ -100,62 +90,12 @@ public class TokenManager : ITokenManager
         }
     }
 
-    public async Task LogoutAllAsync()
-    {
-        var tokens = await _tokenRepository.GetAllAsync();
-        foreach (var token in tokens)
-        {
-            token.MarkAsLoggedOut();
-            await _tokenRepository.UpdateAsync(token);
-        }
-    }
-
-    public async Task<List<Token>> GetStoredAccountsAsync()
-    {
-        var tokens = await _tokenRepository.GetAllAsync();
-        return tokens.OrderByDescending(t => t.IsActive).ThenByDescending(t => t.UpdatedAt).ToList();
-    }
-
     public async Task<Token?> GetTokenByUsernameAsync(string username)
     {
         if (string.IsNullOrWhiteSpace(username))
             throw new ArgumentNullException(nameof(username));
 
         return await _tokenRepository.GetByUsernameAsync(username);
-    }
-
-    public async Task SetActiveAsync(string username)
-    {
-        if (string.IsNullOrWhiteSpace(username))
-            throw new ArgumentNullException(nameof(username));
-
-        await _tokenRepository.SetActiveAsync(username);
-    }
-
-    public async Task<bool> ExistsAsync(string username)
-    {
-        if (string.IsNullOrWhiteSpace(username))
-            throw new ArgumentNullException(nameof(username));
-
-        return await _tokenRepository.ExistsAsync(username);
-    }
-
-    public async Task DeleteTokenAsync(string username)
-    {
-        if (string.IsNullOrWhiteSpace(username))
-            throw new ArgumentNullException(nameof(username));
-
-        var token = await _tokenRepository.GetByUsernameAsync(username);
-        if (token == null)
-            throw new InvalidOperationException($"未找到用户 {username} 的令牌");
-
-        await _tokenRepository.DeleteAsync(token.Id);
-    }
-
-    public async Task<int> GetStoredAccountCountAsync()
-    {
-        var tokens = await _tokenRepository.GetAllAsync();
-        return tokens.Count;
     }
 
     public async Task<DateTime?> GetActiveTokenExpirationDateTimeAsync()
@@ -196,19 +136,5 @@ public class TokenManager : ITokenManager
         }
 
         return new Token(0, accessToken, refreshToken, expiration, username);
-    }
-
-    private async Task RemoveOldestInactiveTokenAsync()
-    {
-        var tokens = await _tokenRepository.GetAllAsync();
-        var oldestInactive = tokens
-            .Where(t => !t.IsActive)
-            .OrderBy(t => t.UpdatedAt)
-            .FirstOrDefault();
-
-        if (oldestInactive != null)
-        {
-            await _tokenRepository.DeleteAsync(oldestInactive.Id);
-        }
     }
 }
