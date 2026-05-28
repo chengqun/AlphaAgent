@@ -18,6 +18,15 @@ public partial class DeviceManagementViewModel : ObservableObject
     [ObservableProperty]
     private string _statusMessage = string.Empty;
 
+    [ObservableProperty]
+    private string _newDeviceName = string.Empty;
+
+    [ObservableProperty]
+    private string _newDeviceType = "Console";
+
+    [ObservableProperty]
+    private bool _isAdding;
+
     public ObservableCollection<MyDeviceDto> Devices { get; } = new();
 
     public DeviceManagementViewModel(IDeviceService? deviceService = null, IRelationshipService? relationshipService = null)
@@ -60,6 +69,44 @@ public partial class DeviceManagementViewModel : ObservableObject
         {
             IsLoading = false;
         }
+    }
+
+    [RelayCommand]
+    private async Task AddDeviceAsync()
+    {
+        if (_deviceService == null) return;
+        if (string.IsNullOrWhiteSpace(NewDeviceName)) return;
+
+        try
+        {
+            IsAdding = true;
+            var response = await _deviceService.CreateDeviceAsync(NewDeviceName, NewDeviceType);
+            if (response.Success)
+            {
+                NewDeviceName = string.Empty;
+                StatusMessage = "设备已创建";
+                await LoadDevicesAsync();
+            }
+            else
+            {
+                StatusMessage = "创建失败";
+            }
+        }
+        catch
+        {
+            StatusMessage = "创建失败";
+        }
+        finally
+        {
+            IsAdding = false;
+        }
+    }
+
+    [RelayCommand]
+    private async Task CopyAuthCodeAsync(string authCode)
+    {
+        if (string.IsNullOrEmpty(authCode)) return;
+        await Clipboard.Default.SetTextAsync(authCode);
     }
 
     [RelayCommand]

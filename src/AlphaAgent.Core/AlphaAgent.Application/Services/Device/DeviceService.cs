@@ -36,4 +36,14 @@ public class DeviceService : IDeviceService
             ? new ApiResponse<List<MyDeviceDto>> { Success = true, Data = response }
             : new ApiResponse<List<MyDeviceDto>> { Success = false };
     }
+
+    public async Task<ApiResponse<MyDeviceDto>> CreateDeviceAsync(string deviceName, string deviceType)
+    {
+        await EnsureTokenAsync();
+        var payload = new { DeviceName = deviceName, DeviceType = deviceType };
+        var response = await _httpClientService.PostAsync<MyDeviceDto>("api/app/device/device", payload);
+        return response != null
+            ? new ApiResponse<MyDeviceDto> { Success = true, Data = response }
+            : new ApiResponse<MyDeviceDto> { Success = false };
+    }
 }

@@ -7,54 +7,99 @@
              BackgroundColor="{AppThemeBinding Light={StaticResource PageBackgroundLight}, Dark={StaticResource PageBackgroundDark}}"
              Loaded="ContentPage_Loaded">
 
-    <RefreshView Command="{Binding LoadDevicesCommand}"
-                 IsRefreshing="{Binding IsLoading}">
-        <CollectionView ItemsSource="{Binding Devices}"
-                        BackgroundColor="{AppThemeBinding Light={StaticResource PageBackgroundLight}, Dark={StaticResource PageBackgroundDark}}"
-                        Margin="16,8">
-            <CollectionView.ItemTemplate>
-                <DataTemplate>
-                    <Border Style="{StaticResource CardBorder}"
-                            StrokeShape="RoundRectangle 12"
-                            Margin="0,4"
-                            Padding="16">
-                        <Grid ColumnDefinitions="*,Auto" RowDefinitions="Auto,Auto" ColumnSpacing="12">
+    <Grid RowDefinitions="*,Auto" BackgroundColor="{AppThemeBinding Light={StaticResource PageBackgroundLight}, Dark={StaticResource PageBackgroundDark}}">
 
-                            <!-- 设备名 -->
-                            <Label Grid.Row="0" Grid.Column="0"
-                                   Text="{Binding DeviceName}"
-                                   FontSize="17" FontAttributes="Bold"
-                                   Style="{StaticResource LabelPrimary}" />
+        <!-- 设备列表 -->
+        <RefreshView Grid.Row="0" Command="{Binding LoadDevicesCommand}"
+                     IsRefreshing="{Binding IsLoading}">
+            <CollectionView ItemsSource="{Binding Devices}"
+                            BackgroundColor="{AppThemeBinding Light={StaticResource PageBackgroundLight}, Dark={StaticResource PageBackgroundDark}}"
+                            Margin="16,8">
+                <CollectionView.ItemTemplate>
+                    <DataTemplate>
+                        <Border Style="{StaticResource CardBorder}"
+                                StrokeShape="RoundRectangle 12"
+                                Margin="0,4"
+                                Padding="16">
+                            <Grid ColumnDefinitions="*,Auto" RowDefinitions="Auto,Auto,Auto" ColumnSpacing="12">
 
-                            <!-- 设备类型 -->
-                            <Label Grid.Row="1" Grid.Column="0"
-                                   Text="{Binding DeviceType}"
-                                   FontSize="14"
-                                   Style="{StaticResource LabelSecondary}" />
+                                <!-- 设备名 -->
+                                <Label Grid.Row="0" Grid.Column="0"
+                                       Text="{Binding DeviceName}"
+                                       FontSize="17" FontAttributes="Bold"
+                                       Style="{StaticResource LabelPrimary}" />
 
-                            <!-- 恢复联系人按钮（仅无关系时显示） -->
-                            <Button Grid.Row="0" Grid.RowSpan="2" Grid.Column="1"
-                                    Text="恢复联系人"
-                                    FontSize="14"
-                                    Command="{Binding Source={RelativeSource AncestorType={x:Type ContentPage}}, Path=BindingContext.RestoreContactCommand}"
-                                    CommandParameter="{Binding DeviceId}"
-                                    Style="{StaticResource ButtonSecondary}"
-                                    IsVisible="{Binding HasRelationship, Converter={StaticResource InvertedBoolConverter}}"
-                                    VerticalOptions="Center" />
+                                <!-- 设备类型 -->
+                                <Label Grid.Row="1" Grid.Column="0"
+                                       Text="{Binding DeviceType}"
+                                       FontSize="14"
+                                       Style="{StaticResource LabelSecondary}" />
 
-                        </Grid>
-                    </Border>
-                </DataTemplate>
-            </CollectionView.ItemTemplate>
+                                <!-- 授权码（点击复制） -->
+                                <Label Grid.Row="2" Grid.Column="0"
+                                       Text="{Binding AuthorizationCode, StringFormat='授权码: {0}'}"
+                                       FontSize="12"
+                                       Style="{StaticResource LabelTertiary}"
+                                       TextDecorations="Underline">
+                                    <Label.GestureRecognizers>
+                                        <TapGestureRecognizer Command="{Binding Source={RelativeSource AncestorType={x:Type ContentPage}}, Path=BindingContext.CopyAuthCodeCommand}"
+                                                              CommandParameter="{Binding AuthorizationCode}" />
+                                    </Label.GestureRecognizers>
+                                </Label>
 
-            <CollectionView.EmptyView>
-                <StackLayout Padding="40" VerticalOptions="Center" HorizontalOptions="Center">
-                    <Label Text="{Binding StatusMessage}"
-                           Style="{StaticResource LabelSecondary}"
-                           HorizontalOptions="Center" />
-                </StackLayout>
-            </CollectionView.EmptyView>
-        </CollectionView>
-    </RefreshView>
+                                <!-- 恢复联系人按钮（仅无关系时显示） -->
+                                <Button Grid.Row="0" Grid.RowSpan="3" Grid.Column="1"
+                                        Text="恢复联系人"
+                                        FontSize="14"
+                                        Command="{Binding Source={RelativeSource AncestorType={x:Type ContentPage}}, Path=BindingContext.RestoreContactCommand}"
+                                        CommandParameter="{Binding DeviceId}"
+                                        Style="{StaticResource ButtonSecondary}"
+                                        IsVisible="{Binding HasRelationship, Converter={StaticResource InvertedBoolConverter}}"
+                                        VerticalOptions="Center" />
+
+                            </Grid>
+                        </Border>
+                    </DataTemplate>
+                </CollectionView.ItemTemplate>
+
+                <CollectionView.EmptyView>
+                    <StackLayout Padding="40" VerticalOptions="Center" HorizontalOptions="Center">
+                        <Label Text="{Binding StatusMessage}"
+                               Style="{StaticResource LabelSecondary}"
+                               HorizontalOptions="Center" />
+                    </StackLayout>
+                </CollectionView.EmptyView>
+            </CollectionView>
+        </RefreshView>
+
+        <!-- 新增设备表单 -->
+        <Border Grid.Row="1"
+                Style="{StaticResource CardBorder}"
+                StrokeShape="RoundRectangle 12"
+                Margin="16,0,16,16"
+                Padding="16">
+            <StackLayout Spacing="12">
+                <Label Text="新增设备" FontSize="18" FontAttributes="Bold" Style="{StaticResource LabelPrimary}" />
+                <Entry Placeholder="设备名称"
+                       Text="{Binding NewDeviceName}"
+                       Style="{StaticResource EntryPrimary}"
+                       IsEnabled="{Binding !IsAdding}" />
+                <Entry Placeholder="设备类型（如 Console、Windows）"
+                       Text="{Binding NewDeviceType}"
+                       Style="{StaticResource EntryPrimary}"
+                       IsEnabled="{Binding !IsAdding}" />
+                <Button Text="创建设备"
+                        Command="{Binding AddDeviceCommand}"
+                        IsEnabled="{Binding !IsAdding}"
+                        Style="{StaticResource PrimaryActionButton}" />
+                <Label Text="{Binding StatusMessage}"
+                       FontSize="14"
+                       TextColor="{StaticResource InfoColor}"
+                       IsVisible="{Binding StatusMessage, Converter={StaticResource NullToBooleanConverter}, ConverterParameter=inverse}"
+                       HorizontalOptions="Center" />
+            </StackLayout>
+        </Border>
+
+    </Grid>
 
 </ContentPage>

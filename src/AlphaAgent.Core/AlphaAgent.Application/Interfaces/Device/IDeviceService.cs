@@ -8,4 +8,5 @@ namespace AlphaAgent.Application.Interfaces.Device;
 public interface IDeviceService
 {
     Task<ApiResponse<List<MyDeviceDto>>> GetMyDevicesAsync();
+    Task<ApiResponse<MyDeviceDto>> CreateDeviceAsync(string deviceName, string deviceType);
 }
