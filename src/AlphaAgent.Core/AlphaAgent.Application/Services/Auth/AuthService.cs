@@ -61,7 +61,6 @@ public class AuthService : IAuthService
     public async Task LogoutAsync()
     {
         await _tokenManager.LogoutAsync();
-        _httpClientService.SetAuthorizationToken(string.Empty);
     }
 
     public async Task<List<AccountInfoDto>> GetStoredAccountsAsync()
@@ -98,7 +97,6 @@ public class AuthService : IAuthService
                     response.ExpiresIn,
                     username);
             }
-            _httpClientService.SetAuthorizationToken(response.AccessToken);
             return new ApiResponse<LoginResponse> { Success = true, Data = response };
         }
 
@@ -127,7 +125,6 @@ public class AuthService : IAuthService
                 response.ExpiresIn,
                 username,
                 password);
-            _httpClientService.SetAuthorizationToken(response.AccessToken);
             return new ApiResponse<LoginResponse> { Success = true, Data = response };
         }
 
@@ -144,7 +141,6 @@ public class AuthService : IAuthService
 
         if (!token.IsExpired())
         {
-            _httpClientService.SetAuthorizationToken(token.AccessToken);
             return new ApiResponse<LoginResponse>
             {
                 Success = true,
@@ -171,7 +167,6 @@ public class AuthService : IAuthService
         if (token != null && !token.IsExpired())
         {
             await _tokenManager.SetActiveAsync(username);
-            _httpClientService.SetAuthorizationToken(token.AccessToken);
             return new ApiResponse<LoginResponse>
             {
                 Success = true,

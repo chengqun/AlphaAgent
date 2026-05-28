@@ -4,7 +4,6 @@ using AlphaAgent.Domain.Abstractions.AiAgent;
 using AlphaAgent.Domain.Abstractions.Interfaces;
 using AlphaAgent.Domain.Entities;
 using AlphaAgent.Domain.Interfaces;
-using AlphaAgent.Domain.Services.Auth;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -15,15 +14,13 @@ namespace AlphaAgent.Application.Services.Agent;
 public class AgentConfigService : IAgentConfigService
 {
     private readonly IHttpClientService _httpClientService;
-    private readonly ITokenManager _tokenManager;
     private readonly IAgentConfigCacheRepository _cacheRepository;
     private readonly IAgentFactory _agentFactory;
     private readonly AgentOptions _agentOptions;
 
-    public AgentConfigService(IHttpClientService httpClientService, ITokenManager tokenManager, IAgentConfigCacheRepository cacheRepository, IAgentFactory agentFactory, AgentOptions agentOptions)
+    public AgentConfigService(IHttpClientService httpClientService, IAgentConfigCacheRepository cacheRepository, IAgentFactory agentFactory, AgentOptions agentOptions)
     {
         _httpClientService = httpClientService;
-        _tokenManager = tokenManager;
         _cacheRepository = cacheRepository;
         _agentFactory = agentFactory;
         _agentOptions = agentOptions;
@@ -40,7 +37,6 @@ public class AgentConfigService : IAgentConfigService
     {
         try
         {
-            await EnsureTokenAsync();
             var result = await _httpClientService.GetAsync<ListResultDto<AgentConfigResponseDto>>("api/app/agent-config/my-config");
             if (result?.Items == null || result.Items.Count == 0)
             {
@@ -64,7 +60,6 @@ public class AgentConfigService : IAgentConfigService
 
     public async Task SetConfigAsync(AgentConfigResponseDto config)
     {
-        await EnsureTokenAsync();
         await _httpClientService.PostAsync<AgentConfigResponseDto>("api/app/agent-config/set-my-config", new
         {
             agentName = config.AgentName,
@@ -111,15 +106,6 @@ public class AgentConfigService : IAgentConfigService
 
         // 重新同步以获取服务端分配的 Id
         await SyncFromServerAsync(userId);
-    }
-
-    private async Task EnsureTokenAsync()
-    {
-        var token = await _tokenManager.GetTokenByUsernameAsync(await _tokenManager.GetUsernameAsync() ?? string.Empty);
-        if (token != null && !token.IsExpired())
-        {
-            _httpClientService.SetAuthorizationToken(token.AccessToken);
-        }
     }
 
     private static AgentConfigCacheItem MapToCacheItem(AgentConfigResponseDto dto, Guid userId)

@@ -53,11 +53,15 @@ public static class ServiceCollectionExtensions
         services.AddTransient<IDatabaseInitializer, DatabaseInitializer>();
         services.AddTransient<ISyncMetadataStore, SyncMetadataStore>();
 
+        services.AddSingleton<BearerTokenDelegatingHandler>();
+
         var httpClientBuilder = services.AddHttpClient<IHttpClientService, HttpClientService>(client =>
         {
             client.BaseAddress = new Uri(baseAddress);
             client.Timeout = TimeSpan.FromSeconds(30);
         });
+
+        httpClientBuilder.AddHttpMessageHandler<BearerTokenDelegatingHandler>();
 
         if (httpMessageHandlerFactory != null)
         {

@@ -32,9 +32,7 @@ public class HttpClientService : IHttpClientService
         try
         {
             var fullUrl = $"{_httpClient.BaseAddress}{endpoint}";
-            var hasAuth = _httpClient.DefaultRequestHeaders.Authorization != null;
             _logger.LogInformation("GET {Url}", fullUrl);
-            _logger.LogDebug("Has Authorization: {HasAuth}", hasAuth);
 
             var response = await _httpClient.GetAsync(endpoint);
             _logger.LogInformation("GET {Url} - Status: {StatusCode} ({StatusCodeValue})", fullUrl, response.StatusCode, (int)response.StatusCode);
@@ -61,9 +59,7 @@ public class HttpClientService : IHttpClientService
         try
         {
             var fullUrl = $"{_httpClient.BaseAddress}{endpoint}";
-            var hasAuth = _httpClient.DefaultRequestHeaders.Authorization != null;
             _logger.LogInformation("POST {Url}", fullUrl);
-            _logger.LogDebug("Has Authorization: {HasAuth}, Data Type: {DataType}", hasAuth, data == null ? "null" : data.GetType().Name);
 
             HttpResponseMessage response;
             if (data != null)
@@ -106,9 +102,7 @@ public class HttpClientService : IHttpClientService
         try
         {
             var fullUrl = $"{_httpClient.BaseAddress}{endpoint}";
-            var hasAuth = _httpClient.DefaultRequestHeaders.Authorization != null;
             _logger.LogInformation("DELETE {Url}", fullUrl);
-            _logger.LogDebug("Has Authorization: {HasAuth}", hasAuth);
 
             var response = await _httpClient.DeleteAsync(endpoint);
             _logger.LogInformation("DELETE {Url} - Status: {StatusCode} ({StatusCodeValue})", fullUrl, response.StatusCode, (int)response.StatusCode);
@@ -144,9 +138,7 @@ public class HttpClientService : IHttpClientService
         try
         {
             var fullUrl = $"{_httpClient.BaseAddress}{endpoint}";
-            var hasAuth = _httpClient.DefaultRequestHeaders.Authorization != null;
             _logger.LogInformation("DELETE (raw) {Url}", fullUrl);
-            _logger.LogDebug("Has Authorization: {HasAuth}", hasAuth);
 
             var response = await _httpClient.DeleteAsync(endpoint);
             _logger.LogInformation("DELETE (raw) {Url} - Status: {StatusCode} ({StatusCodeValue})", fullUrl, response.StatusCode, (int)response.StatusCode);
@@ -164,9 +156,7 @@ public class HttpClientService : IHttpClientService
         try
         {
             var fullUrl = $"{_httpClient.BaseAddress}{endpoint}";
-            var hasAuth = _httpClient.DefaultRequestHeaders.Authorization != null;
             _logger.LogInformation("POST (form) {Url}", fullUrl);
-            _logger.LogDebug("Has Authorization: {HasAuth}, Data Type: {DataType}", hasAuth, data == null ? "null" : data.GetType().Name);
 
             using var request = new HttpRequestMessage(HttpMethod.Post, endpoint);
             if (data != null)
@@ -222,9 +212,7 @@ public class HttpClientService : IHttpClientService
         try
         {
             var fullUrl = $"{_httpClient.BaseAddress}{endpoint}";
-            var hasAuth = _httpClient.DefaultRequestHeaders.Authorization != null;
             _logger.LogInformation("POST (raw) {Url}", fullUrl);
-            _logger.LogDebug("Has Authorization: {HasAuth}, Data Type: {DataType}", hasAuth, data == null ? "null" : data.GetType().Name);
 
             HttpResponseMessage response;
             if (data != null)
@@ -243,16 +231,5 @@ public class HttpClientService : IHttpClientService
             _logger.LogWarning(ex, "POST (raw) request exception: {ExceptionType}: {Message}", ex.GetType().Name, ex.Message);
             return null;
         }
-    }
-
-    public void SetAccessToken(string token)
-    {
-        SetAuthorizationToken(token);
-    }
-
-    public void SetAuthorizationToken(string token)
-    {
-        _httpClient.DefaultRequestHeaders.Authorization =
-            new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", token);
     }
 }

@@ -12,6 +12,4 @@ public interface IHttpClientService
     Task<TResponse?> SendAsync<TResponse>(string endpoint, object? data = null) where TResponse : class;
     Task<HttpResponseMessage?> PostRawAsync(string endpoint, object? data = null);
     Task<byte[]?> GetByteArrayAsync(string endpoint);
-    void SetAccessToken(string token);
-    void SetAuthorizationToken(string token);
 }
