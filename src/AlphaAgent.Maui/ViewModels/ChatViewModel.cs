@@ -135,6 +135,9 @@ public partial class ChatViewModel : ObservableObject, IPageLifecycleAware
         _globalMessageHandler?.StartListening();
         SubscribeSignalREvents();
 
+        // 全局连接 SignalR（只在未连接时连接一次）
+        await EnsureSignalRConnectedAsync();
+
         if (!_isLoaded)
         {
             // 首次加载：从本地缓存瞬间显示，然后后台同步
@@ -278,6 +281,24 @@ public partial class ChatViewModel : ObservableObject, IPageLifecycleAware
         _eventBusService?.Subscribe<UnreadCountUpdatedEvent>(OnUnreadCountUpdated);
         _eventBusService?.Subscribe<ConversationReadEvent>(OnConversationRead);
         _eventBusService?.Subscribe<NewConversationEvent>(OnNewConversation);
+    }
+
+    private async Task EnsureSignalRConnectedAsync()
+    {
+        if (_signalRChatService == null || _tokenManager == null) return;
+        if (_signalRChatService.IsConnected) return;
+
+        try
+        {
+            var token = await _tokenManager.GetTokenByUsernameAsync(await _tokenManager.GetUsernameAsync() ?? string.Empty);
+            if (token == null || token.IsExpired()) return;
+
+            await _signalRChatService.ConnectAsync(token.AccessToken, AppSettings.ServerBaseAddress);
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"[ChatViewModel] SignalR 连接失败: {ex.Message}");
+        }
     }
 
     private void UnsubscribeSignalREvents()

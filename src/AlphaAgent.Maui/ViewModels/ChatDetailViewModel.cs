@@ -353,7 +353,7 @@ public partial class ChatDetailViewModel : ObservableObject, IQueryAttributable,
     }
 
     /// <summary>
-    /// 异步：按需网络加载 + 标记已读 + 连接 SignalR
+    /// 异步：按需网络加载 + 标记已读 + 加入会话组
     /// </summary>
     private async Task SyncFromServerAsync()
     {
@@ -372,9 +372,10 @@ public partial class ChatDetailViewModel : ObservableObject, IQueryAttributable,
             // 标记已读 + 通知会话列表
             await MarkAsReadAndNotifyAsync(conversationId);
 
-            // 连接 SignalR 并加入会话组
-            await EnsureConnectedAsync(version);
+            // SignalR 已由 ChatViewModel 全局连接，此处只加入会话组 + 订阅事件
             if (version != _loadVersion) return;
+            SubscribeToEvents();
+            IsConnected = _signalRChatService?.IsConnected ?? false;
             await JoinConversationGroupAsync(conversationId);
         }
         catch (Exception ex)
@@ -442,40 +443,6 @@ public partial class ChatDetailViewModel : ObservableObject, IQueryAttributable,
             await _chatService.MarkAsReadAsync(conversationId);
 
         _eventBusService?.Publish(new ConversationReadEvent(conversationId));
-    }
-
-    private async Task EnsureConnectedAsync(int version)
-    {
-        if (_signalRChatService == null || _tokenManager == null)
-        {
-            IsConnected = false;
-            return;
-        }
-
-        try
-        {
-            var token = await _tokenManager.GetTokenByUsernameAsync(await _tokenManager.GetUsernameAsync() ?? string.Empty);
-            if (version != _loadVersion) return;
-            if (token == null || token.IsExpired())
-            {
-                IsConnected = false;
-                return;
-            }
-
-            if (!_signalRChatService.IsConnected)
-            {
-                await _signalRChatService.ConnectAsync(token.AccessToken, AppSettings.ServerBaseAddress);
-            }
-
-            if (version != _loadVersion) return;
-            SubscribeToEvents();
-            IsConnected = true;
-        }
-        catch (Exception ex)
-        {
-            System.Diagnostics.Debug.WriteLine($"[ChatDetail] SignalR 连接失败: {ex.Message}");
-            IsConnected = false;
-        }
     }
 
     private void SubscribeToEvents()
