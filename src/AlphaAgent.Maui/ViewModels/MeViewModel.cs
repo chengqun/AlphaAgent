@@ -150,6 +150,12 @@ public partial class MeViewModel : ObservableObject
         }
     }
 
+    [RelayCommand]
+    private async Task NavigateToDeviceManagementAsync()
+    {
+        await Shell.Current.GoToAsync("DeviceManagementPage");
+    }
+
     public async Task ToggleThemeAsync(bool isDark)
     {
         try

@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             x:Class="AlphaAgent.Maui.Views.DeviceManagementPage"
+             Title="我的设备"
+             Shell.TabBarIsVisible="False"
+             BackgroundColor="{AppThemeBinding Light={StaticResource PageBackgroundLight}, Dark={StaticResource PageBackgroundDark}}"
+             Loaded="ContentPage_Loaded">
+
+    <RefreshView Command="{Binding LoadDevicesCommand}"
+                 IsRefreshing="{Binding IsLoading}">
+        <CollectionView ItemsSource="{Binding Devices}"
+                        BackgroundColor="{AppThemeBinding Light={StaticResource PageBackgroundLight}, Dark={StaticResource PageBackgroundDark}}"
+                        Margin="16,8">
+            <CollectionView.ItemTemplate>
+                <DataTemplate>
+                    <Border Style="{StaticResource CardBorder}"
+                            StrokeShape="RoundRectangle 12"
+                            Margin="0,4"
+                            Padding="16">
+                        <Grid ColumnDefinitions="*,Auto" RowDefinitions="Auto,Auto" ColumnSpacing="12">
+
+                            <!-- 设备名 -->
+                            <Label Grid.Row="0" Grid.Column="0"
+                                   Text="{Binding DeviceName}"
+                                   FontSize="17" FontAttributes="Bold"
+                                   Style="{StaticResource LabelPrimary}" />
+
+                            <!-- 设备类型 -->
+                            <Label Grid.Row="1" Grid.Column="0"
+                                   Text="{Binding DeviceType}"
+                                   FontSize="14"
+                                   Style="{StaticResource LabelSecondary}" />
+
+                            <!-- 恢复联系人按钮（仅无关系时显示） -->
+                            <Button Grid.Row="0" Grid.RowSpan="2" Grid.Column="1"
+                                    Text="恢复联系人"
+                                    FontSize="14"
+                                    Command="{Binding Source={RelativeSource AncestorType={x:Type ContentPage}}, Path=BindingContext.RestoreContactCommand}"
+                                    CommandParameter="{Binding DeviceId}"
+                                    Style="{StaticResource ButtonSecondary}"
+                                    IsVisible="{Binding HasRelationship, Converter={StaticResource InvertedBoolConverter}}"
+                                    VerticalOptions="Center" />
+
+                        </Grid>
+                    </Border>
+                </DataTemplate>
+            </CollectionView.ItemTemplate>
+
+            <CollectionView.EmptyView>
+                <StackLayout Padding="40" VerticalOptions="Center" HorizontalOptions="Center">
+                    <Label Text="{Binding StatusMessage}"
+                           Style="{StaticResource LabelSecondary}"
+                           HorizontalOptions="Center" />
+                </StackLayout>
+            </CollectionView.EmptyView>
+        </CollectionView>
+    </RefreshView>
+
+</ContentPage>

@@ -73,6 +73,38 @@
                 </Grid>
             </Border>
 
+            <!-- 我的设备卡片 -->
+            <Border Style="{StaticResource CardBorder}"
+                    StrokeShape="RoundRectangle 20"
+                    Padding="20">
+                <Grid ColumnDefinitions="*,Auto" ColumnSpacing="16">
+                    <StackLayout Orientation="Horizontal" Spacing="12" VerticalOptions="Center">
+                        <Border WidthRequest="44" HeightRequest="44"
+                                StrokeShape="RoundRectangle 22"
+                                BackgroundColor="{AppThemeBinding Light={StaticResource AvatarBackgroundLight}, Dark={StaticResource AvatarBackgroundDark}}">
+                            <Label Text="💻"
+                                   FontSize="22"
+                                   TextColor="{StaticResource TextWhite}"
+                                   HorizontalOptions="Center"
+                                   VerticalOptions="Center" />
+                        </Border>
+                        <Label Text="我的设备"
+                               FontSize="18"
+                               FontAttributes="Bold"
+                               Style="{StaticResource LabelPrimary}"
+                               VerticalOptions="Center" />
+                    </StackLayout>
+                    <Label Text="›"
+                           FontSize="24"
+                           Style="{StaticResource LabelSecondary}"
+                           HorizontalOptions="End"
+                           VerticalOptions="Center" />
+                </Grid>
+                <Border.GestureRecognizers>
+                    <TapGestureRecognizer Command="{Binding NavigateToDeviceManagementCommand}" />
+                </Border.GestureRecognizers>
+            </Border>
+
             <!-- 退出登录按钮 -->
             <Button Text="退出登录"
                     Command="{Binding LogoutCommand}"

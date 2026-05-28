@@ -1,10 +1,15 @@
 using System;
+using System.Collections.Generic;
+using System.Linq;
 using System.Threading.Tasks;
 using AlphaAgent.Abp.Application.Contracts.Services.Devices;
+using AlphaAgent.Abp.Domain.Entities;
 using AlphaAgent.Abp.Domain.Services.Devices;
 using Microsoft.Extensions.Logging;
 using Volo.Abp;
 using Volo.Abp.Application.Services;
+using Volo.Abp.Domain.Repositories;
+using AlphaAgent.Abp.Domain.Shared.Enums;
 using Microsoft.AspNetCore.Mvc;
 
 namespace AlphaAgent.Abp.Application.Services.Devices
@@ -13,11 +18,13 @@ namespace AlphaAgent.Abp.Application.Services.Devices
     public class DeviceAppService : ApplicationService, IDeviceAppService
     {
         private readonly IDeviceManager _deviceManager;
+        private readonly IRepository<AppRelationship, Guid> _relationshipRepository;
         private readonly ILogger<DeviceAppService> _logger;
 
-        public DeviceAppService(IDeviceManager deviceManager, ILogger<DeviceAppService> logger)
+        public DeviceAppService(IDeviceManager deviceManager, IRepository<AppRelationship, Guid> relationshipRepository, ILogger<DeviceAppService> logger)
         {
             _deviceManager = deviceManager;
+            _relationshipRepository = relationshipRepository;
             _logger = logger;
         }
 
@@ -116,6 +123,32 @@ namespace AlphaAgent.Abp.Application.Services.Devices
                 DeviceType = device.DeviceType,
                 AuthorizationCode = device.AuthorizationCode
             };
+        }
+
+        [HttpGet("my-devices")]
+        public async Task<List<DeviceDto>> GetMyDevicesAsync()
+        {
+            if (!CurrentUser.IsAuthenticated)
+                throw new UserFriendlyException("未登录");
+
+            var userId = CurrentUser.Id!.Value;
+            var devices = await _deviceManager.GetUserDevicesAsync(userId);
+
+            // 查询当前用户所有已接受的设备关系
+            var relationships = await _relationshipRepository.GetListAsync(
+                r => r.UserId == userId && r.TargetType == RelationshipType.Device && r.Status == RelationshipStatus.Accepted
+            );
+            var relatedDeviceIds = relationships.Select(r => r.TargetId).ToHashSet();
+
+            return devices.Select(d => new DeviceDto
+            {
+                Id = d.Id,
+                DeviceId = d.DeviceId,
+                DeviceName = d.DeviceName,
+                DeviceType = d.DeviceType,
+                AuthorizationCode = d.AuthorizationCode,
+                HasRelationship = relatedDeviceIds.Contains(d.DeviceId)
+            }).ToList();
         }
 
         /// <summary>
