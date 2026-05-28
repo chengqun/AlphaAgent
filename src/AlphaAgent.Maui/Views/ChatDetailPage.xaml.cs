@@ -2,14 +2,22 @@ using AlphaAgent.Maui.ViewModels;
 
 namespace AlphaAgent.Maui.Views;
 
-public partial class ChatDetailPage : ContentPage
+public partial class ChatDetailPage : ContentPage, IQueryAttributable
 {
+    private ChatDetailViewModel? _viewModel;
+
     public ChatDetailPage(ChatDetailViewModel viewModel)
     {
-        InitializeComponent();
+        _viewModel = viewModel;
         BindingContext = viewModel;
+        InitializeComponent();
 
         viewModel.Messages.CollectionChanged += OnMessagesCollectionChanged;
+    }
+
+    public void ApplyQueryAttributes(IDictionary<string, object> query)
+    {
+        _viewModel?.ApplyQueryAttributes(query);
     }
 
     protected override async void OnAppearing()

@@ -56,25 +56,27 @@ public static class MauiProgram
 		// 注册全局消息处理器
 		builder.Services.AddSingleton<IGlobalMessageHandler, GlobalMessageHandler>();
 
-		// 注册 ViewModel
-		builder.Services.AddScoped<LoginViewModel>();
-		builder.Services.AddScoped<RegisterViewModel>();
-		builder.Services.AddScoped<SplashViewModel>();
-		builder.Services.AddScoped<ChatViewModel>();
-		builder.Services.AddScoped<ContactsViewModel>();
-		builder.Services.AddScoped<ContactDetailViewModel>();
-		builder.Services.AddScoped<DiscoveryViewModel>();
-		builder.Services.AddScoped<MeViewModel>();
-		builder.Services.AddScoped<MomentsViewModel>();
-		builder.Services.AddScoped<ContactMomentsViewModel>();
-		builder.Services.AddScoped<VideoChannelsViewModel>();
-		builder.Services.AddScoped<AddFriendViewModel>();
-		builder.Services.AddScoped<NewFriendsViewModel>();
-		builder.Services.AddScoped<ChatDetailViewModel>();
-		builder.Services.AddScoped<AgentChatDetailViewModel>();
-		builder.Services.AddScoped<AgentContactDetailViewModel>();
-        builder.Services.AddScoped<InitializingViewModel>();
-	        builder.Services.AddScoped<DeviceManagementViewModel>();
+		// TabBar 主页：Shell 只创建一个实例，用 Singleton 保持状态
+		builder.Services.AddSingleton<SplashViewModel>();
+		builder.Services.AddSingleton<ChatViewModel>();
+		builder.Services.AddSingleton<ContactsViewModel>();
+		builder.Services.AddSingleton<DiscoveryViewModel>();
+		builder.Services.AddSingleton<MeViewModel>();
+
+		// 子页面：每次导航创建新实例，避免状态串扰
+		builder.Services.AddTransient<LoginViewModel>();
+		builder.Services.AddTransient<RegisterViewModel>();
+		builder.Services.AddTransient<ContactDetailViewModel>();
+		builder.Services.AddTransient<MomentsViewModel>();
+		builder.Services.AddTransient<ContactMomentsViewModel>();
+		builder.Services.AddTransient<VideoChannelsViewModel>();
+		builder.Services.AddTransient<AddFriendViewModel>();
+		builder.Services.AddTransient<NewFriendsViewModel>();
+		builder.Services.AddTransient<ChatDetailViewModel>();
+		builder.Services.AddTransient<AgentChatDetailViewModel>();
+		builder.Services.AddTransient<AgentContactDetailViewModel>();
+		builder.Services.AddTransient<InitializingViewModel>();
+		builder.Services.AddTransient<DeviceManagementViewModel>();
 
 #if DEBUG
 		builder.Logging.AddDebug();
