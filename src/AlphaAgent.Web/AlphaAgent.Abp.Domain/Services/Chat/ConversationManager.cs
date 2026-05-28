@@ -82,7 +82,7 @@ public class ConversationManager : DomainService, IConversationManager
     /// </summary>
     public async Task<AppConversation> GetOrCreateDeviceConversationAsync(Guid userId, Guid deviceId)
     {
-        var key = $"device_{deviceId}";
+        var key = $"device_{userId}_{deviceId}";
 
         var existing = await _conversationRepository.FirstOrDefaultAsync(c => c.ConversationKey == key);
         if (existing != null)
