@@ -65,7 +65,8 @@ public static class ServiceCollectionExtensions
             return new TokenManager(tokenRepository, httpClient);
         });
 
-        services.AddSingleton<BearerTokenDelegatingHandler>();
+        // DelegatingHandler 必须是 Transient：AddHttpClient 每次构建管道会设置 InnerHandler，不能复用同一实例
+        services.AddTransient<BearerTokenDelegatingHandler>();
 
         var httpClientBuilder = services.AddHttpClient<IHttpClientService, HttpClientService>(client =>
         {
