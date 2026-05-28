@@ -28,27 +28,30 @@ public static class ServiceCollectionExtensions
 {
     public static IServiceCollection AddApplicationServices(this IServiceCollection services)
     {
-        services.AddScoped<ISecurityManager, SecurityManager>();
-        services.AddScoped<ITokenManager, TokenManager>();
+        // 无状态服务：Singleton 语义明确，避免 AddScoped 在 MAUI 中的歧义
+        services.AddSingleton<ISecurityManager, SecurityManager>();
+        services.AddSingleton<ITokenManager, TokenManager>();
 
-        services.AddScoped<ISecurityService, SecurityService>();
-        services.AddScoped<IAuthService, AuthService>();
-        services.AddScoped<IRelationshipService, RelationshipService>();
-        services.AddScoped<IGroupService, GroupService>();
-        services.AddScoped<IMomentService, MomentService>();
-        services.AddScoped<IMomentCacheService, MomentCacheService>();
-        services.AddScoped<IChatService, ChatService>();
-        services.AddScoped<IConversationSyncService, ConversationSyncService>();
-        services.AddScoped<IContactSyncService, ContactSyncService>();
-        services.AddScoped<ICoreInitializer, CoreInitializer>();
-        services.AddScoped<IAgentService, AgentService>();
-        services.AddScoped<IMessageCacheService, MessageCacheService>();
-        services.AddScoped<IVideoFeedService, VideoFeedService>();
-        services.AddScoped<IUpdateService, UpdateService>();
-        services.AddScoped<ISecurityClientSyncService, SecurityClientSyncService>();
-        services.AddScoped<IAgentConfigService, AgentConfigService>();
-        services.AddScoped<IPostLoginInitializer, PostLoginInitializer>();
-        services.AddScoped<IDeviceService, DeviceService>();
+        services.AddSingleton<ISecurityService, SecurityService>();
+        services.AddSingleton<IAuthService, AuthService>();
+        services.AddSingleton<IRelationshipService, RelationshipService>();
+        services.AddSingleton<IGroupService, GroupService>();
+        services.AddSingleton<IMomentService, MomentService>();
+        services.AddSingleton<IMomentCacheService, MomentCacheService>();
+        services.AddSingleton<IChatService, ChatService>();
+        services.AddSingleton<IConversationSyncService, ConversationSyncService>();
+        services.AddSingleton<IContactSyncService, ContactSyncService>();
+        services.AddSingleton<IAgentService, AgentService>();
+        services.AddSingleton<IMessageCacheService, MessageCacheService>();
+        services.AddSingleton<IVideoFeedService, VideoFeedService>();
+        services.AddSingleton<IUpdateService, UpdateService>();
+        services.AddSingleton<ISecurityClientSyncService, SecurityClientSyncService>();
+        services.AddSingleton<IAgentConfigService, AgentConfigService>();
+        services.AddSingleton<IDeviceService, DeviceService>();
+
+        // 一次性初始化：每次调用获取新实例
+        services.AddTransient<ICoreInitializer, CoreInitializer>();
+        services.AddTransient<IPostLoginInitializer, PostLoginInitializer>();
 
         return services;
     }

@@ -447,21 +447,24 @@ public partial class ChatDetailViewModel : ObservableObject, IQueryAttributable,
 
     private void SubscribeToEvents()
     {
-        if (_signalRChatService == null) return;
-
-        _signalRChatService.OnMessageReceived -= HandleMessageForCurrentConversation;
-        _signalRChatService.OnMessageReceived += HandleMessageForCurrentConversation;
-
-        _signalRChatService.OnReconnected -= OnSignalRReconnected;
-        _signalRChatService.OnReconnected += OnSignalRReconnected;
+        _eventBusService?.Subscribe<NewMessageEvent>(OnNewMessageEvent);
+        _eventBusService?.Subscribe<SignalRReconnectedEvent>(OnSignalRReconnectedEvent);
     }
 
     private void UnsubscribeFromEvents()
     {
-        if (_signalRChatService == null) return;
+        _eventBusService?.Unsubscribe<NewMessageEvent>(OnNewMessageEvent);
+        _eventBusService?.Unsubscribe<SignalRReconnectedEvent>(OnSignalRReconnectedEvent);
+    }
 
-        _signalRChatService.OnMessageReceived -= HandleMessageForCurrentConversation;
-        _signalRChatService.OnReconnected -= OnSignalRReconnected;
+    private async void OnNewMessageEvent(NewMessageEvent @event)
+    {
+        await HandleMessageForCurrentConversation(@event.Message);
+    }
+
+    private async void OnSignalRReconnectedEvent(SignalRReconnectedEvent @event)
+    {
+        await SyncMissedMessagesAsync();
     }
 
     /// <summary>
@@ -600,11 +603,6 @@ public partial class ChatDetailViewModel : ObservableObject, IQueryAttributable,
             ErrorMessage = $"发送失败: {ex.Message}";
             MessageInput = content;
         }
-    }
-
-    private async Task OnSignalRReconnected()
-    {
-        await SyncMissedMessagesAsync();
     }
 
     private async Task SyncMissedMessagesAsync()

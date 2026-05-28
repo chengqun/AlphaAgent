@@ -37,19 +37,21 @@ public static class ServiceCollectionExtensions
         services.AddDbContextFactory<SharesDbContext>(options =>
             options.UseSqlite(sqliteConnectionString));
 
-        services.AddScoped<ISecurityRepository, SecurityRepository>();
-        services.AddScoped<IQuoteRepository, QuoteRepository>();
-        services.AddScoped<ITokenRepository, TokenRepository>();
-        services.AddScoped<IAgentRepository, AgentRepository>();
-        services.AddScoped<IMessageCacheRepository, MessageCacheRepository>();
-        services.AddScoped<IConversationCacheRepository, ConversationCacheRepository>();
-        services.AddScoped<IContactCacheRepository, ContactCacheRepository>();
-        services.AddScoped<IMomentCacheRepository, MomentCacheRepository>();
-        services.AddScoped<IVideoFeedRepository, VideoFeedRepository>();
-        services.AddScoped<IAgentConfigCacheRepository, AgentConfigCacheRepository>();
+        // Repository：通过 IDbContextFactory 每次创建 DbContext，Repository 本身无状态
+        services.AddSingleton<ISecurityRepository, SecurityRepository>();
+        services.AddSingleton<IQuoteRepository, QuoteRepository>();
+        services.AddSingleton<ITokenRepository, TokenRepository>();
+        services.AddSingleton<IAgentRepository, AgentRepository>();
+        services.AddSingleton<IMessageCacheRepository, MessageCacheRepository>();
+        services.AddSingleton<IConversationCacheRepository, ConversationCacheRepository>();
+        services.AddSingleton<IContactCacheRepository, ContactCacheRepository>();
+        services.AddSingleton<IMomentCacheRepository, MomentCacheRepository>();
+        services.AddSingleton<IVideoFeedRepository, VideoFeedRepository>();
+        services.AddSingleton<IAgentConfigCacheRepository, AgentConfigCacheRepository>();
 
-        services.AddScoped<IDatabaseInitializer, DatabaseInitializer>();
-        services.AddScoped<ISyncMetadataStore, SyncMetadataStore>();
+        // 一次性使用：每次获取新实例
+        services.AddTransient<IDatabaseInitializer, DatabaseInitializer>();
+        services.AddTransient<ISyncMetadataStore, SyncMetadataStore>();
 
         var httpClientBuilder = services.AddHttpClient<IHttpClientService, HttpClientService>(client =>
         {
@@ -73,7 +75,7 @@ public static class ServiceCollectionExtensions
 
         services.AddSingleton<IIndicatorCalculator, IndicatorCalculator>();
 
-        services.AddScoped<IAnalysisManager, AnalysisManager>();
+        services.AddSingleton<IAnalysisManager, AnalysisManager>();
 
         RegisterAgentServices(services, agentOptions);
 

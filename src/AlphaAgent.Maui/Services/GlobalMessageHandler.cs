@@ -8,6 +8,7 @@ public interface IGlobalMessageHandler
 {
     void StartListening();
     void StopListening();
+    void StartListeningReconnected();
 }
 
 public class GlobalMessageHandler : IGlobalMessageHandler
@@ -76,5 +77,19 @@ public class GlobalMessageHandler : IGlobalMessageHandler
 
         System.Diagnostics.Debug.WriteLine($"[GlobalMessageHandler] 发布 UnreadCountUpdatedEvent");
         _eventBusService?.Publish(new UnreadCountUpdatedEvent(conversationId, userId, unreadCount));
+    }
+
+    public void StartListeningReconnected()
+    {
+        if (_signalRChatService == null) return;
+
+        _signalRChatService.OnReconnected -= OnSignalRReconnected;
+        _signalRChatService.OnReconnected += OnSignalRReconnected;
+    }
+
+    private async Task OnSignalRReconnected()
+    {
+        System.Diagnostics.Debug.WriteLine("[GlobalMessageHandler] SignalR 重连，发布 SignalRReconnectedEvent");
+        _eventBusService?.Publish(new SignalRReconnectedEvent());
     }
 }

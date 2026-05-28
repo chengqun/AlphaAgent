@@ -281,6 +281,8 @@ public partial class ChatViewModel : ObservableObject, IPageLifecycleAware
         _eventBusService?.Subscribe<UnreadCountUpdatedEvent>(OnUnreadCountUpdated);
         _eventBusService?.Subscribe<ConversationReadEvent>(OnConversationRead);
         _eventBusService?.Subscribe<NewConversationEvent>(OnNewConversation);
+        _eventBusService?.Subscribe<SignalRReconnectedEvent>(OnSignalRReconnected);
+        _globalMessageHandler?.StartListeningReconnected();
     }
 
     private async Task EnsureSignalRConnectedAsync()
@@ -310,6 +312,13 @@ public partial class ChatViewModel : ObservableObject, IPageLifecycleAware
         _eventBusService?.Unsubscribe<UnreadCountUpdatedEvent>(OnUnreadCountUpdated);
         _eventBusService?.Unsubscribe<ConversationReadEvent>(OnConversationRead);
         _eventBusService?.Unsubscribe<NewConversationEvent>(OnNewConversation);
+        _eventBusService?.Unsubscribe<SignalRReconnectedEvent>(OnSignalRReconnected);
+    }
+
+    private async void OnSignalRReconnected(SignalRReconnectedEvent @event)
+    {
+        System.Diagnostics.Debug.WriteLine("[ChatViewModel] SignalR 重连，后台同步会话列表");
+        _ = SyncInBackgroundAsync();
     }
 
     private async void OnNewMessage(NewMessageEvent @event)
