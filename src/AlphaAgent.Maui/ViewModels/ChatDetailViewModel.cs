@@ -124,6 +124,7 @@ public partial class ChatDetailViewModel : ObservableObject, IQueryAttributable,
         try
         {
             _currentUserId = await ResolveCurrentUserIdAsync();
+            System.Diagnostics.Debug.WriteLine($"[ChatDetail] OnAppearing: userId={_currentUserId}, PendingContactId={PendingContactId}, PendingContactType={PendingContactType}, ConversationId={ConversationId}");
             if (version != _loadVersion) { _isAppearing = false; return; }
 
             // 从通讯录导航：会话尚未创建，先创建再加载
@@ -140,10 +141,12 @@ public partial class ChatDetailViewModel : ObservableObject, IQueryAttributable,
                 }
                 _currentConversationId = conversationId.Value;
                 ConversationId = conversationId.Value.ToString();
+                System.Diagnostics.Debug.WriteLine($"[ChatDetail] 新建会话: convId={_currentConversationId}");
             }
             else if (!string.IsNullOrEmpty(ConversationId))
             {
                 _currentConversationId = Guid.Parse(ConversationId);
+                System.Diagnostics.Debug.WriteLine($"[ChatDetail] 已有会话: convId={_currentConversationId}");
             }
             else
             {
@@ -214,7 +217,9 @@ public partial class ChatDetailViewModel : ObservableObject, IQueryAttributable,
             else if (PendingContactType == "设备")
             {
                 var deviceId = Guid.Parse(PendingContactId);
+                System.Diagnostics.Debug.WriteLine($"[ChatDetail] 创建设备会话: PendingContactId={PendingContactId}, deviceId={deviceId}");
                 var deviceResponse = await _chatService.GetOrCreateDeviceConversationAsync(deviceId);
+                System.Diagnostics.Debug.WriteLine($"[ChatDetail] 设备会话响应: Success={deviceResponse.Success}, ConvId={deviceResponse.Data?.Id}, Error={deviceResponse.Error}");
                 if (!deviceResponse.Success || deviceResponse.Data == null)
                 {
                     ErrorMessage = $"创建设备会话失败: {deviceResponse.Error}";
@@ -314,6 +319,7 @@ public partial class ChatDetailViewModel : ObservableObject, IQueryAttributable,
 
         var cached = await _messageCacheService.GetCachedMessagesAsync(_currentConversationId, MaxMessagesPerLoad);
         if (version != _loadVersion) return;
+        System.Diagnostics.Debug.WriteLine($"[ChatDetail] 缓存消息: convId={_currentConversationId}, count={cached?.Count ?? 0}");
         if (cached == null || !cached.Any()) return;
 
         foreach (var msg in cached)
@@ -390,7 +396,12 @@ public partial class ChatDetailViewModel : ObservableObject, IQueryAttributable,
 
         var response = await _chatService.GetMessagesAsync(_currentConversationId, 0, MaxMessagesPerLoad);
         if (version != _loadVersion) return;
-        if (!response.Success || response.Data == null) return;
+        System.Diagnostics.Debug.WriteLine($"[ChatDetail] 网络加载: convId={_currentConversationId}, Success={response.Success}, count={response.Data?.Count ?? 0}");
+        if (!response.Success || response.Data == null)
+        {
+            System.Diagnostics.Debug.WriteLine($"[ChatDetail] 网络加载失败: Error={response.Error}");
+            return;
+        }
 
         var newMessages = response.Data
             .Where(m => _displayedMessageIds.Add(m.Id))
@@ -585,7 +596,9 @@ public partial class ChatDetailViewModel : ObservableObject, IQueryAttributable,
 
         try
         {
+            System.Diagnostics.Debug.WriteLine($"[ChatDetail] 发送消息: convId={_currentConversationId}, content={content}");
             var response = await _chatService.SendMessageAsync(_currentConversationId, content);
+            System.Diagnostics.Debug.WriteLine($"[ChatDetail] 发送响应: Success={response.Success}, msgId={response.Data?.Id}, Error={response.Error}");
 
             if (response.Success && response.Data != null)
             {
@@ -605,7 +618,8 @@ public partial class ChatDetailViewModel : ObservableObject, IQueryAttributable,
             }
             else
             {
-                ErrorMessage = "发送失败";
+                ErrorMessage = $"发送失败: {response.Error ?? "未知错误"}";
+                System.Diagnostics.Debug.WriteLine($"[ChatDetail] 发送失败: Error={response.Error}");
                 MessageInput = content;
             }
         }
