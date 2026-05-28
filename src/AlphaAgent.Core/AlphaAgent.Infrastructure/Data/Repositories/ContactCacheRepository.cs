@@ -13,11 +13,11 @@ namespace AlphaAgent.Infrastructure.Data.Repositories;
 public class ContactCacheRepository : IContactCacheRepository
 {
     private readonly ConcurrentDictionary<Guid, ContactCacheItem> _memoryCache = new();
-    private readonly SharesDbContext _dbContext;
+    private readonly IDbContextFactory<SharesDbContext> _dbContextFactory;
 
-    public ContactCacheRepository(SharesDbContext dbContext)
+    public ContactCacheRepository(IDbContextFactory<SharesDbContext> dbContextFactory)
     {
-        _dbContext = dbContext;
+        _dbContextFactory = dbContextFactory;
     }
 
     public async Task<List<ContactCacheItem>> GetAllAsync(Guid userId)
@@ -26,7 +26,8 @@ public class ContactCacheRepository : IContactCacheRepository
         if (cached.Count > 0)
             return cached.OrderBy(c => c.Type).ThenBy(c => c.TargetName).ToList();
 
-        var items = await _dbContext.ContactCache
+        await using var dbContext = await _dbContextFactory.CreateDbContextAsync();
+        var items = await dbContext.ContactCache
             .Where(c => c.UserId == userId)
             .OrderBy(c => c.Type)
             .ThenBy(c => c.TargetName)
@@ -49,29 +50,27 @@ public class ContactCacheRepository : IContactCacheRepository
             _memoryCache[item.Id] = item;
         }
 
-        await Task.Run(async () =>
+        try
         {
-            try
+            await using var dbContext = await _dbContextFactory.CreateDbContextAsync();
+            foreach (var item in itemList)
             {
-                foreach (var item in itemList)
+                var existing = await dbContext.ContactCache.FindAsync(item.Id);
+                if (existing != null)
                 {
-                    var existing = await _dbContext.ContactCache.FindAsync(item.Id);
-                    if (existing != null)
-                    {
-                        UpdateEntity(existing, item);
-                    }
-                    else
-                    {
-                        await _dbContext.ContactCache.AddAsync(item);
-                    }
+                    UpdateEntity(existing, item);
                 }
-                await _dbContext.SaveChangesAsync();
+                else
+                {
+                    await dbContext.ContactCache.AddAsync(item);
+                }
             }
-            catch (Exception ex)
-            {
-                System.Diagnostics.Debug.WriteLine($"[ContactCacheRepository] UpsertRangeAsync 失败: {ex.Message}");
-            }
-        });
+            await dbContext.SaveChangesAsync();
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"[ContactCacheRepository] UpsertRangeAsync 失败: {ex.Message}");
+        }
     }
 
     public async Task DeleteAllAsync(Guid userId)
@@ -79,21 +78,19 @@ public class ContactCacheRepository : IContactCacheRepository
         foreach (var key in _memoryCache.Where(kvp => kvp.Value.UserId == userId).Select(kvp => kvp.Key).ToList())
             _memoryCache.TryRemove(key, out _);
 
-        await Task.Run(async () =>
+        try
         {
-            try
-            {
-                var items = await _dbContext.ContactCache
-                    .Where(c => c.UserId == userId)
-                    .ToListAsync();
-                _dbContext.ContactCache.RemoveRange(items);
-                await _dbContext.SaveChangesAsync();
-            }
-            catch (Exception ex)
-            {
-                System.Diagnostics.Debug.WriteLine($"[ContactCacheRepository] DeleteAllAsync 失败: {ex.Message}");
-            }
-        });
+            await using var dbContext = await _dbContextFactory.CreateDbContextAsync();
+            var items = await dbContext.ContactCache
+                .Where(c => c.UserId == userId)
+                .ToListAsync();
+            dbContext.ContactCache.RemoveRange(items);
+            await dbContext.SaveChangesAsync();
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"[ContactCacheRepository] DeleteAllAsync 失败: {ex.Message}");
+        }
     }
 
     public async Task<DateTime?> GetLastCachedAtAsync(Guid userId)
@@ -105,7 +102,8 @@ public class ContactCacheRepository : IContactCacheRepository
         if (memoryMax.HasValue)
             return memoryMax;
 
-        return await _dbContext.ContactCache
+        await using var dbContext = await _dbContextFactory.CreateDbContextAsync();
+        return await dbContext.ContactCache
             .Where(c => c.UserId == userId)
             .MaxAsync(c => (DateTime?)c.CachedAt);
     }

@@ -2,22 +2,24 @@ using System;
 using System.Threading.Tasks;
 using AlphaAgent.Domain.Abstractions.Interfaces;
 using AlphaAgent.Domain.Entities;
+using AlphaAgent.Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
 
 namespace AlphaAgent.Infrastructure.Data;
 
 public class SyncMetadataStore : ISyncMetadataStore
 {
-    private readonly SharesDbContext _context;
+    private readonly IDbContextFactory<SharesDbContext> _dbContextFactory;
 
-    public SyncMetadataStore(SharesDbContext context)
+    public SyncMetadataStore(IDbContextFactory<SharesDbContext> dbContextFactory)
     {
-        _context = context;
+        _dbContextFactory = dbContextFactory;
     }
 
     public async Task<DateTime?> GetLastSyncTimeAsync(string key)
     {
-        var entry = await _context.SyncMetadata.FindAsync(key);
+        await using var dbContext = await _dbContextFactory.CreateDbContextAsync();
+        var entry = await dbContext.SyncMetadata.FindAsync(key);
         if (entry == null || string.IsNullOrEmpty(entry.Value))
             return null;
 
@@ -30,7 +32,8 @@ public class SyncMetadataStore : ISyncMetadataStore
     public async Task SetLastSyncTimeAsync(string key, DateTime time)
     {
         var isoString = time.ToUniversalTime().ToString("o");
-        var entry = await _context.SyncMetadata.FindAsync(key);
+        await using var dbContext = await _dbContextFactory.CreateDbContextAsync();
+        var entry = await dbContext.SyncMetadata.FindAsync(key);
 
         if (entry != null)
         {
@@ -38,9 +41,9 @@ public class SyncMetadataStore : ISyncMetadataStore
         }
         else
         {
-            _context.SyncMetadata.Add(new SyncMetadata { Key = key, Value = isoString });
+            dbContext.SyncMetadata.Add(new SyncMetadata { Key = key, Value = isoString });
         }
 
-        await _context.SaveChangesAsync();
+        await dbContext.SaveChangesAsync();
     }
 }

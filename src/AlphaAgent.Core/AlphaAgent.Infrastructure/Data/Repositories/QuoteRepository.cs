@@ -1,5 +1,6 @@
 using AlphaAgent.Domain.Entities;
 using AlphaAgent.Domain.Interfaces;
+using AlphaAgent.Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
 using System;
 using System.Collections.Generic;
@@ -10,16 +11,17 @@ namespace AlphaAgent.Infrastructure.Data.Repositories;
 
 public class QuoteRepository : IQuoteRepository
 {
-    private readonly SharesDbContext _context;
+    private readonly IDbContextFactory<SharesDbContext> _dbContextFactory;
 
-    public QuoteRepository(SharesDbContext context)
+    public QuoteRepository(IDbContextFactory<SharesDbContext> dbContextFactory)
     {
-        _context = context;
+        _dbContextFactory = dbContextFactory;
     }
 
     public async Task<List<Quote>> GetBySecurityIdAsync(int securityId, string freq, int limit = 100)
     {
-        return await _context.Quotes
+        await using var dbContext = await _dbContextFactory.CreateDbContextAsync();
+        return await dbContext.Quotes
             .Where(q => q.SecurityId == securityId && q.Freq == freq)
             .OrderByDescending(q => q.Date)
             .Take(limit)
@@ -28,20 +30,23 @@ public class QuoteRepository : IQuoteRepository
 
     public async Task<Quote> AddAsync(Quote quote)
     {
-        _context.Quotes.Add(quote);
-        await _context.SaveChangesAsync();
+        await using var dbContext = await _dbContextFactory.CreateDbContextAsync();
+        dbContext.Quotes.Add(quote);
+        await dbContext.SaveChangesAsync();
         return quote;
     }
 
     public async Task AddRangeAsync(IEnumerable<Quote> quotes)
     {
-        await _context.Quotes.AddRangeAsync(quotes);
-        await _context.SaveChangesAsync();
+        await using var dbContext = await _dbContextFactory.CreateDbContextAsync();
+        await dbContext.Quotes.AddRangeAsync(quotes);
+        await dbContext.SaveChangesAsync();
     }
 
     public async Task<Quote?> GetLatestBySecurityIdAsync(int securityId, string freq)
     {
-        return await _context.Quotes
+        await using var dbContext = await _dbContextFactory.CreateDbContextAsync();
+        return await dbContext.Quotes
             .Where(q => q.SecurityId == securityId && q.Freq == freq)
             .OrderByDescending(q => q.Date)
             .FirstOrDefaultAsync();
@@ -49,14 +54,16 @@ public class QuoteRepository : IQuoteRepository
 
     public async Task DeleteBySecurityIdAsync(int securityId, string freq)
     {
-        var quotes = await _context.Quotes.Where(q => q.SecurityId == securityId && q.Freq == freq).ToListAsync();
-        _context.Quotes.RemoveRange(quotes);
-        await _context.SaveChangesAsync();
+        await using var dbContext = await _dbContextFactory.CreateDbContextAsync();
+        var quotes = await dbContext.Quotes.Where(q => q.SecurityId == securityId && q.Freq == freq).ToListAsync();
+        dbContext.Quotes.RemoveRange(quotes);
+        await dbContext.SaveChangesAsync();
     }
 
     public async Task<Quote> UpdateAsync(Quote quote)
     {
-        var existingQuote = await _context.Quotes
+        await using var dbContext = await _dbContextFactory.CreateDbContextAsync();
+        var existingQuote = await dbContext.Quotes
             .FirstOrDefaultAsync(q => q.SecurityId == quote.SecurityId && q.Date == quote.Date && q.Freq == quote.Freq);
 
         if (existingQuote != null)
@@ -66,10 +73,10 @@ public class QuoteRepository : IQuoteRepository
         }
         else
         {
-            _context.Quotes.Add(quote);
+            dbContext.Quotes.Add(quote);
         }
 
-        await _context.SaveChangesAsync();
+        await dbContext.SaveChangesAsync();
         return quote;
     }
 }

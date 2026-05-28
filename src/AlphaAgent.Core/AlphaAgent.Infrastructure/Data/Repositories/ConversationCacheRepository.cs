@@ -13,11 +13,11 @@ namespace AlphaAgent.Infrastructure.Data.Repositories;
 public class ConversationCacheRepository : IConversationCacheRepository
 {
     private readonly ConcurrentDictionary<Guid, ConversationCacheItem> _memoryCache = new();
-    private readonly SharesDbContext _dbContext;
+    private readonly IDbContextFactory<SharesDbContext> _dbContextFactory;
 
-    public ConversationCacheRepository(SharesDbContext dbContext)
+    public ConversationCacheRepository(IDbContextFactory<SharesDbContext> dbContextFactory)
     {
-        _dbContext = dbContext;
+        _dbContextFactory = dbContextFactory;
     }
 
     public async Task<List<ConversationCacheItem>> GetAllAsync(Guid userId)
@@ -26,7 +26,8 @@ public class ConversationCacheRepository : IConversationCacheRepository
         if (cached.Count > 0)
             return cached.OrderByDescending(c => c.LastMessageTime).ToList();
 
-        var items = await _dbContext.ConversationCache
+        await using var dbContext = await _dbContextFactory.CreateDbContextAsync();
+        var items = await dbContext.ConversationCache
             .Where(c => c.UserId == userId)
             .OrderByDescending(c => c.LastMessageTime)
             .ToListAsync();
@@ -42,27 +43,25 @@ public class ConversationCacheRepository : IConversationCacheRepository
         item.CachedAt = DateTime.UtcNow;
         _memoryCache[item.Id] = item;
 
-        await Task.Run(async () =>
+        try
         {
-            try
+            await using var dbContext = await _dbContextFactory.CreateDbContextAsync();
+            var existing = await dbContext.ConversationCache.FindAsync(item.Id);
+            if (existing != null)
             {
-                var existing = await _dbContext.ConversationCache.FindAsync(item.Id);
-                if (existing != null)
-                {
-                    UpdateEntity(existing, item);
-                    await _dbContext.SaveChangesAsync();
-                }
-                else
-                {
-                    await _dbContext.ConversationCache.AddAsync(item);
-                    await _dbContext.SaveChangesAsync();
-                }
+                UpdateEntity(existing, item);
+                await dbContext.SaveChangesAsync();
             }
-            catch (Exception ex)
+            else
             {
-                System.Diagnostics.Debug.WriteLine($"[ConversationCacheRepository] UpsertAsync 失败: {ex.Message}");
+                await dbContext.ConversationCache.AddAsync(item);
+                await dbContext.SaveChangesAsync();
             }
-        });
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"[ConversationCacheRepository] UpsertAsync 失败: {ex.Message}");
+        }
     }
 
     public async Task UpsertRangeAsync(IEnumerable<ConversationCacheItem> items)
@@ -76,51 +75,47 @@ public class ConversationCacheRepository : IConversationCacheRepository
             _memoryCache[item.Id] = item;
         }
 
-        await Task.Run(async () =>
+        try
         {
-            try
+            await using var dbContext = await _dbContextFactory.CreateDbContextAsync();
+            foreach (var item in itemList)
             {
-                foreach (var item in itemList)
+                var existing = await dbContext.ConversationCache.FindAsync(item.Id);
+                if (existing != null)
                 {
-                    var existing = await _dbContext.ConversationCache.FindAsync(item.Id);
-                    if (existing != null)
-                    {
-                        UpdateEntity(existing, item);
-                    }
-                    else
-                    {
-                        await _dbContext.ConversationCache.AddAsync(item);
-                    }
+                    UpdateEntity(existing, item);
                 }
-                await _dbContext.SaveChangesAsync();
+                else
+                {
+                    await dbContext.ConversationCache.AddAsync(item);
+                }
             }
-            catch (Exception ex)
-            {
-                System.Diagnostics.Debug.WriteLine($"[ConversationCacheRepository] UpsertRangeAsync 失败: {ex.Message}");
-            }
-        });
+            await dbContext.SaveChangesAsync();
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"[ConversationCacheRepository] UpsertRangeAsync 失败: {ex.Message}");
+        }
     }
 
     public async Task DeleteAsync(Guid conversationId)
     {
         _memoryCache.TryRemove(conversationId, out _);
 
-        await Task.Run(async () =>
+        try
         {
-            try
+            await using var dbContext = await _dbContextFactory.CreateDbContextAsync();
+            var existing = await dbContext.ConversationCache.FindAsync(conversationId);
+            if (existing != null)
             {
-                var existing = await _dbContext.ConversationCache.FindAsync(conversationId);
-                if (existing != null)
-                {
-                    _dbContext.ConversationCache.Remove(existing);
-                    await _dbContext.SaveChangesAsync();
-                }
+                dbContext.ConversationCache.Remove(existing);
+                await dbContext.SaveChangesAsync();
             }
-            catch (Exception ex)
-            {
-                System.Diagnostics.Debug.WriteLine($"[ConversationCacheRepository] DeleteAsync 失败: {ex.Message}");
-            }
-        });
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"[ConversationCacheRepository] DeleteAsync 失败: {ex.Message}");
+        }
     }
 
     public async Task DeleteAllAsync(Guid userId)
@@ -128,21 +123,19 @@ public class ConversationCacheRepository : IConversationCacheRepository
         foreach (var key in _memoryCache.Where(kvp => kvp.Value.UserId == userId).Select(kvp => kvp.Key).ToList())
             _memoryCache.TryRemove(key, out _);
 
-        await Task.Run(async () =>
+        try
         {
-            try
-            {
-                var items = await _dbContext.ConversationCache
-                    .Where(c => c.UserId == userId)
-                    .ToListAsync();
-                _dbContext.ConversationCache.RemoveRange(items);
-                await _dbContext.SaveChangesAsync();
-            }
-            catch (Exception ex)
-            {
-                System.Diagnostics.Debug.WriteLine($"[ConversationCacheRepository] DeleteAllAsync 失败: {ex.Message}");
-            }
-        });
+            await using var dbContext = await _dbContextFactory.CreateDbContextAsync();
+            var items = await dbContext.ConversationCache
+                .Where(c => c.UserId == userId)
+                .ToListAsync();
+            dbContext.ConversationCache.RemoveRange(items);
+            await dbContext.SaveChangesAsync();
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"[ConversationCacheRepository] DeleteAllAsync 失败: {ex.Message}");
+        }
     }
 
     public async Task<DateTime?> GetLastCachedAtAsync(Guid userId)
@@ -154,7 +147,8 @@ public class ConversationCacheRepository : IConversationCacheRepository
         if (memoryMax.HasValue)
             return memoryMax;
 
-        return await _dbContext.ConversationCache
+        await using var dbContext = await _dbContextFactory.CreateDbContextAsync();
+        return await dbContext.ConversationCache
             .Where(c => c.UserId == userId)
             .MaxAsync(c => (DateTime?)c.CachedAt);
     }

@@ -12,33 +12,34 @@ namespace AlphaAgent.Infrastructure.Data.Repositories;
 
 public class AgentRepository : IAgentRepository
 {
-    private readonly SharesDbContext _dbContext;
+    private readonly IDbContextFactory<SharesDbContext> _dbContextFactory;
 
-    public AgentRepository(SharesDbContext dbContext)
+    public AgentRepository(IDbContextFactory<SharesDbContext> dbContextFactory)
     {
-        _dbContext = dbContext;
+        _dbContextFactory = dbContextFactory;
     }
 
     public async Task<AgentSession> CreateSessionAsync(Guid userId, string agentName)
     {
+        await using var dbContext = await _dbContextFactory.CreateDbContextAsync();
         var session = new AgentSession(userId, agentName);
-        _dbContext.AgentSessions.Add(session);
-        await _dbContext.SaveChangesAsync();
+        dbContext.AgentSessions.Add(session);
+        await dbContext.SaveChangesAsync();
         return session;
     }
 
     public async Task<AgentSession?> GetSessionAsync(Guid sessionId)
     {
-        return await _dbContext.AgentSessions
+        await using var dbContext = await _dbContextFactory.CreateDbContextAsync();
+        return await dbContext.AgentSessions
             .Include(s => s.Messages)
             .FirstOrDefaultAsync(s => s.Id == sessionId);
     }
 
     public async Task<AgentSession?> GetActiveSessionAsync(Guid userId, string agentName)
     {
-        // 不加载消息，提高查询性能
-        // 排除带 Context 的会话（如股票会话），它们通过 GetActiveSessionByContextAsync 查找
-        return await _dbContext.AgentSessions
+        await using var dbContext = await _dbContextFactory.CreateDbContextAsync();
+        return await dbContext.AgentSessions
             .Where(s => s.UserId == userId && s.Status == AgentSessionStatus.Active && s.AgentName == agentName
                         && (s.Context == null || s.Context == ""))
             .OrderByDescending(s => s.CreatedAt)
@@ -47,7 +48,8 @@ public class AgentRepository : IAgentRepository
 
     public async Task<AgentSession?> GetActiveSessionByContextAsync(Guid userId, string agentName, string context)
     {
-        return await _dbContext.AgentSessions
+        await using var dbContext = await _dbContextFactory.CreateDbContextAsync();
+        return await dbContext.AgentSessions
             .Where(s => s.UserId == userId && s.Status == AgentSessionStatus.Active && s.AgentName == agentName && s.Context == context)
             .OrderByDescending(s => s.CreatedAt)
             .FirstOrDefaultAsync();
@@ -55,7 +57,8 @@ public class AgentRepository : IAgentRepository
 
     public async Task<List<AgentSession>> GetUserSessionsAsync(Guid userId)
     {
-        return await _dbContext.AgentSessions
+        await using var dbContext = await _dbContextFactory.CreateDbContextAsync();
+        return await dbContext.AgentSessions
             .Include(s => s.Messages)
             .Where(s => s.UserId == userId)
             .OrderByDescending(s => s.CreatedAt)
@@ -64,43 +67,47 @@ public class AgentRepository : IAgentRepository
 
     public async Task UpdateSessionAsync(AgentSession session)
     {
+        await using var dbContext = await _dbContextFactory.CreateDbContextAsync();
         // 获取数据库中已有的消息ID
-        var existingMessageIds = await _dbContext.AgentMessages
+        var existingMessageIds = await dbContext.AgentMessages
             .Where(m => m.SessionId == session.Id)
             .Select(m => m.Id)
             .ToListAsync();
-        
+
         // 只添加新消息
         foreach (var message in session.Messages)
         {
             if (!existingMessageIds.Contains(message.Id))
             {
-                _dbContext.AgentMessages.Add(message);
+                dbContext.AgentMessages.Add(message);
             }
         }
-        
-        await _dbContext.SaveChangesAsync();
+
+        await dbContext.SaveChangesAsync();
     }
 
     public async Task DeleteSessionAsync(Guid sessionId)
     {
-        var session = await _dbContext.AgentSessions.FindAsync(sessionId);
+        await using var dbContext = await _dbContextFactory.CreateDbContextAsync();
+        var session = await dbContext.AgentSessions.FindAsync(sessionId);
         if (session != null)
         {
-            _dbContext.AgentSessions.Remove(session);
-            await _dbContext.SaveChangesAsync();
+            dbContext.AgentSessions.Remove(session);
+            await dbContext.SaveChangesAsync();
         }
     }
 
     public async Task AddMessageAsync(AgentMessage message)
     {
-        _dbContext.AgentMessages.Add(message);
-        await _dbContext.SaveChangesAsync();
+        await using var dbContext = await _dbContextFactory.CreateDbContextAsync();
+        dbContext.AgentMessages.Add(message);
+        await dbContext.SaveChangesAsync();
     }
 
     public async Task<List<AgentMessage>> GetSessionMessagesAsync(Guid sessionId, int? limit = null)
     {
-        var query = _dbContext.AgentMessages
+        await using var dbContext = await _dbContextFactory.CreateDbContextAsync();
+        var query = dbContext.AgentMessages
             .Where(m => m.SessionId == sessionId)
             .OrderByDescending(m => m.Timestamp);
 
@@ -112,20 +119,23 @@ public class AgentRepository : IAgentRepository
 
     public async Task<AgentTask> CreateTaskAsync(Guid sessionId, string taskType, string? input = null)
     {
+        await using var dbContext = await _dbContextFactory.CreateDbContextAsync();
         var task = new AgentTask(sessionId, taskType, input);
-        _dbContext.AgentTasks.Add(task);
-        await _dbContext.SaveChangesAsync();
+        dbContext.AgentTasks.Add(task);
+        await dbContext.SaveChangesAsync();
         return task;
     }
 
     public async Task<AgentTask?> GetTaskAsync(Guid taskId)
     {
-        return await _dbContext.AgentTasks.FindAsync(taskId);
+        await using var dbContext = await _dbContextFactory.CreateDbContextAsync();
+        return await dbContext.AgentTasks.FindAsync(taskId);
     }
 
     public async Task<List<AgentTask>> GetSessionTasksAsync(Guid sessionId)
     {
-        return await _dbContext.AgentTasks
+        await using var dbContext = await _dbContextFactory.CreateDbContextAsync();
+        return await dbContext.AgentTasks
             .Where(t => t.SessionId == sessionId)
             .OrderByDescending(t => t.CreatedAt)
             .ToListAsync();
@@ -133,7 +143,8 @@ public class AgentRepository : IAgentRepository
 
     public async Task UpdateTaskAsync(AgentTask task)
     {
-        _dbContext.AgentTasks.Update(task);
-        await _dbContext.SaveChangesAsync();
+        await using var dbContext = await _dbContextFactory.CreateDbContextAsync();
+        dbContext.AgentTasks.Update(task);
+        await dbContext.SaveChangesAsync();
     }
 }

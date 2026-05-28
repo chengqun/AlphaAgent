@@ -34,7 +34,7 @@ public static class ServiceCollectionExtensions
         AgentOptions agentOptions,
         Func<HttpMessageHandler>? httpMessageHandlerFactory = null)
     {
-        services.AddDbContext<SharesDbContext>(options =>
+        services.AddDbContextFactory<SharesDbContext>(options =>
             options.UseSqlite(sqliteConnectionString));
 
         services.AddScoped<ISecurityRepository, SecurityRepository>();

@@ -1,5 +1,6 @@
 using AlphaAgent.Domain.Entities;
 using AlphaAgent.Domain.Interfaces;
+using AlphaAgent.Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
 using System;
 using System.Collections.Generic;
@@ -10,90 +11,101 @@ namespace AlphaAgent.Infrastructure.Data.Repositories;
 
 public class SecurityRepository : ISecurityRepository
 {
-    private readonly SharesDbContext _context;
+    private readonly IDbContextFactory<SharesDbContext> _dbContextFactory;
 
-    public SecurityRepository(SharesDbContext context)
+    public SecurityRepository(IDbContextFactory<SharesDbContext> dbContextFactory)
     {
-        _context = context;
+        _dbContextFactory = dbContextFactory;
     }
 
     public async Task<List<Security>> GetAllAsync()
     {
-        return await _context.Securities.ToListAsync();
+        await using var dbContext = await _dbContextFactory.CreateDbContextAsync();
+        return await dbContext.Securities.ToListAsync();
     }
 
     public async Task<Security?> GetByIdAsync(int id)
     {
-        return await _context.Securities.FindAsync(id);
+        await using var dbContext = await _dbContextFactory.CreateDbContextAsync();
+        return await dbContext.Securities.FindAsync(id);
     }
 
     public async Task<Security?> GetByCodeAsync(string code)
     {
-        return await _context.Securities.FirstOrDefaultAsync(s => s.Code == code);
+        await using var dbContext = await _dbContextFactory.CreateDbContextAsync();
+        return await dbContext.Securities.FirstOrDefaultAsync(s => s.Code == code);
     }
 
     public async Task<List<Security>> GetByExchangeAsync(string exchange)
     {
-        return await _context.Securities.Where(s => s.Exchange == exchange).ToListAsync();
+        await using var dbContext = await _dbContextFactory.CreateDbContextAsync();
+        return await dbContext.Securities.Where(s => s.Exchange == exchange).ToListAsync();
     }
 
     public async Task<List<Security>> GetByTypeAsync(string type)
     {
-        return await _context.Securities.Where(s => s.Type == type).ToListAsync();
+        await using var dbContext = await _dbContextFactory.CreateDbContextAsync();
+        return await dbContext.Securities.Where(s => s.Type == type).ToListAsync();
     }
 
     public async Task<bool> ExistsAsync(string code)
     {
-        return await _context.Securities.AnyAsync(s => s.Code == code);
+        await using var dbContext = await _dbContextFactory.CreateDbContextAsync();
+        return await dbContext.Securities.AnyAsync(s => s.Code == code);
     }
 
     public async Task<Security> AddAsync(Security security)
     {
-        var existingSecurity = await _context.Securities.FirstOrDefaultAsync(s => s.Code == security.Code && s.Type == security.Type);
+        await using var dbContext = await _dbContextFactory.CreateDbContextAsync();
+        var existingSecurity = await dbContext.Securities.FirstOrDefaultAsync(s => s.Code == security.Code && s.Type == security.Type);
 
         if (existingSecurity != null)
         {
             existingSecurity.UpdateFrom(security);
-            await _context.SaveChangesAsync();
+            await dbContext.SaveChangesAsync();
             return existingSecurity;
         }
         else
         {
-            _context.Securities.Add(security);
-            await _context.SaveChangesAsync();
+            dbContext.Securities.Add(security);
+            await dbContext.SaveChangesAsync();
             return security;
         }
     }
 
     public async Task<Security> UpdateAsync(Security security)
     {
-        _context.Securities.Update(security);
-        await _context.SaveChangesAsync();
+        await using var dbContext = await _dbContextFactory.CreateDbContextAsync();
+        dbContext.Securities.Update(security);
+        await dbContext.SaveChangesAsync();
         return security;
     }
 
     public async Task DeleteAsync(int id)
     {
-        var security = await _context.Securities.FindAsync(id);
+        await using var dbContext = await _dbContextFactory.CreateDbContextAsync();
+        var security = await dbContext.Securities.FindAsync(id);
         if (security != null)
         {
-            _context.Securities.Remove(security);
-            await _context.SaveChangesAsync();
+            dbContext.Securities.Remove(security);
+            await dbContext.SaveChangesAsync();
         }
     }
 
     public async Task<List<Security>> SearchAsync(string keyword)
     {
-        return await _context.Securities
+        await using var dbContext = await _dbContextFactory.CreateDbContextAsync();
+        return await dbContext.Securities
             .Where(s => s.Code.Contains(keyword) || s.Name.Contains(keyword))
             .ToListAsync();
     }
 
     public async Task AddRangeAsync(IEnumerable<Security> securities)
     {
+        await using var dbContext = await _dbContextFactory.CreateDbContextAsync();
         foreach (var security in securities)
         {
-            var existingSecurity = await _context.Securities.FirstOrDefaultAsync(s => s.Code == security.Code && s.Type == security.Type);
+            var existingSecurity = await dbContext.Securities.FirstOrDefaultAsync(s => s.Code == security.Code && s.Type == security.Type);
 
             if (existingSecurity != null)
             {
@@ -101,11 +113,11 @@ public class SecurityRepository : ISecurityRepository
             }
             else
             {
-                _context.Securities.Add(security);
+                dbContext.Securities.Add(security);
             }
         }
 
-        await _context.SaveChangesAsync();
+        await dbContext.SaveChangesAsync();
     }
 
     public async Task AddRangeAsync(IEnumerable<Security> securities, int batchSize = 1000)
@@ -113,11 +125,12 @@ public class SecurityRepository : ISecurityRepository
         var securityList = securities.ToList();
         for (int i = 0; i < securityList.Count; i += batchSize)
         {
+            await using var dbContext = await _dbContextFactory.CreateDbContextAsync();
             var batch = securityList.Skip(i).Take(batchSize);
 
             foreach (var security in batch)
             {
-                var existingSecurity = await _context.Securities.FirstOrDefaultAsync(s => s.Code == security.Code && s.Type == security.Type);
+                var existingSecurity = await dbContext.Securities.FirstOrDefaultAsync(s => s.Code == security.Code && s.Type == security.Type);
 
                 if (existingSecurity != null)
                 {
@@ -125,12 +138,11 @@ public class SecurityRepository : ISecurityRepository
                 }
                 else
                 {
-                    _context.Securities.Add(security);
+                    dbContext.Securities.Add(security);
                 }
             }
 
-            await _context.SaveChangesAsync();
-            _context.ChangeTracker.Clear();
+            await dbContext.SaveChangesAsync();
         }
     }
 }

@@ -4,29 +4,32 @@ using System.Linq;
 using System.Threading.Tasks;
 using AlphaAgent.Domain.Entities;
 using AlphaAgent.Domain.Interfaces;
+using AlphaAgent.Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
 
 namespace AlphaAgent.Infrastructure.Data.Repositories;
 
 public class MomentCacheRepository : IMomentCacheRepository
 {
-    private readonly SharesDbContext _dbContext;
+    private readonly IDbContextFactory<SharesDbContext> _dbContextFactory;
 
-    public MomentCacheRepository(SharesDbContext dbContext)
+    public MomentCacheRepository(IDbContextFactory<SharesDbContext> dbContextFactory)
     {
-        _dbContext = dbContext;
+        _dbContextFactory = dbContextFactory;
     }
 
     public async Task<List<MomentCacheItem>> GetAllAsync()
     {
-        return await _dbContext.MomentCaches
+        await using var dbContext = await _dbContextFactory.CreateDbContextAsync();
+        return await dbContext.MomentCaches
             .OrderByDescending(m => m.CreatedAt)
             .ToListAsync();
     }
 
     public async Task<DateTime?> GetLatestCreatedAtAsync()
     {
-        return await _dbContext.MomentCaches
+        await using var dbContext = await _dbContextFactory.CreateDbContextAsync();
+        return await dbContext.MomentCaches
             .OrderByDescending(m => m.CreatedAt)
             .Select(m => (DateTime?)m.CreatedAt)
             .FirstOrDefaultAsync();
@@ -34,9 +37,10 @@ public class MomentCacheRepository : IMomentCacheRepository
 
     public async Task AddOrUpdateAsync(IEnumerable<MomentCacheItem> items)
     {
+        await using var dbContext = await _dbContextFactory.CreateDbContextAsync();
         foreach (var item in items)
         {
-            var existing = await _dbContext.MomentCaches.FindAsync(item.Id);
+            var existing = await dbContext.MomentCaches.FindAsync(item.Id);
             if (existing != null)
             {
                 existing.UserId = item.UserId;
@@ -49,24 +53,26 @@ public class MomentCacheRepository : IMomentCacheRepository
             }
             else
             {
-                _dbContext.MomentCaches.Add(item);
+                dbContext.MomentCaches.Add(item);
             }
         }
-        await _dbContext.SaveChangesAsync();
+        await dbContext.SaveChangesAsync();
     }
 
     public async Task AddAsync(MomentCacheItem item)
     {
-        var existing = await _dbContext.MomentCaches.FindAsync(item.Id);
+        await using var dbContext = await _dbContextFactory.CreateDbContextAsync();
+        var existing = await dbContext.MomentCaches.FindAsync(item.Id);
         if (existing != null) return;
 
-        _dbContext.MomentCaches.Add(item);
-        await _dbContext.SaveChangesAsync();
+        dbContext.MomentCaches.Add(item);
+        await dbContext.SaveChangesAsync();
     }
 
     public async Task ClearAllAsync()
     {
-        _dbContext.MomentCaches.RemoveRange(_dbContext.MomentCaches);
-        await _dbContext.SaveChangesAsync();
+        await using var dbContext = await _dbContextFactory.CreateDbContextAsync();
+        dbContext.MomentCaches.RemoveRange(dbContext.MomentCaches);
+        await dbContext.SaveChangesAsync();
     }
 }

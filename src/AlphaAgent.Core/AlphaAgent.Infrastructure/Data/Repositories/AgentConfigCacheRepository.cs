@@ -12,11 +12,11 @@ namespace AlphaAgent.Infrastructure.Data.Repositories;
 public class AgentConfigCacheRepository : IAgentConfigCacheRepository
 {
     private readonly ConcurrentDictionary<Guid, AgentConfigCacheItem> _memoryCache = new();
-    private readonly SharesDbContext _dbContext;
+    private readonly IDbContextFactory<SharesDbContext> _dbContextFactory;
 
-    public AgentConfigCacheRepository(SharesDbContext dbContext)
+    public AgentConfigCacheRepository(IDbContextFactory<SharesDbContext> dbContextFactory)
     {
-        _dbContext = dbContext;
+        _dbContextFactory = dbContextFactory;
     }
 
     public async Task<List<AgentConfigCacheItem>> GetByUserIdAsync(Guid userId)
@@ -25,7 +25,8 @@ public class AgentConfigCacheRepository : IAgentConfigCacheRepository
         if (cached.Count > 0)
             return cached.OrderByDescending(c => c.IsActive).ThenBy(c => c.AgentName).ToList();
 
-        var items = await _dbContext.AgentConfigCache
+        await using var dbContext = await _dbContextFactory.CreateDbContextAsync();
+        var items = await dbContext.AgentConfigCache
             .Where(c => c.UserId == userId)
             .OrderByDescending(c => c.IsActive)
             .ThenBy(c => c.AgentName)
@@ -48,29 +49,27 @@ public class AgentConfigCacheRepository : IAgentConfigCacheRepository
             _memoryCache[item.Id] = item;
         }
 
-        await Task.Run(async () =>
+        try
         {
-            try
+            await using var dbContext = await _dbContextFactory.CreateDbContextAsync();
+            foreach (var item in itemList)
             {
-                foreach (var item in itemList)
+                var existing = await dbContext.AgentConfigCache.FindAsync(item.Id);
+                if (existing != null)
                 {
-                    var existing = await _dbContext.AgentConfigCache.FindAsync(item.Id);
-                    if (existing != null)
-                    {
-                        UpdateEntity(existing, item);
-                    }
-                    else
-                    {
-                        await _dbContext.AgentConfigCache.AddAsync(item);
-                    }
+                    UpdateEntity(existing, item);
                 }
-                await _dbContext.SaveChangesAsync();
+                else
+                {
+                    await dbContext.AgentConfigCache.AddAsync(item);
+                }
             }
-            catch (Exception ex)
-            {
-                System.Diagnostics.Debug.WriteLine($"[AgentConfigCacheRepository] UpsertRangeAsync 失败: {ex.Message}");
-            }
-        });
+            await dbContext.SaveChangesAsync();
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"[AgentConfigCacheRepository] UpsertRangeAsync 失败: {ex.Message}");
+        }
     }
 
     public async Task DeleteByUserIdAsync(Guid userId)
@@ -78,21 +77,19 @@ public class AgentConfigCacheRepository : IAgentConfigCacheRepository
         foreach (var key in _memoryCache.Where(kvp => kvp.Value.UserId == userId).Select(kvp => kvp.Key).ToList())
             _memoryCache.TryRemove(key, out _);
 
-        await Task.Run(async () =>
+        try
         {
-            try
-            {
-                var items = await _dbContext.AgentConfigCache
-                    .Where(c => c.UserId == userId)
-                    .ToListAsync();
-                _dbContext.AgentConfigCache.RemoveRange(items);
-                await _dbContext.SaveChangesAsync();
-            }
-            catch (Exception ex)
-            {
-                System.Diagnostics.Debug.WriteLine($"[AgentConfigCacheRepository] DeleteByUserIdAsync 失败: {ex.Message}");
-            }
-        });
+            await using var dbContext = await _dbContextFactory.CreateDbContextAsync();
+            var items = await dbContext.AgentConfigCache
+                .Where(c => c.UserId == userId)
+                .ToListAsync();
+            dbContext.AgentConfigCache.RemoveRange(items);
+            await dbContext.SaveChangesAsync();
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"[AgentConfigCacheRepository] DeleteByUserIdAsync 失败: {ex.Message}");
+        }
     }
 
     private static void UpdateEntity(AgentConfigCacheItem existing, AgentConfigCacheItem source)
