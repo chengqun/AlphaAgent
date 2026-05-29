@@ -119,7 +119,13 @@ public class AuthService : IAuthService
 
     public async Task<ApiResponse<LoginResponse>> AutoLoginAsync()
     {
-        var token = await _tokenManager.GetTokenByUsernameAsync(await _tokenManager.GetUsernameAsync() ?? string.Empty);
+        var username = await _tokenManager.GetUsernameAsync();
+        if (string.IsNullOrEmpty(username))
+        {
+            return new ApiResponse<LoginResponse> { Success = false, Error = "没有找到活跃的用户" };
+        }
+
+        var token = await _tokenManager.GetTokenByUsernameAsync(username);
         if (token == null)
         {
             return new ApiResponse<LoginResponse> { Success = false, Error = "没有找到活跃的用户" };
