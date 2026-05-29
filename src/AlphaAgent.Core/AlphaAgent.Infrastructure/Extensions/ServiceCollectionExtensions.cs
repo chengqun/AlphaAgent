@@ -10,6 +10,7 @@ using AlphaAgent.Infrastructure.Data.Repositories;
 using AlphaAgent.Infrastructure.Services.AiAgent;
 using AlphaAgent.Infrastructure.Services.AiAgent.Agents;
 using AlphaAgent.Infrastructure.Services.AiAgent.Tools;
+using AlphaAgent.Infrastructure.Services.AiAgent.Workflows;
 using AlphaAgent.Infrastructure.Services.Database;
 using AlphaAgent.Infrastructure.Services.Http;
 using AlphaAgent.Infrastructure.Services.Indicators;
@@ -147,6 +148,17 @@ public static class ServiceCollectionExtensions
                     serviceProvider.GetRequiredService<TechnicalAnalysisTool>(),
                     serviceProvider.GetRequiredService<SecurityQueryTool>(),
                     chatClient, systemPrompt, opts.Temperature, enabledTools);
+            });
+
+            factory.Register(SequentialAnalysisWorkflow.Name, SequentialAnalysisWorkflow.Description, SequentialAnalysisWorkflow.DefaultSystemPrompt, serviceProvider =>
+            {
+                var opts = serviceProvider.GetRequiredService<AgentOptions>();
+                var chatClient = CreateChatClient(opts);
+                var systemPrompt = opts.GetSystemPrompt(SequentialAnalysisWorkflow.Name, SequentialAnalysisWorkflow.DefaultSystemPrompt);
+                return SequentialAnalysisWorkflow.Create(
+                    serviceProvider.GetRequiredService<TechnicalAnalysisTool>(),
+                    serviceProvider.GetRequiredService<SecurityQueryTool>(),
+                    chatClient, systemPrompt, opts.Temperature);
             });
 
             return factory;
