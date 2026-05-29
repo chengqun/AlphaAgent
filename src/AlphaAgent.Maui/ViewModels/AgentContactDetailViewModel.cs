@@ -44,9 +44,6 @@ public partial class AgentContactDetailViewModel : ObservableObject, IQueryAttri
     private string _statusMessage = string.Empty;
 
     [ObservableProperty]
-    private bool _isSaving;
-
-    [ObservableProperty]
     private bool _hasDisabledTools;
 
     private Guid? _cachedUserId;
@@ -117,7 +114,7 @@ public partial class AgentContactDetailViewModel : ObservableObject, IQueryAttri
         }
     }
 
-    private void OnToolIsEnabledChanged(ToolToggleItem item)
+    private async void OnToolIsEnabledChanged(ToolToggleItem item)
     {
         if (item.IsEnabled)
         {
@@ -136,50 +133,38 @@ public partial class AgentContactDetailViewModel : ObservableObject, IQueryAttri
             }
         }
         HasDisabledTools = DisabledTools.Count > 0;
+
+        // 切换即保存
+        await SaveToolsConfigAsync();
     }
 
-    [RelayCommand]
     private async Task SaveToolsConfigAsync()
     {
-        if (_configCacheRepository == null)
-        {
-            StatusMessage = "服务未初始化";
-            return;
-        }
-
-        IsSaving = true;
         try
         {
-            var userId = await ResolveCurrentUserIdAsync();
-            if (userId == null)
-            {
-                StatusMessage = "无法获取用户信息";
-                return;
-            }
-
             var enabledNames = EnabledTools.Select(t => t.Name).ToList();
-
             _agentOptions.EnabledTools[AgentName] = enabledNames;
 
-            var cachedConfigs = await _configCacheRepository.GetByUserIdAsync(userId.Value);
-            var existingConfig = cachedConfigs.FirstOrDefault(c => c.AgentName == AgentName);
-
-            if (existingConfig != null)
+            if (_configCacheRepository != null)
             {
-                existingConfig.EnabledTools = enabledNames;
-                existingConfig.SerializeEnabledTools();
-                await _configCacheRepository.UpsertRangeAsync(new[] { existingConfig });
-            }
+                var userId = await ResolveCurrentUserIdAsync();
+                if (userId != null)
+                {
+                    var cachedConfigs = await _configCacheRepository.GetByUserIdAsync(userId.Value);
+                    var existingConfig = cachedConfigs.FirstOrDefault(c => c.AgentName == AgentName);
 
-            StatusMessage = "配置已保存";
+                    if (existingConfig != null)
+                    {
+                        existingConfig.EnabledTools = enabledNames;
+                        existingConfig.SerializeEnabledTools();
+                        await _configCacheRepository.UpsertRangeAsync(new[] { existingConfig });
+                    }
+                }
+            }
         }
         catch (Exception ex)
         {
-            StatusMessage = $"保存失败: {ex.Message}";
-        }
-        finally
-        {
-            IsSaving = false;
+            System.Diagnostics.Debug.WriteLine($"[AgentContactDetailVM] 保存工具配置失败: {ex.Message}");
         }
     }
 
