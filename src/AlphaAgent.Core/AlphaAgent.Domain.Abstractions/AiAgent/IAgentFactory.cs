@@ -7,6 +7,7 @@ public interface IAgentFactory
 {
     IAgent GetAgent(string agentName);
     IReadOnlyList<AgentInfo> GetAvailableAgents();
+    IReadOnlyList<ToolInfo> GetAllTools(string agentName);
 }
 
 public class AgentInfo

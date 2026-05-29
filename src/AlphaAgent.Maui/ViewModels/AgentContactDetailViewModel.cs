@@ -19,6 +19,7 @@ namespace AlphaAgent.Maui.ViewModels;
 public partial class AgentContactDetailViewModel : ObservableObject, IQueryAttributable
 {
     private readonly IAgentService? _agentService;
+    private readonly IAgentFactory? _agentFactory;
     private readonly IAgentConfigService? _agentConfigService;
     private readonly IAgentConfigCacheRepository? _configCacheRepository;
     private readonly ITokenManager? _tokenManager;
@@ -46,12 +47,14 @@ public partial class AgentContactDetailViewModel : ObservableObject, IQueryAttri
 
     public AgentContactDetailViewModel(
         IAgentService? agentService = null,
+        IAgentFactory? agentFactory = null,
         IAgentConfigService? agentConfigService = null,
         IAgentConfigCacheRepository? configCacheRepository = null,
         ITokenManager? tokenManager = null,
         AgentOptions? agentOptions = null)
     {
         _agentService = agentService;
+        _agentFactory = agentFactory;
         _agentConfigService = agentConfigService;
         _configCacheRepository = configCacheRepository;
         _tokenManager = tokenManager;
@@ -70,33 +73,30 @@ public partial class AgentContactDetailViewModel : ObservableObject, IQueryAttri
     [RelayCommand]
     private async Task LoadAgentInfoAsync()
     {
-        if (_agentService == null)
-        {
-            StatusMessage = "服务未初始化";
-            return;
-        }
-
         try
         {
-            var agents = await _agentService.GetAvailableAgentsAsync();
-            var agent = agents.FirstOrDefault(a => a.Name == AgentName);
-
-            if (agent != null)
+            // 获取 Agent 描述信息
+            if (_agentService != null)
             {
-                Description = !string.IsNullOrEmpty(agent.Description) ? agent.Description : "暂无描述";
-                var allTools = agent.Tools ?? new List<ToolInfoDto>();
-
-                // 获取当前 Agent 的 EnabledTools 配置
-                var enabledToolNames = await GetEnabledToolNamesAsync();
-
-                var items = allTools.Select(t => new ToolToggleItem(
-                    t.Name,
-                    t.Description,
-                    enabledToolNames == null || enabledToolNames.Contains(t.Name)
-                )).ToList();
-
-                ToolItems = new ObservableCollection<ToolToggleItem>(items);
+                var agents = await _agentService.GetAvailableAgentsAsync();
+                var agent = agents.FirstOrDefault(a => a.Name == AgentName);
+                if (agent != null)
+                    Description = !string.IsNullOrEmpty(agent.Description) ? agent.Description : "暂无描述";
             }
+
+            // 获取全部 tools（不受 EnabledTools 过滤）
+            var allTools = _agentFactory?.GetAllTools(AgentName) ?? Array.Empty<ToolInfo>();
+
+            // 获取当前 Agent 的 EnabledTools 配置
+            var enabledToolNames = await GetEnabledToolNamesAsync();
+
+            var items = allTools.Select(t => new ToolToggleItem(
+                t.Name,
+                t.Description,
+                enabledToolNames == null || enabledToolNames.Contains(t.Name)
+            )).ToList();
+
+            ToolItems = new ObservableCollection<ToolToggleItem>(items);
         }
         catch (Exception ex)
         {

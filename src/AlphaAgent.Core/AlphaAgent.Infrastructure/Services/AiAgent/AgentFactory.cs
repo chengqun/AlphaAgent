@@ -19,6 +19,11 @@ public class AgentFactory : IAgentFactory
         _registrations[name] = new AgentRegistration(description, defaultSystemPrompt, factory);
     }
 
+    public void Register(string name, string description, string defaultSystemPrompt, List<ToolInfo> allTools, Func<IServiceProvider, IAgent> factory)
+    {
+        _registrations[name] = new AgentRegistration(description, defaultSystemPrompt, factory, allTools);
+    }
+
     public IAgent GetAgent(string agentName)
     {
         if (_registrations.TryGetValue(agentName, out var registration))
@@ -63,5 +68,22 @@ public class AgentFactory : IAgentFactory
         return infos.AsReadOnly();
     }
 
-    private record AgentRegistration(string Description, string DefaultSystemPrompt, Func<IServiceProvider, IAgent> Factory);
+    public IReadOnlyList<ToolInfo> GetAllTools(string agentName)
+    {
+        if (_registrations.TryGetValue(agentName, out var registration) && registration.AllTools != null)
+            return registration.AllTools;
+
+        // 降级：实例化 Agent 读取（可能已被过滤）
+        try
+        {
+            var agent = registration.Factory(_serviceProvider);
+            return agent.Tools;
+        }
+        catch
+        {
+            return Array.Empty<ToolInfo>();
+        }
+    }
+
+    private record AgentRegistration(string Description, string DefaultSystemPrompt, Func<IServiceProvider, IAgent> Factory, List<ToolInfo>? AllTools = null);
 }

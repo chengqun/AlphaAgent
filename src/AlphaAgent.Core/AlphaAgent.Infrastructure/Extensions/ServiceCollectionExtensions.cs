@@ -119,7 +119,13 @@ public static class ServiceCollectionExtensions
         {
             var factory = new AgentFactory(sp);
 
-            factory.Register(StockAnalystAgent.Name, StockAnalystAgent.Description, StockAnalystAgent.DefaultSystemPrompt, serviceProvider =>
+            var allTools = new List<ToolInfo>
+            {
+                new() { Name = ToolNames.CalculateIndicators, Description = "计算股票的技术指标，包括SMA、EMA、RSI、MACD、BB、SAR、KDJ、ADX等" },
+                new() { Name = ToolNames.QuerySecurity, Description = "查询证券信息，根据关键词搜索股票/期货代码和名称" },
+            };
+
+            factory.Register(StockAnalystAgent.Name, StockAnalystAgent.Description, StockAnalystAgent.DefaultSystemPrompt, allTools, serviceProvider =>
             {
                 var opts = serviceProvider.GetRequiredService<AgentOptions>();
                 var chatClient = CreateChatClient(opts);
@@ -131,7 +137,7 @@ public static class ServiceCollectionExtensions
                     chatClient, systemPrompt, opts.Temperature, enabledTools);
             });
 
-            factory.Register(StockAnalystNoMemoryAgent.Name, StockAnalystNoMemoryAgent.Description, StockAnalystNoMemoryAgent.DefaultSystemPrompt, serviceProvider =>
+            factory.Register(StockAnalystNoMemoryAgent.Name, StockAnalystNoMemoryAgent.Description, StockAnalystNoMemoryAgent.DefaultSystemPrompt, allTools, serviceProvider =>
             {
                 var opts = serviceProvider.GetRequiredService<AgentOptions>();
                 var chatClient = CreateChatClient(opts);
