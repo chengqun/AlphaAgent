@@ -25,6 +25,12 @@ jobs:
     - name: Install MAUI workloads
       run: dotnet workload install maui-android
 
+    - name: Decode keystore
+      shell: powershell
+      run: |
+        $keystoreBytes = [Convert]::FromBase64String('${{ secrets.KEYSTORE_BASE64 }}')
+        [IO.File]::WriteAllBytes("${{ github.workspace }}\alphaagent.keystore", $keystoreBytes)
+
     - name: Set version
       shell: powershell
       run: |
@@ -38,7 +44,7 @@ jobs:
         echo "APP_VERSION_CODE=$versionCode" >> $env:GITHUB_ENV
 
     - name: Build APK
-      run: dotnet publish src/AlphaAgent.Maui/AlphaAgent.Maui.csproj -f net10.0-android -c Release -p:ApplicationVersion=${{ env.APP_VERSION_CODE }} -p:Version=${{ env.APP_VERSION_NAME }}
+      run: dotnet publish src/AlphaAgent.Maui/AlphaAgent.Maui.csproj -f net10.0-android -c Release -p:ApplicationVersion=${{ env.APP_VERSION_CODE }} -p:Version=${{ env.APP_VERSION_NAME }} -p:AndroidKeyStore=true -p:AndroidSigningKeyStore=${{ github.workspace }}\alphaagent.keystore -p:AndroidSigningKeyAlias=${{ secrets.KEY_ALIAS }} -p:AndroidSigningKeyPass=${{ secrets.KEY_PASSWORD }} -p:AndroidSigningStorePass=${{ secrets.KEYSTORE_PASSWORD }}
 
     - name: Find APK
       id: apk
