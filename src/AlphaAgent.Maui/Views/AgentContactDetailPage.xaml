@@ -62,12 +62,17 @@
                     Padding="{StaticResource CardPadding}">
                 <StackLayout Spacing="8">
                     <Label Text="可用功能：" FontSize="18" FontAttributes="Bold" Style="{StaticResource LabelPrimary}" />
-                    <StackLayout Spacing="8" BindableLayout.ItemsSource="{Binding AvailableTools}">
+                    <StackLayout Spacing="12" BindableLayout.ItemsSource="{Binding ToolItems}">
                         <BindableLayout.ItemTemplate>
                             <DataTemplate>
-                                <StackLayout Spacing="2">
-                                    <Label Text="{Binding Name}" FontSize="16" FontAttributes="Bold" Style="{StaticResource LabelPrimary}" />
-                                    <Label Text="{Binding Description}" FontSize="14" Style="{StaticResource LabelSecondary}" />
+                                <StackLayout Orientation="Horizontal" Spacing="12">
+                                    <Switch IsToggled="{Binding IsEnabled}"
+                                            HorizontalOptions="Start"
+                                            VerticalOptions="Center" />
+                                    <StackLayout Spacing="2" HorizontalOptions="FillAndExpand">
+                                        <Label Text="{Binding Name}" FontSize="16" FontAttributes="Bold" Style="{StaticResource LabelPrimary}" />
+                                        <Label Text="{Binding Description}" FontSize="14" Style="{StaticResource LabelSecondary}" />
+                                    </StackLayout>
                                 </StackLayout>
                             </DataTemplate>
                         </BindableLayout.ItemTemplate>
@@ -83,6 +88,10 @@
 
             <!-- 操作按钮 -->
             <StackLayout Spacing="10">
+                <Button Text="保存配置"
+                        Style="{StaticResource SuccessActionButton}"
+                        Command="{Binding SaveToolsConfigCommand}"
+                        IsEnabled="{Binding IsSaving, Converter={StaticResource InvertedBoolConverter}}" />
                 <Button Text="发消息"
                         Style="{StaticResource PrimaryActionButton}"
                         Command="{Binding SendMessageCommand}" />

@@ -124,10 +124,11 @@ public static class ServiceCollectionExtensions
                 var opts = serviceProvider.GetRequiredService<AgentOptions>();
                 var chatClient = CreateChatClient(opts);
                 var systemPrompt = opts.GetSystemPrompt(StockAnalystAgent.Name, StockAnalystAgent.DefaultSystemPrompt);
+                var enabledTools = opts.GetEnabledTools(StockAnalystAgent.Name)?.ToArray();
                 return StockAnalystAgent.Create(
                     serviceProvider.GetRequiredService<TechnicalAnalysisTool>(),
                     serviceProvider.GetRequiredService<SecurityQueryTool>(),
-                    chatClient, systemPrompt, opts.Temperature);
+                    chatClient, systemPrompt, opts.Temperature, enabledTools);
             });
 
             factory.Register(StockAnalystNoMemoryAgent.Name, StockAnalystNoMemoryAgent.Description, StockAnalystNoMemoryAgent.DefaultSystemPrompt, serviceProvider =>
@@ -135,10 +136,11 @@ public static class ServiceCollectionExtensions
                 var opts = serviceProvider.GetRequiredService<AgentOptions>();
                 var chatClient = CreateChatClient(opts);
                 var systemPrompt = opts.GetSystemPrompt(StockAnalystNoMemoryAgent.Name, StockAnalystNoMemoryAgent.DefaultSystemPrompt);
+                var enabledTools = opts.GetEnabledTools(StockAnalystNoMemoryAgent.Name)?.ToArray();
                 return StockAnalystNoMemoryAgent.Create(
                     serviceProvider.GetRequiredService<TechnicalAnalysisTool>(),
                     serviceProvider.GetRequiredService<SecurityQueryTool>(),
-                    chatClient, systemPrompt, opts.Temperature);
+                    chatClient, systemPrompt, opts.Temperature, enabledTools);
             });
 
             return factory;

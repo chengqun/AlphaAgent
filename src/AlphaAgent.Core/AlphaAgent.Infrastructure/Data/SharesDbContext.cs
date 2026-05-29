@@ -69,5 +69,6 @@ public class SharesDbContext : DbContext
         modelBuilder.Entity<AgentConfigCacheItem>().HasKey(a => a.Id);
         modelBuilder.Entity<AgentConfigCacheItem>().HasIndex(a => a.UserId);
         modelBuilder.Entity<AgentConfigCacheItem>().HasIndex(a => new { a.UserId, a.AgentName, a.IsActive });
+        modelBuilder.Entity<AgentConfigCacheItem>().Ignore(a => a.EnabledTools);
     }
 }

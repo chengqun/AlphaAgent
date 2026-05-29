@@ -121,6 +121,7 @@ public class AgentConfigService : IAgentConfigService
             DefaultSystemPrompt = dto.DefaultSystemPrompt,
             Temperature = dto.Temperature,
             IsActive = dto.IsActive,
+            EnabledTools = dto.EnabledTools,
             CachedAt = DateTime.UtcNow
         };
     }
@@ -136,7 +137,8 @@ public class AgentConfigService : IAgentConfigService
             Endpoint = item.Endpoint,
             DefaultSystemPrompt = item.DefaultSystemPrompt,
             Temperature = item.Temperature,
-            IsActive = item.IsActive
+            IsActive = item.IsActive,
+            EnabledTools = item.EnabledTools
         };
     }
 

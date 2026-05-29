@@ -33,7 +33,10 @@ public class AgentConfigCacheRepository : IAgentConfigCacheRepository
             .ToListAsync();
 
         foreach (var item in items)
+        {
+            item.DeserializeEnabledTools();
             _memoryCache[item.Id] = item;
+        }
 
         return items;
     }
@@ -46,6 +49,7 @@ public class AgentConfigCacheRepository : IAgentConfigCacheRepository
         foreach (var item in itemList)
         {
             item.CachedAt = now;
+            item.SerializeEnabledTools();
             _memoryCache[item.Id] = item;
         }
 
@@ -101,6 +105,7 @@ public class AgentConfigCacheRepository : IAgentConfigCacheRepository
         existing.DefaultSystemPrompt = source.DefaultSystemPrompt;
         existing.Temperature = source.Temperature;
         existing.IsActive = source.IsActive;
+        existing.EnabledToolsJson = source.EnabledToolsJson;
         existing.CachedAt = source.CachedAt;
         existing.UserId = source.UserId;
     }

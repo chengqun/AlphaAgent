@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 
 namespace AlphaAgent.Application.Dtos.Agent;
 
@@ -12,4 +13,5 @@ public class AgentConfigResponseDto
     public string DefaultSystemPrompt { get; set; } = string.Empty;
     public float Temperature { get; set; } = 0.5f;
     public bool IsActive { get; set; } = true;
+    public List<string> EnabledTools { get; set; } = new();
 }
