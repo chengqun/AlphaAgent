@@ -56,18 +56,20 @@
                        FontSize="16" />
             </Border>
 
-            <!-- 可用功能 -->
+            <!-- 工具配置 -->
             <Border BackgroundColor="{AppThemeBinding Light={StaticResource CardBackgroundLight}, Dark={StaticResource CardBackgroundDark}}"
                     StrokeShape="RoundRectangle 12"
                     Padding="{StaticResource CardPadding}">
                 <StackLayout Spacing="8">
-                    <Label Text="可用功能：" FontSize="18" FontAttributes="Bold" Style="{StaticResource LabelPrimary}" />
-                    <StackLayout Spacing="12" BindableLayout.ItemsSource="{Binding ToolItems}">
+                    <!-- 已启用工具 -->
+                    <Label Text="已启用工具" FontSize="18" FontAttributes="Bold" Style="{StaticResource LabelPrimary}" />
+                    <StackLayout Spacing="12" BindableLayout.ItemsSource="{Binding EnabledTools}">
                         <BindableLayout.ItemTemplate>
                             <DataTemplate>
-                                <StackLayout Orientation="Horizontal" Spacing="12"
-                                             Opacity="{Binding IsEnabled, Converter={StaticResource BoolToOpacityConverter}}">
+                                <StackLayout Orientation="Horizontal" Spacing="12">
                                     <Switch IsToggled="{Binding IsEnabled}"
+                                            OnColor="{StaticResource Primary}"
+                                            ThumbColor="{StaticResource Primary}"
                                             HorizontalOptions="Start"
                                             VerticalOptions="Center" />
                                     <StackLayout Spacing="2" HorizontalOptions="FillAndExpand">
@@ -77,6 +79,30 @@
                                 </StackLayout>
                             </DataTemplate>
                         </BindableLayout.ItemTemplate>
+                    </StackLayout>
+
+                    <!-- 分割线 + 未启用工具 -->
+                    <StackLayout IsVisible="{Binding HasDisabledTools}">
+                        <BoxView HeightRequest="1" Margin="0,8"
+                                 BackgroundColor="{AppThemeBinding Light={StaticResource SeparatorLight}, Dark={StaticResource SeparatorDark}}" />
+                        <Label Text="未启用工具" FontSize="18" FontAttributes="Bold"
+                               TextColor="{AppThemeBinding Light={StaticResource TextTertiaryLight}, Dark={StaticResource TextTertiaryDark}}"
+                               Margin="0,4,0,0" />
+                        <StackLayout Spacing="12" BindableLayout.ItemsSource="{Binding DisabledTools}">
+                            <BindableLayout.ItemTemplate>
+                                <DataTemplate>
+                                    <StackLayout Orientation="Horizontal" Spacing="12" Opacity="0.5">
+                                        <Switch IsToggled="{Binding IsEnabled}"
+                                                HorizontalOptions="Start"
+                                                VerticalOptions="Center" />
+                                        <StackLayout Spacing="2" HorizontalOptions="FillAndExpand">
+                                            <Label Text="{Binding Name}" FontSize="16" FontAttributes="Bold" Style="{StaticResource LabelTertiary}" />
+                                            <Label Text="{Binding Description}" FontSize="14" Style="{StaticResource LabelTertiary}" />
+                                        </StackLayout>
+                                    </StackLayout>
+                                </DataTemplate>
+                            </BindableLayout.ItemTemplate>
+                        </StackLayout>
                     </StackLayout>
                 </StackLayout>
             </Border>

@@ -35,13 +35,19 @@ public partial class AgentContactDetailViewModel : ObservableObject, IQueryAttri
     private string _description = "暂无描述";
 
     [ObservableProperty]
-    private ObservableCollection<ToolToggleItem> _toolItems = new();
+    private ObservableCollection<ToolToggleItem> _enabledTools = new();
+
+    [ObservableProperty]
+    private ObservableCollection<ToolToggleItem> _disabledTools = new();
 
     [ObservableProperty]
     private string _statusMessage = string.Empty;
 
     [ObservableProperty]
     private bool _isSaving;
+
+    [ObservableProperty]
+    private bool _hasDisabledTools;
 
     private Guid? _cachedUserId;
 
@@ -75,7 +81,6 @@ public partial class AgentContactDetailViewModel : ObservableObject, IQueryAttri
     {
         try
         {
-            // 获取 Agent 描述信息
             if (_agentService != null)
             {
                 var agents = await _agentService.GetAvailableAgentsAsync();
@@ -84,24 +89,53 @@ public partial class AgentContactDetailViewModel : ObservableObject, IQueryAttri
                     Description = !string.IsNullOrEmpty(agent.Description) ? agent.Description : "暂无描述";
             }
 
-            // 获取全部 tools（不受 EnabledTools 过滤）
             var allTools = _agentFactory?.GetAllTools(AgentName) ?? Array.Empty<ToolInfo>();
-
-            // 获取当前 Agent 的 EnabledTools 配置
             var enabledToolNames = await GetEnabledToolNamesAsync();
 
-            var items = allTools.Select(t => new ToolToggleItem(
-                t.Name,
-                t.Description,
-                enabledToolNames == null || enabledToolNames.Contains(t.Name)
-            )).ToList();
+            var enabled = new ObservableCollection<ToolToggleItem>();
+            var disabled = new ObservableCollection<ToolToggleItem>();
 
-            ToolItems = new ObservableCollection<ToolToggleItem>(items);
+            foreach (var t in allTools)
+            {
+                var isEnabled = enabledToolNames == null || enabledToolNames.Contains(t.Name);
+                var item = new ToolToggleItem(t.Name, t.Description, isEnabled);
+                item.IsEnabledChanged += OnToolIsEnabledChanged;
+
+                if (isEnabled)
+                    enabled.Add(item);
+                else
+                    disabled.Add(item);
+            }
+
+            EnabledTools = enabled;
+            DisabledTools = disabled;
+            HasDisabledTools = disabled.Count > 0;
         }
         catch (Exception ex)
         {
             StatusMessage = $"加载失败: {ex.Message}";
         }
+    }
+
+    private void OnToolIsEnabledChanged(ToolToggleItem item)
+    {
+        if (item.IsEnabled)
+        {
+            if (DisabledTools.Contains(item))
+            {
+                DisabledTools.Remove(item);
+                EnabledTools.Add(item);
+            }
+        }
+        else
+        {
+            if (EnabledTools.Contains(item))
+            {
+                EnabledTools.Remove(item);
+                DisabledTools.Add(item);
+            }
+        }
+        HasDisabledTools = DisabledTools.Count > 0;
     }
 
     [RelayCommand]
@@ -123,12 +157,10 @@ public partial class AgentContactDetailViewModel : ObservableObject, IQueryAttri
                 return;
             }
 
-            var enabledNames = ToolItems.Where(t => t.IsEnabled).Select(t => t.Name).ToList();
+            var enabledNames = EnabledTools.Select(t => t.Name).ToList();
 
-            // 更新 AgentOptions
             _agentOptions.EnabledTools[AgentName] = enabledNames;
 
-            // 更新本地 SQLite 缓存
             var cachedConfigs = await _configCacheRepository.GetByUserIdAsync(userId.Value);
             var existingConfig = cachedConfigs.FirstOrDefault(c => c.AgentName == AgentName);
 
@@ -158,14 +190,12 @@ public partial class AgentContactDetailViewModel : ObservableObject, IQueryAttri
             $"AgentChatDetailPage?agentName={Uri.EscapeDataString(AgentName)}");
     }
 
-    private async Task<List<string>? > GetEnabledToolNamesAsync()
+    private async Task<List<string>?> GetEnabledToolNamesAsync()
     {
-        // 先从 AgentOptions 读取（登录时已同步）
         var fromOptions = _agentOptions.GetEnabledTools(AgentName);
         if (fromOptions != null)
             return fromOptions;
 
-        // 再从本地缓存读取
         if (_agentConfigService != null)
         {
             var userId = await ResolveCurrentUserIdAsync();
@@ -178,7 +208,7 @@ public partial class AgentContactDetailViewModel : ObservableObject, IQueryAttri
             }
         }
 
-        return null; // null = 加载全部 tools
+        return null;
     }
 
     private async Task<Guid?> ResolveCurrentUserIdAsync()
@@ -230,10 +260,17 @@ public partial class ToolToggleItem : ObservableObject
     public string Name { get; }
     public string Description { get; }
 
+    public event Action<ToolToggleItem>? IsEnabledChanged;
+
     public ToolToggleItem(string name, string description, bool isEnabled = true)
     {
         Name = name;
         Description = description;
         IsEnabled = isEnabled;
+    }
+
+    partial void OnIsEnabledChanged(bool value)
+    {
+        IsEnabledChanged?.Invoke(this);
     }
 }
