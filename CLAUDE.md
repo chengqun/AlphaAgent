@@ -41,8 +41,8 @@ dotnet nuget locals all --clear
 AlphaAgent has three subsystems with distinct tech stacks:
 
 1. **AlphaAgent.Core** — Clean Architecture library (no ABP dependency): Chinese A-share market data, quote failover, technical indicators, AI Agent system, local SQLite cache. 4 layers: Domain.Abstractions → Domain → Application → Infrastructure.
-2. **AlphaAgent.Web** — ABP Framework 10.3 DDD web app: social features (friends, devices, groups, moments, stock relationships), real-time chat via SignalR, SQL Server via EF Core. 8 sub-projects following ABP DDD layering.
-3. **AlphaAgent.Maui** — .NET MAUI cross-platform client: connects to Web backend through Core's Application services + SignalR. Cache-first loading with local SQLite.
+2. **AlphaAgent.Web** — ABP Framework 10.3 DDD web app: social features (friends, devices, groups, moments, stock relationships), real-time chat via SignalR, agent config management, security sync, SQL Server via EF Core. 8 sub-projects following ABP DDD layering.
+3. **AlphaAgent.Maui** — .NET MAUI cross-platform client: 4-tab Shell (Chat, Contacts, Discovery, Me), connects to Web backend through Core's Application services + SignalR. Cache-first loading with local SQLite. Theme support (light/dark/system).
 
 ### Critical Dependency Rules
 
@@ -79,7 +79,7 @@ MAUI ViewModels use a consistent pattern for fast UI rendering:
 
 Sync services (`IConversationSyncService`, `IContactSyncService`, `AgentConfigService`) manage local SQLite caches that mirror server data. `ConversationSyncService` filters out Agent conversations (Type 3/4) and deletes stale entries. `ContactSyncService` and `AgentConfigService` use full-replace strategy (delete all then upsert).
 
-**SQLite new table migration**: When adding cache entities to `SharesDbContext`, add `CREATE TABLE IF NOT EXISTS` in `DatabaseInitializer.EnsureNewTablesAsync()`. `EnsureCreatedAsync` does NOT add new tables to an existing database.
+**SQLite**: App is always reinstalled (no in-place upgrade), so `DatabaseInitializer` uses `EnsureCreatedAsync` only — no migration logic needed.
 
 ### Agent System
 
@@ -88,12 +88,18 @@ The Agent system spans all four Core layers, using `Microsoft.Extensions.AI` + `
 - **Domain.Abstractions**: `IAgent`, `IAgentFactory`, `AgentMemoryMode` (Stateful/SlidingWindow/Stateless), agent models, `AgentOptions` (LLM config)
 - **Domain**: `AgentSession` (with `Context` field for per-stock isolation), `AgentMessage`, `IAgentRepository`
 - **Application**: `IAgentService` orchestrates sessions — `StartSessionAsync(agentName, initialContext?)`, `SendMessageAsync`, `SendMessageStreamingAsync`. `AgentStreamEvent` hierarchy for typed stream discrimination. `ContentPart` for interleaved content order.
-- **Infrastructure**: `LlmAgent` wraps `ChatClientAgent`, `AgentFactory` with named registrations, `StockAnalystAgent`/`StockAnalystNoMemoryAgent` static factory classes, `TechnicalAnalysisTool` via `AIFunctionFactory.Create()`. `AgentConfigCacheRepository` for local SQLite caching of agent config data.
+- **Infrastructure**: `LlmAgent` wraps `ChatClientAgent`, `AgentFactory` with named registrations, `StockAnalystAgent`/`StockAnalystNoMemoryAgent` static factory classes, `TechnicalAnalysisTool` + `SecurityQueryTool` via `AIFunctionFactory.Create()`. `AgentConfigCacheRepository` for local SQLite caching of agent config data. `BearerTokenDelegatingHandler` auto-injects JWT and refreshes on 401.
 
 **AgentConfig Cache-First** — `AgentConfigService` uses local SQLite cache (`AgentConfigCacheItem`) via `IAgentConfigCacheRepository`:
 - Server fetch → full-replace cache (delete all by userId, then upsert range)
 - Server failure → fall back to local cache
 - `GetCachedConfigsAsync(userId)` reads directly from local cache
+
+**Agent Tool Selection** — `AgentOptions.EnabledTools` (Dictionary<string, List<string>>) controls which tools each agent uses:
+- `null` or key not present → load all tools (default)
+- Empty list → load no tools
+- Non-empty list → load only named tools
+- `AgentContactDetailViewModel` provides Switch toggles per tool; changes save immediately to both `AgentOptions` in-memory and local SQLite cache (`AgentConfigCacheItem.EnabledTools`). Server does not store `EnabledTools` — it is local-only.
 
 **Agent Memory Modes** — all modes persist messages to SQLite for display; `BuildChatHistory` controls what's sent to the LLM:
 - `Stateful`: all history sent to LLM
@@ -107,6 +113,32 @@ The Agent system spans all four Core layers, using `Microsoft.Extensions.AI` + `
 
 **New agent registration**: (1) create static factory class in Infrastructure/Services/AiAgent/Agents/, (2) register in `RegisterAgentServices()` in ServiceCollectionExtensions, (3) add tool class to DI if needed. No Application layer changes needed.
 
+**Agent Tools** — `ToolNames` static class defines tool name constants. Currently registered tools: `TechnicalAnalysisTool` (`CalculateIndicators`), `SecurityQueryTool` (`QuerySecurity`).
+
+### Post-Login Initialization
+
+`IPostLoginInitializer`/`PostLoginInitializer` orchestrates the post-login flow with 3 steps tracked via `IProgress<PostLoginProgress>`:
+1. Connect SignalR (`ISignalRChatService.ConnectAsync`)
+2. Load Agent config (`IAgentConfigService.SyncFromServerAsync` + `EnsureDefaultConfigsAsync`)
+3. Sync securities (`ISecurityClientSyncService.SyncFromServerAsync`)
+
+MAUI `InitializingViewModel` displays step-by-step progress (spinner/checkmark/X).
+
+### Security Client Sync
+
+`ISecurityClientSyncService`/`SecurityClientSyncService` provides incremental sync of security data from server to local SQLite:
+- Uses `ISyncMetadataStore` (keyed by sync type, e.g., `"SecurityLastSyncTime"`) to track last sync time
+- `SyncFromServerAsync()` calls `api/app/security-client-sync/updates?after={lastSyncTime}` for incremental updates
+- Falls back to full sync if no local data exists
+
+### BearerTokenDelegatingHandler
+
+`BearerTokenDelegatingHandler` is a `DelegatingHandler` that:
+- Injects Bearer token from `ITokenManager` into all outgoing requests
+- On 401 response, attempts token refresh via `ITokenManager.TryRefreshTokenAsync()` and retries once
+- Skips auth for `connect/` and `api/account/register` paths (avoids circular dependency during token acquisition)
+- Registered as Transient; `HttpClientService` uses it in its HTTP pipeline
+
 ### ABP Web Key Patterns
 
 - **Conventional API Controllers**: ABP auto-generates HTTP endpoints from `IAppService` interfaces → `api/app/{service}/{method}`
@@ -115,6 +147,8 @@ The Agent system spans all four Core layers, using `Microsoft.Extensions.AI` + `
 - **Auth**: OpenIddict, OAuth2 password+refresh token. Client: `alphaagent_chat`. Access 30 days, refresh 365 days.
 - **Real-time Chat**: Dual-protocol (REST for history/CRUD, SignalR for delivery). `ChatHub` with dual authentication (JWT + authorization code for devices). `SignalRQueryTokenMiddleware` extracts tokens from query params for WebSocket auth.
 - **Moments GUID conversion**: Stock integer IDs → hex-padded Guid. Device/group string IDs → SHA-256 first 16 bytes as Guid.
+- **Agent Config Management**: `AppAgentConfig` entity (server-side) stores per-user LLM config (AgentName, ModelName, ApiKey, Endpoint, DefaultSystemPrompt, Temperature, IsActive). `AgentConfigAppService` provides CRUD + `GetMyConfigAsync`, `SetMyConfigAsync`, `ActivateConfigAsync`. Blazor admin at `/agent-config-management`. Permission: `Abp.AgentConfigs.Manage`.
+- **Security Sync**: `SecuritySyncService` syncs securities from external data source on server. `SecurityClientSyncService` (`[AllowAnonymous]`) provides incremental updates to MAUI client via `api/app/security-client-sync/updates?after={timestamp}`.
 
 ## Conventions
 
@@ -143,7 +177,7 @@ The Agent system spans all four Core layers, using `Microsoft.Extensions.AI` + `
 | Workflow | Trigger | Purpose |
 |----------|---------|---------|
 | `deploy-iis.yml` | Push to master (Web changes) or manual | Build + deploy HttpApi.Host to IIS via msdeploy |
-| `build-maui.yml` | Push to master (Core/Maui changes) or manual | Build APK → GitHub Release → deploy to IIS → register version |
+| `build-apk.yml` | Manual (`workflow_dispatch`) only | Build signed APK → GitHub Release → deploy to IIS → register version |
 
 ### deploy-iis.yml Flow
 
@@ -153,13 +187,16 @@ The Agent system spans all four Core layers, using `Microsoft.Extensions.AI` + `
 
 **Secrets**: `CONNECTION_STRING_DEFAULT`, `STRING_ENCRYPTION_PASSPHRASE`, `OPENID_DICT_CLIENT_SECRET`, `VERSION_PUBLISH_TOKEN`, `IIS_SITE_NAME`, `IIS_SERVER_HOST`, `IIS_USERNAME`, `IIS_PASSWORD`
 
-### build-maui.yml Flow
+### build-apk.yml Flow
 
-1. Set version: manual input or `1.0.{run_number}` (VersionCode = integer run_number)
-2. `dotnet publish` for net10.0-android Release
-3. Upload APK to GitHub Release (`softprops/action-gh-release@v2`)
-4. Deploy APK to IIS `/apk` directory via msdeploy (with `web.config` for `.apk` MIME type)
-5. Call `POST /api/app/version-config/publish` with `X-Publish-Token` header to register version
+1. Decode keystore from `KEYSTORE_BASE64` secret
+2. Set version: manual input or `1.0.{run_number}` (VersionCode = integer run_number)
+3. `dotnet publish` for net10.0-android Release with signing (`AndroidKeyStore=true`, keystore from secrets)
+4. Upload APK to GitHub Release (`softprops/action-gh-release@v2`)
+5. Deploy APK to IIS `/apk` directory via msdeploy (with `web.config` for `.apk` MIME type)
+6. Call `POST /api/app/version-config/publish` with `X-Publish-Token` header to register version
+
+**Signing secrets**: `KEYSTORE_BASE64`, `KEY_ALIAS`, `KEY_PASSWORD`, `KEYSTORE_PASSWORD`
 
 **APK public download**: `https://{IIS_SERVER_HOST}/apk/{apk-filename}`
 

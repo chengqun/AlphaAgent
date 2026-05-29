@@ -9,18 +9,21 @@ AlphaAgent follows Clean Architecture principles with a three-tier system: a sta
 │                     AlphaAgent.Maui                              │
 │  ┌──────────────┐  ┌──────────────┐  ┌───────────────────────┐ │
 │  │ SplashVM     │  │ LoginVM      │  │ ContactsVM            │ │
-│  │ MainVM       │  │              │  │ (Friends/Devices/      │ │
+│  │ InitVM       │  │ RegisterVM   │  │ (Friends/Devices/      │ │
 │  │              │  │ OAuth2 Login │  │  Groups/Stocks)        │ │
 │  └──────────────┘  └──────┬───────┘  └───────────┬───────────┘ │
 │                           │                       │             │
 │  ┌──────────────┐  ┌──────┴───────────────────────┴──────┐     │
 │  │ ChatDetailVM │  │    Application Layer Services        │     │
-│  │ (real-time)  │  │  (IAuthService, ISecurityService,   │     │
-│  │              │  │   IRelationshipService, IGroupService,│     │
-│  └──────┬───────┘  │   IMomentService, IChatService,      │     │
+│  │ AgentChatVM  │  │  (IAuthService, ISecurityService,   │     │
+│  │ MomentsVM    │  │   IRelationshipService, IGroupService,│     │
+│  │ VideoVM      │  │   IMomentService, IChatService,      │     │
 │         │          │   IAgentService, IMessageCacheService,│     │
 │         │          │   IConversationSyncService,          │     │
-│         │          │   IContactSyncService, IVideoFeedService, IAgentConfigService)│     │
+│         │          │   IContactSyncService, IVideoFeedService,│  │
+│         │          │   IAgentConfigService, IDeviceService, │   │
+│         │          │   IUpdateService, IPostLoginInitializer,│  │
+│         │          │   ISecurityClientSyncService)          │  │
 │         │          └──────────────┬──────────────────────┘      │
 │         │                         │                             │
 │         │                         ▼                             │
@@ -29,7 +32,7 @@ AlphaAgent follows Clean Architecture principles with a three-tier system: a sta
 │         │              │  (Entities: Security, Quote,    │      │
 │         │              │   Token, MessageCacheItem,      │      │
 │         │              │   AgentSession, AgentMessage,   │      │
-│         │              │   AgentTask;                    │      │
+│         │              │   AgentTask, SyncMetadata;      │      │
 │         │              │   Services: SecurityManager,     │      │
 │         │              │   TokenManager, AnalysisManager) │      │
 │         │              └─────────────────────────────────┘      │
@@ -198,9 +201,11 @@ AlphaAgent.Core follows Clean Architecture with four layers:
 │  ├─────────────────────────────────────────────────────┤    │
 │  │  AI: LlmAgent, AgentFactory, StockAnalystAgent,    │    │
 │  │      StockAnalystNoMemoryAgent,                    │    │
-│  │      TechnicalAnalysisTool, IChatClient (OpenAI)    │    │
+│  │      TechnicalAnalysisTool, SecurityQueryTool,     │    │
+│  │      IChatClient (OpenAI)                          │    │
 │  ├─────────────────────────────────────────────────────┤    │
 │  │  Services: HttpClientService, IndicatorCalculator,  │    │
+│  │            BearerTokenDelegatingHandler,             │    │
 │  │            FailoverQuoteProvider, SignalRChatService,│    │
 │  │            Quote Providers (Sina, Baidu, EastMoney),│    │
 │  │            DatabaseInitializer, VideoFeedData       │    │
@@ -226,7 +231,7 @@ AlphaAgent.Core follows Clean Architecture with four layers:
 - **Domain.Abstractions**: `IAgent` defines the agent contract with `RunAsync()` and `RunStreamingAsync()` methods. `AgentMemoryMode` enum (Stateful, Stateless, SlidingWindow) controls history behavior. `IAgentFactory` provides named agent resolution and discovery. Agent models (`AgentContext`, `ChatMessage`, `AgentResponse`, `ToolCall`, `AgentResponseChunk`, `AgentSessionStatus`, `AgentInfo`, `ToolInfo`) live here as pure abstractions with zero dependencies. `AgentOptions` configures LLM connection (ModelName, ApiKey, Endpoint, DefaultSystemPrompt, Temperature). Infrastructure interfaces (`ISignalRChatService`, `IHttpClientService`) and chat DTOs (`ChatMessage`) also live here to satisfy the Dependency Inversion Principle.
 - **Domain**: `AgentSession` (aggregate with `UserId`, `AgentName`, `Context`, `Status`, `Messages` collection), `AgentMessage` (with `AgentMessageRole` enum: User, Assistant, System, Tool), `AgentTask` (with lifecycle: Pending → Running → Completed/Failed). `IAgentRepository` provides session/message/task CRUD. `GetActiveSessionAsync` queries by both `UserId` and `AgentName` for session isolation (excluding sessions with non-empty Context). `GetActiveSessionByContextAsync(userId, agentName, context)` enables per-stock session isolation where Context = `"stock:{stockId}:{stockName}"`.
 - **Application**: `IAgentService`/`AgentService` orchestrates sessions — `StartSessionAsync` (with optional `initialContext`), `SendMessageAsync`, `SendMessageStreamingAsync`, `GetSessionHistoryAsync`, `GetAvailableAgentsAsync`, `CloseSessionAsync`. All memory modes persist messages for display; `BuildChatHistory` controls what's sent to the LLM (Stateless returns empty, SlidingWindow returns last N, Stateful returns all). DTOs: `AgentSessionDto`, `AgentResponseDto`, `ToolCallDto`, `AgentChatMessageDto`, `AgentInfoDto`, `ToolInfoDto`. `ContentPart` tracks interleaved content order for correct history replay. `AgentStreamEvent` hierarchy (`AgentTextEvent`, `AgentToolCallEvent`, `AgentToolResultEvent`) provides typed stream discrimination.
-- **Infrastructure**: `LlmAgent` wraps `ChatClientAgent` from `Microsoft.Agents.AI`, delegating both sync and streaming execution. `AgentFactory` holds named `AgentRegistration` entries for agent resolution. `StockAnalystAgent` (SlidingWindow memory, default 20 messages) and `StockAnalystNoMemoryAgent` (Stateless, same tools but no LLM history) are static factory classes that create `LlmAgent` instances with `AIFunctionFactory.Create()` tools. `TechnicalAnalysisTool` exposes `CalculateIndicators()` as an AI function. `AgentRepository` persists sessions/messages/tasks to SQLite via `SharesDbContext`.
+- **Infrastructure**: `LlmAgent` wraps `ChatClientAgent` from `Microsoft.Agents.AI`, delegating both sync and streaming execution. `AgentFactory` holds named `AgentRegistration` entries for agent resolution. `StockAnalystAgent` (SlidingWindow memory, default 20 messages) and `StockAnalystNoMemoryAgent` (Stateless, same tools but no LLM history) are static factory classes that create `LlmAgent` instances with `AIFunctionFactory.Create()` tools. `TechnicalAnalysisTool` exposes `CalculateIndicators()` and `SecurityQueryTool` exposes `QuerySecurity()` as AI functions. Tool names are centralized in `ToolNames` constants. `AgentRepository` persists sessions/messages/tasks to SQLite via `SharesDbContext`.
 
 **Agent Execution Flow**:
 ```
@@ -240,6 +245,7 @@ User sends message
         → ChatClientAgent invokes LLM via IChatClient
         → LLM may call tools via AIFunctionFactory.Create() functions
           → TechnicalAnalysisTool.CalculateIndicators()
+          → SecurityQueryTool.QuerySecurity()
         → Tool results fed back to LLM for final response
       → AgentResponse or IAsyncEnumerable<AgentResponseChunk> returned
     → AgentService persists assistant message (with ContentPartsJson for interleaved order)
@@ -259,6 +265,8 @@ User sends message
 - Currently registered: `StockAnalystAgent` (SlidingWindow, with tools), `StockAnalystNoMemoryAgent` (Stateless, same tools)
 - New agents are added by: (1) creating a static factory class, (2) registering it in `RegisterAgentServices()` — the system auto-creates a skeleton config on the server via `EnsureDefaultConfigsAsync`
 - `IChatClient` is created per-agent invocation using the current `AgentOptions` singleton (allows runtime config updates after login)
+
+**Agent Tool Selection**: Each agent supports configurable tool enablement. `AgentOptions.EnabledTools` (Dictionary<string, List<string>>) maps agent names to lists of enabled tool names — null or key not present means all tools (default), empty list means no tools, non-empty list means only those tools. `StockAnalystAgent.Create()` and `StockAnalystNoMemoryAgent.Create()` accept an `enabledTools` parameter that filters the available `AITool` set. Tool selections are persisted per-agent in `AgentConfigCacheItem.EnabledTools` (SQLite JSON column) and synchronized with server config. The MAUI `AgentContactDetailViewModel` provides Switch toggles for tool enable/disable. `PostLoginInitializer.ApplyAgentConfigs()` applies saved tool selections to `AgentOptions` at login. Tool names are centralized in `ToolNames` constants (`CalculateIndicators`, `QuerySecurity`).
 
 **Agent Memory Modes (`AgentMemoryMode`)**:
 - `Stateful` (default): Full memory — all history sent to LLM, messages persisted
@@ -292,6 +300,8 @@ User sends message
 - [StockAnalystAgent.cs](../src/AlphaAgent.Core/AlphaAgent.Infrastructure/Services/AiAgent/Agents/StockAnalystAgent.cs)
 - [StockAnalystNoMemoryAgent.cs](../src/AlphaAgent.Core/AlphaAgent.Infrastructure/Services/AiAgent/Agents/StockAnalystNoMemoryAgent.cs)
 - [TechnicalAnalysisTool.cs](../src/AlphaAgent.Core/AlphaAgent.Infrastructure/Services/AiAgent/Tools/TechnicalAnalysisTool.cs)
+- [SecurityQueryTool.cs](../src/AlphaAgent.Core/AlphaAgent.Infrastructure/Services/AiAgent/Tools/SecurityQueryTool.cs)
+- [ToolNames.cs](../src/AlphaAgent.Core/AlphaAgent.Domain.Abstractions/AiAgent/ToolNames.cs)
 - [AgentRepository.cs](../src/AlphaAgent.Core/AlphaAgent.Infrastructure/Data/Repositories/AgentRepository.cs)
 
 ### Failover Quote Provider
@@ -394,6 +404,8 @@ User sends message
 - [ChatDetailViewModel.cs](../src/AlphaAgent.Maui/ViewModels/ChatDetailViewModel.cs)
 - [CustomCertificateHandler.cs](../src/AlphaAgent.Maui/Services/CustomCertificateHandler.cs)
 - [AppSettings.cs](../src/AlphaAgent.Maui/Services/AppSettings.cs)
+
+### Group Management
 
 **Purpose**: Groups as a first-class entity beyond the relationship system, with admin-only creation and owner-based member management.
 
@@ -506,6 +518,8 @@ MessageCacheRepository (Infrastructure Layer - hybrid caching)
 
 - **AgentConfigService** (`IAgentConfigService`): Methods: `GetCachedConfigsAsync(userId)`, `SyncFromServerAsync(userId)`, `EnsureDefaultConfigsAsync(userId, existingConfigs)`, `SetConfigAsync(config)`. Cache-first with server sync and automatic skeleton creation for newly registered agents. `EnsureDefaultConfigsAsync` compares `IAgentFactory.GetAvailableAgents()` against existing server configs, creates skeleton entries (AgentName + DefaultSystemPrompt, empty ApiKey) for missing agents, then re-syncs. Users must fill ApiKey via Blazor management UI before agents can call LLMs.
 
+- **SecurityClientSyncService** (`ISecurityClientSyncService`): Client-side incremental sync of security data from server to local SQLite. Uses `ISyncMetadataStore` (keyed by sync type, e.g., `"SecurityLastSyncTime"`) to track last sync timestamp. `SyncFromServerAsync()` fetches incremental updates from `api/app/security-client-sync/updates?after={lastSyncTime}`. Falls back to full sync if no local data exists. Server-side `SecurityClientSyncService` exposes `GetUpdatesAsync(after?)` API for incremental delivery.
+
 **Cache-First Loading Pattern in ViewModels**:
 1. `OnAppearingAsync` loads from local cache first (instant display)
 2. `SyncInBackgroundAsync()` syncs from server with 30-second throttle (`_minSyncInterval`)
@@ -516,7 +530,7 @@ MessageCacheRepository (Infrastructure Layer - hybrid caching)
 - `ConversationCacheItem` — Id, Type, Name, OtherUserName, OtherUserId, OtherDeviceId, DeviceType, UnreadCount, LastMessage, LastMessageTime, MemberCount, Context, CachedAt, UserId. Indexes: UserId, (UserId, LastMessageTime).
 - `ContactCacheItem` — Id, Type, TargetId, TargetName, DeviceType, Status, CachedAt, UserId. Indexes: UserId, (UserId, Type).
 - `MomentCacheItem` — Id, UserId, Username, Content, ImageUrl, CreatedAt, Type, Visibility.
-- `AgentConfigCacheItem` — Id, UserId, AgentName, ModelName, ApiKey, Endpoint, DefaultSystemPrompt, Temperature, IsActive, CachedAt. Indexes: UserId, (UserId, AgentName, IsActive).
+- `AgentConfigCacheItem` — Id, UserId, AgentName, ModelName, ApiKey, Endpoint, DefaultSystemPrompt, Temperature, EnabledTools (JSON string: Dictionary<string, List<string>>), IsActive, CachedAt. Indexes: UserId, (UserId, AgentName, IsActive).
 
 **SQLite New Table Migration**: `DatabaseInitializer.EnsureNewTablesAsync()` uses `CREATE TABLE IF NOT EXISTS` for adding new tables to existing databases, since `EnsureCreatedAsync` only creates tables that didn't exist at initial database creation.
 
@@ -531,6 +545,8 @@ MessageCacheRepository (Infrastructure Layer - hybrid caching)
 - [MomentCacheService.cs](../src/AlphaAgent.Core/AlphaAgent.Application/Services/Moment/MomentCacheService.cs)
 - [IAgentConfigCacheRepository.cs](../src/AlphaAgent.Core/AlphaAgent.Domain/Interfaces/IAgentConfigCacheRepository.cs)
 - [AgentConfigCacheRepository.cs](../src/AlphaAgent.Core/AlphaAgent.Infrastructure/Data/Repositories/AgentConfigCacheRepository.cs)
+- [ISecurityClientSyncService.cs](../src/AlphaAgent.Core/AlphaAgent.Application/Interfaces/Security/ISecurityClientSyncService.cs)
+- [SecurityClientSyncService.cs](../src/AlphaAgent.Core/AlphaAgent.Application/Services/Security/SecurityClientSyncService.cs)
 - [ConversationCacheItem.cs](../src/AlphaAgent.Core/AlphaAgent.Domain/Entities/ConversationCacheItem.cs)
 - [ContactCacheItem.cs](../src/AlphaAgent.Core/AlphaAgent.Domain/Entities/ContactCacheItem.cs)
 - [MomentCacheItem.cs](../src/AlphaAgent.Core/AlphaAgent.Domain/Entities/MomentCacheItem.cs)
@@ -572,10 +588,20 @@ The MAUI client authenticates via Resource Owner Password Credentials grant agai
 1. User submits username/password to `LoginViewModel`
 2. `AuthService.LoginAsync()` sends `POST connect/token` with `grant_type=password`, `client_id=alphaagent_chat`, `scope=offline_access Abp alphaagent_chat`
 3. On success, tokens are persisted to SQLite via `TokenRepository`
-4. Before each API call, `AuthService` retrieves the access token and sets `Authorization: Bearer {token}`
+4. `BearerTokenDelegatingHandler` automatically attaches the Bearer token to all requests (skipping `connect/` and `api/account/register` endpoints)
 5. If the token is expired, `RefreshTokenAsync()` calls `connect/token` with `grant_type=refresh_token`
 6. On logout, all token records are deleted from SQLite
 7. On app startup, `SplashViewModel` attempts auto-login via stored refresh token, initialized via `ICoreInitializer.InitializeAsync()`
+
+### Post-Login Initialization Flow
+
+After successful login, `IPostLoginInitializer`/`PostLoginInitializer` orchestrates a 3-step initialization with `IProgress<PostLoginProgress>` for visual feedback:
+
+1. **Connect SignalR** — `ISignalRChatService.ConnectAsync(accessToken, serverBaseAddress)` establishes WebSocket connection for real-time messaging
+2. **Load Agent config** — `IAgentConfigService.SyncFromServerAsync(userId)` fetches per-user LLM configs from server, then `EnsureDefaultConfigsAsync()` creates skeleton entries for new agents, then `ApplyAgentConfigs()` applies configs (including `EnabledTools`) to the in-memory `AgentOptions`
+3. **Sync securities** — `ISecurityClientSyncService.SyncFromServerAsync()` performs incremental sync of security data from server to local SQLite
+
+MAUI `InitializingViewModel` displays step-by-step progress with spinner/checkmark/X icons. On failure, the user is still navigated to the main app (non-blocking initialization).
 
 ### Real-Time Chat Flow
 
@@ -698,7 +724,7 @@ Contact list (cache-first):
 ## Security Architecture
 
 - **Backend**: OpenIddict with two OAuth2 clients — Swagger (AuthorizationCode), AlphaAgent Chat (Password + RefreshToken). Token lifetimes: access 30 days, refresh 365 days.
-- **Client**: Bearer token stored in SQLite, attached to all API requests. Token expiry checked before each call with automatic refresh.
+- **Client**: Bearer token stored in SQLite. `BearerTokenDelegatingHandler` attaches token to all API requests (skipping auth-free endpoints). On 401, automatically refreshes token and retries the request.
 - **Permissions**: Permission groups include Devices, Messages, Friendships, Groups, Moments, Stocks, Securities, OpenAI, AgentPrompts, OpenIddict, and Relationships with granular children.
 - **Multi-tenancy**: Configurable via `MultiTenancyConsts.IsEnabled` in Domain.Shared.
 - **Exception handling**: Custom `ExceptionHandlerMiddleware` in the HttpApi.Host pipeline.
@@ -777,7 +803,7 @@ Two GitHub Actions workflows handle automated deployment:
    - Flow: `dotnet publish` (self-contained, win-x64) → replace `${PLACEHOLDER}` tokens in appsettings.json with GitHub Secrets → msdeploy with `-enableRule:AppOffline` to IIS via WMSVC (port 8172)
    - AppOffline rule: automatically places `app_offline.htm` before deploy (releases DLL locks), removes after deploy
 
-2. **build-maui.yml** — MAUI APK build + deploy + version registration
+2. **build-apk.yml** — MAUI APK build + deploy + version registration
    - Trigger: push to master (paths: `src/AlphaAgent.Core/**`, `src/AlphaAgent.Maui/**`) or manual `workflow_dispatch` (with optional version input)
    - Runner: windows-latest
    - Flow: set version → `dotnet publish` net10.0-android → upload to GitHub Release → deploy APK to IIS `/apk` via msdeploy → call Publish API to register version
@@ -818,7 +844,7 @@ dotnet publish ──► APK
 
 ### Security
 - OpenIddict certificate password hardcoded in module startup code
-- `Console.WriteLine` in Infrastructure layer logs sensitive data (OAuth passwords, tokens, client secrets) — should use `ILogger<T>`
+- `Console.WriteLine` in Application layer (SecurityClientSyncService) logs sync operations — should use `ILogger<T>`
 - Access token lifetime (30 days) and refresh token lifetime (365 days) are excessively long — industry standard is 15-60 min access, 7-30 days refresh
 - Device `AuthorizationCode` exposed in `accepted-contacts` API response
 
@@ -831,10 +857,10 @@ dotnet publish ──► APK
 ### Runtime
 - `EventBusService.Unsubscribe` has race condition with concurrent `TryRemove`/re-assign
 - `UnreadMessageCacheService` uses `ConcurrentDictionary` but inner `List<ChatMessage>` is not thread-safe
-- `StockAnalystAgent.Create()` creates `IServiceScope` that is never disposed (scope leak only occurs when AgentFactory.GetAvailableAgents() instantiates agents; metadata-only listing now avoids this via try-catch fallback)
+- `StockAnalystAgent.Create()` creates `IServiceScope` that is never disposed (scope leak only occurs when AgentFactory.GetAvailableAgents() instantiates agents; metadata-only listing avoids this via try-catch fallback)
 - Quote providers (Sina/East/Baidu) silently return empty lists on exceptions
 - `HttpClientService` returns `default` on all exceptions — callers cannot distinguish "no data" from "request failed"
-- 138 `Console.WriteLine` calls instead of `ILogger<T>`
+- 7 `Console.WriteLine` calls in Core Application layer (SecurityClientSyncService) instead of `ILogger<T>`; remaining calls are in console apps where appropriate
 
 ### Code Quality
 - Duplicate code: `GetCurrentUserIdAsync`, `EnsureLocalTime`, `StringToGuid`, `PadBase64` repeated across ViewModels
@@ -844,7 +870,7 @@ dotnet publish ──► APK
 
 ### Short-term (Priority)
 - Remove hardcoded secrets (cert password) from source code — use configuration/environment variables
-- Replace `Console.WriteLine` with `ILogger<T>` throughout Infrastructure layer
+- Replace `Console.WriteLine` with `ILogger<T>` in Application layer (SecurityClientSyncService has 7 remaining calls)
 - Reduce token lifetimes: AccessToken → 1 hour, RefreshToken → 7 days
 
 ### Mid-term (Quality)

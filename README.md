@@ -27,12 +27,12 @@ AlphaAgent serves Chinese A-share market participants who need both real-time ma
 
 ## Key Features
 
-- **AI Agent System** — `IAgent`/`IAgentFactory` abstraction with `LlmAgent` wrapping `Microsoft.Agents.AI.ChatClientAgent`. Three memory modes: `Stateful` (full history), `SlidingWindow` (last N, default), `Stateless` (no LLM history). Streaming via `IAsyncEnumerable<AgentResponseChunk>` with interleaved content tracking (`ContentPart`). Context-based session isolation enables per-stock Agent sessions. `StockAnalystAgent` and `StockAnalystNoMemoryAgent` factory classes with `AIFunctionFactory.Create()` tools.
+- **AI Agent System** — `IAgent`/`IAgentFactory` abstraction with `LlmAgent` wrapping `Microsoft.Agents.AI.ChatClientAgent`. Three memory modes: `Stateful` (full history), `SlidingWindow` (last N, default), `Stateless` (no LLM history). Streaming via `IAsyncEnumerable<AgentResponseChunk>` with interleaved content tracking (`ContentPart`). Context-based session isolation enables per-stock Agent sessions. `StockAnalystAgent` and `StockAnalystNoMemoryAgent` factory classes with `TechnicalAnalysisTool` + `SecurityQueryTool` via `AIFunctionFactory.Create()`. Per-agent tool selection via `AgentOptions.EnabledTools`.
 - **Failover Quote Provider** — Randomizes and iterates through Sina, Baidu, and EastMoney APIs, falling back automatically on failure. Distributes load across providers via Fisher-Yates shuffle.
 - **8 Technical Indicators** — SMA, EMA, RSI, MACD, Bollinger Bands, SAR, KDJ, ADX with configurable parameters. Outputs CSV with OHLCV data for charting.
 - **Unified Relationship System** — Single `AppRelationship` entity with four polymorphic managers: bidirectional friendships, owner-authorized device/group memberships, and auto-accepted stock watchlists.
-- **Real-Time Chat** — SignalR-based messaging supporting user-to-user, user-to-device, and group conversations. REST API for history/CRUD, SignalR for real-time delivery. Dual authentication: JWT for users, authorization codes for devices.
-- **Cache-First Loading** — MAUI ViewModels load from local SQLite cache first for instant display, then sync from server in the background with 30-second throttle. `IConversationSyncService` and `IContactSyncService` manage local caches. Incremental updates prevent UI flicker.
+- **Real-Time Chat** — SignalR-based messaging supporting user-to-user, user-to-device, and group conversations. REST API for history/CRUD, SignalR for real-time delivery. Dual authentication: JWT for users, authorization codes for devices. `BearerTokenDelegatingHandler` auto-injects JWT and refreshes on 401.
+- **Cache-First Loading** — MAUI ViewModels load from local SQLite cache first for instant display, then sync from server in the background with 30-second throttle. `IConversationSyncService`, `IContactSyncService`, and `ISecurityClientSyncService` manage local caches. Incremental updates prevent UI flicker.
 - **Hybrid Message Cache** — Memory + SQLite caching for chat messages with configurable expiration (5 minutes) and message limit (50 per conversation).
 - **Moments Social Feed** — Multi-type social feed supporting user posts, stock-related moments, device moments, and group moments. Deterministic GUID conversion packs non-Guid IDs into the `UserId` Guid column.
 - **Device Management** — Device registration with auto-generated authorization codes. Devices connect via SignalR using auth codes.
@@ -40,7 +40,13 @@ AlphaAgent serves Chinese A-share market participants who need both real-time ma
 - **Video Feed** — Video browsing with vertical swiping, paginated loading, and deduplication. Uses `CommunityToolkit.Maui.MediaElement` for playback.
 - **Auto Update** — MAUI client checks for updates on startup via server API. New versions are registered automatically during CI/CD build. APK deployed to IIS for public download. Supports force-update mode.
 - **CI/CD** — GitHub Actions workflows for automatic deployment: Web backend to IIS via msdeploy with AppOffline rule, MAUI APK build + deploy + version registration. Secrets managed via GitHub Secrets with placeholder replacement pattern.
+- **Post-Login Initialization** — `IPostLoginInitializer` orchestrates 3-step initialization (SignalR connect, Agent config load, Security sync) with visual progress tracking.
+- **Registration** — User registration with auto-login on success via `IAuthService.RegisterAsync`.
+- **Theme Support** — Light/dark/system theme via `IThemeManager`, persisted to MAUI Preferences, toggle on Me tab.
+- **Agent Config Management** — Server-side `AppAgentConfig` entity with Blazor admin for per-user LLM config (ApiKey, Model, Endpoint, SystemPrompt). MAUI syncs configs via `IAgentConfigService` cache-first pattern.
+- **Security Client Sync** — Incremental sync of security data from server using `ISyncMetadataStore` for last-sync-time tracking, avoiding full re-downloads.
 - **Console Device Client** — Standalone .NET console app connecting via SignalR using device authorization codes. Also Agent-enabled for LLM-powered command processing.
+- **Incremental Security Sync** — `ISecurityClientSyncService` syncs only updated securities from server using `ISyncMetadataStore` for last-sync-time tracking. Server-side `SecuritySyncService` fetches from external data sources.
 - **Clean Architecture** — AlphaAgent.Core follows Clean Architecture with Domain.Abstractions, Domain, Application, and Infrastructure layers. UI layer (MAUI) only references Application layer.
 
 ## Installation
@@ -135,11 +141,18 @@ src/
 │   ├── AlphaAgent.Abp.HttpApi.Client/      # HTTP client module
 │   ├── AlphaAgent.Abp.EntityFrameworkCore/ # EF Core DbContext, migrations (SQL Server)
 │   └── AlphaAgent.Abp.DbMigrator/          # Console tool for database migrations
-├── AlphaAgent.Maui/                        # Cross-platform MAUI client
+├── AlphaAgent.Maui/                        # Cross-platform MAUI client (4-tab Shell)
 │   ├── ViewModels/                         # CommunityToolkit.Mvvm ViewModels with IPageLifecycleAware
+│   │   ├── SplashViewModel, LoginViewModel, RegisterViewModel
+│   │   ├── InitializingViewModel (post-login 3-step init)
+│   │   ├── ChatViewModel, ContactsViewModel, DiscoveryViewModel, MeViewModel (TabBar)
+│   │   ├── ChatDetailViewModel, AgentChatDetailViewModel, AgentContactDetailViewModel
+│   │   ├── MomentsViewModel, ContactMomentsViewModel
+│   │   ├── AddFriendViewModel, NewFriendsViewModel, ContactDetailViewModel
+│   │   ├── DeviceManagementViewModel, VideoChannelsViewModel
 │   ├── Views/                              # XAML pages
-│   ├── Services/                           # EventBusService, GlobalMessageHandler, CustomCertificateHandler, AppSettings
-│   └── Events/                             # NewMessageEvent, NewConversationEvent, etc.
+│   ├── Services/                           # EventBusService, GlobalMessageHandler, CustomCertificateHandler, AppSettings, ThemeManager, UnreadMessageCacheService
+│   └── Events/                             # NewMessageEvent, NewConversationEvent, SignalRReconnectedEvent, etc.
 ├── AlphaAgent.ConsoleDevice/               # Console device client (SignalR + Agent-enabled)
 └── common.props                            # Shared build properties (LangVersion=latest, CS1591 suppressed)
 ```
@@ -199,8 +212,10 @@ The system follows Clean Architecture principles with three cooperating subsyste
 ┌─────────────────────┐  OAuth2 + REST + SignalR  ┌──────────────────────────┐
 │  AlphaAgent.Maui     │ ──────────────────────── │    AlphaAgent.Web         │
 │  (Mobile/Desktop)    │                           │    (ABP + API + SignalR)  │
-│                      │                           │    SQL Server             │
-│  AlphaAgent.Core     │                           └──────────────────────────┘
+│  4-tab Shell:        │                           │    SQL Server             │
+│  Chat|Contacts|      │                           └──────────────────────────┘
+│  Discovery|Me        │
+│  AlphaAgent.Core     │
 │  (Application/Domain)│
 │  (SQLite cache)      │
 │  (AI Agent system)   │
@@ -226,6 +241,7 @@ See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) for detailed system design, dat
 - Register domain services as `Transient` in module `ConfigureServices`
 - Generic interface implementations (like `IRelationshipManager<,,>`) must be registered individually by their specific generic type parameters
 - New agents are added by creating a static factory class and registering in `RegisterAgentServices()`, not by implementing `IAgent` directly
+- New agent tools are added by creating a tool class with `[Description]` attributes, registering in DI, and adding `AIFunctionFactory.Create()` to the agent factory
 - Adhere to Clean Architecture: UI layer should not directly reference Infrastructure
 
 See [docs/DEVELOPMENT.md](docs/DEVELOPMENT.md) for detailed development workflows.

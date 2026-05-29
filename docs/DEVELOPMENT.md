@@ -50,7 +50,7 @@ The backend configuration is in `src/AlphaAgent.Web/AlphaAgent.Abp.HttpApi.Host/
 
 **Development setup**: Place real values in `appsettings.Development.json` (gitignored via `appsettings.*.json` pattern in `.gitignore`). ASP.NET Core automatically loads this file in Development environment, overriding the placeholder tokens.
 
-The MAUI client hardcodes its SQLite connection (`Data Source=alphaagent.db` in `FileSystem.AppDataDirectory`) and backend base address in `AppSettings.ServerBaseAddress` (referenced from `MauiProgram.cs` via `AddInfrastructureServices(sqliteConnectionString, AppSettings.ServerBaseAddress, agentOptions, CustomCertificateHandler.CreateHandler)`). Update `AppSettings.ServerBaseAddress` to point to your backend instance. `AgentOptions` is created with an empty `ApiKey`; the real API key is loaded from the server's `AppAgentConfigs` table during `SplashViewModel.LoadAgentConfigAsync()` and applied to the `AgentOptions` singleton before any agent session is created.
+The MAUI client hardcodes its SQLite connection (`Data Source=alphaagent.db` in `FileSystem.AppDataDirectory`) and backend base address in `AppSettings.ServerBaseAddress` (referenced from `MauiProgram.cs` via `AddInfrastructureServices(sqliteConnectionString, AppSettings.ServerBaseAddress, agentOptions, CustomCertificateHandler.CreateHandler)`). Update `AppSettings.ServerBaseAddress` to point to your backend instance. `AgentOptions` is created with an empty `ApiKey`; the real API key is loaded from the server's `AppAgentConfigs` table during `PostLoginInitializer` (invoked from `InitializingViewModel`) and applied to the `AgentOptions` singleton before any agent session is created.
 
 For self-signed certificate servers, place the root CA certificate as `Resources/raw/rootCA.crt`. `CustomCertificateHandler` loads it at startup and configures both `HttpClient` and SignalR to trust it. Android also requires `Platforms/Android/Resources/xml/network_security_config.xml` (referenced from AndroidManifest) for native-layer certificate trust.
 
@@ -80,7 +80,7 @@ Triggers on push to `master` when files under `src/AlphaAgent.Web/` change, or v
 | `IIS_USERNAME` | msdeploy Basic auth username |
 | `IIS_PASSWORD` | msdeploy Basic auth password |
 
-### build-maui.yml — APK Build + Deploy + Version Registration
+### build-apk.yml — APK Build + Deploy + Version Registration
 
 Triggers on push to `master` when files under `src/AlphaAgent.Core/` or `src/AlphaAgent.Maui/` change, or via manual `workflow_dispatch` (with optional `version` input, e.g., `1.2.0`). Auto-triggers on Core/Maui code changes.
 
@@ -98,7 +98,7 @@ Triggers on push to `master` when files under `src/AlphaAgent.Core/` or `src/Alp
 
 Both workflows support `workflow_dispatch` for manual triggers:
 - **deploy-iis.yml**: Go to Actions tab → "Deploy to IIS" → "Run workflow"
-- **build-maui.yml**: Go to Actions tab → "Build MAUI APK" → "Run workflow" → optionally enter a version tag (e.g., `2.0.0`)
+- **build-apk.yml**: Go to Actions tab → "Build MAUI APK" → "Run workflow" → optionally enter a version tag (e.g., `2.0.0`)
 
 ## Auto-Update System
 
@@ -106,7 +106,7 @@ The auto-update system enables the MAUI client to check for new versions on star
 
 ### Version Registration During CI/CD
 
-When `build-maui.yml` completes an APK build, the "Publish version to server" step calls `POST /api/app/version-config/publish` with:
+When `build-apk.yml` completes an APK build, the "Publish version to server" step calls `POST /api/app/version-config/publish` with:
 - `platform`: 1 (Android)
 - `versionCode`: the GitHub run number (integer, monotonically increasing)
 - `versionName`: the version tag (e.g., `1.2.0`)
@@ -185,15 +185,20 @@ Follow these steps to add a new agent to the system:
        public const string Name = "YourAgent";
        public const string Description = "描述智能体功能";
 
-       public static IAgent Create(IServiceProvider serviceProvider, IChatClient chatClient, string systemPrompt, float temperature)
+       public static IAgent Create(IServiceProvider serviceProvider, IChatClient chatClient, string systemPrompt, float temperature, string[]? enabledTools = null)
        {
            var scope = serviceProvider.CreateScope();
            var yourTool = scope.ServiceProvider.GetRequiredService<YourTool>();
 
-           var aiTools = new[]
+           var allTools = new[]
            {
                AIFunctionFactory.Create(yourTool.YourMethod),
            };
+
+           // Filter tools by enabledTools (null = all tools)
+           var aiTools = enabledTools != null
+               ? allTools.Where(t => enabledTools.Contains(t.Name)).ToArray()
+               : allTools;
 
            var chatClientAgent = new ChatClientAgent(chatClient, new ChatClientAgentOptions
            {
@@ -219,10 +224,18 @@ Follow these steps to add a new agent to the system:
    ```csharp
    services.AddScoped<YourTool>();
 
+   // Define tool info for discovery and tool selection
+   var allTools = new List<ToolInfo>
+   {
+       new(ToolNames.YourTool, "工具功能描述"),
+   };
+
    // Inside the IAgentFactory registration:
-   factory.Register(YourAgent.Name, YourAgent.Description, YourAgent.DefaultSystemPrompt, serviceProvider =>
-       YourAgent.Create(serviceProvider, chatClient, options.DefaultSystemPrompt, options.Temperature));
+   factory.Register(YourAgent.Name, YourAgent.Description, YourAgent.DefaultSystemPrompt, allTools, serviceProvider =>
+       YourAgent.Create(serviceProvider, chatClient, options.DefaultSystemPrompt, options.Temperature, options.GetEnabledTools(YourAgent.Name)));
    ```
+
+   Add a constant to `ToolNames` in `AlphaAgent.Domain.Abstractions/AiAgent/ToolNames.cs` for the new tool name.
 
 4. **Application** — No changes needed; `IAgentService` handles all agents generically via `IAgentFactory`
 
@@ -442,12 +455,14 @@ await _agentService.CloseSessionAsync(session.Id);
 - `AgentSystemPrompts` — Per-agent system prompts dictionary (populated from server config)
 - `Temperature` — LLM temperature (default: `0.5`)
 
-**Agent Config Loading** (`SplashViewModel.LoadAgentConfigAsync`):
-1. Read local SQLite cache → apply to `AgentOptions` if configs have real ApiKey
-2. Sync from server → update cache with server data; fallback to cache on network error
+**Agent Config Loading** (`PostLoginInitializer`, invoked from `InitializingViewModel`):
+1. Connect SignalR — `ISignalRChatService.ConnectAsync(accessToken, serverBaseAddress)`
+2. Read local SQLite cache → sync from server → update cache; fallback to cache on network error
 3. `EnsureDefaultConfigsAsync` → create skeleton configs (AgentName + DefaultSystemPrompt, empty ApiKey) for newly registered agents missing from server
-4. Re-read cache → apply final configs to `AgentOptions`
+4. `ApplyAgentConfigs` → apply configs (including `EnabledTools`) to the in-memory `AgentOptions` singleton
+5. Sync securities — `ISecurityClientSyncService.SyncFromServerAsync()` for incremental security data sync
 - If no config has a real ApiKey, `AgentOptions.ApiKey` stays empty and agents cannot call LLMs — users must fill ApiKey via Blazor admin panel
+- Progress is reported via `IProgress<PostLoginProgress>` for step-by-step UI feedback in `InitializingViewModel`
 
 **MAUI Agent UI**:
 - `AgentContactDetailViewModel` — Displays agent info and available tools, navigates to chat
@@ -541,7 +556,7 @@ await _agentConfigService.SetConfigAsync(config);
 3. Use `SortConversations()` / `UpdateContactBookIfNeeded()` to compare ID sets/order before updating `ObservableCollection` — prevents UI flicker
 4. Subscribe to events (`NewConversationEvent`, `ContactChangedEvent`) for real-time updates
 
-**SQLite New Table Migration**: When adding new cache entities to `SharesDbContext`, add the table creation in `DatabaseInitializer.EnsureNewTablesAsync()` using `CREATE TABLE IF NOT EXISTS`, since `EnsureCreatedAsync` does not add new tables to an existing database.
+**SQLite**: App is always reinstalled (no in-place upgrade), so `DatabaseInitializer` uses `EnsureCreatedAsync` only — no migration logic needed.
 
 **Key Interfaces**:
 - `IConversationSyncService` (Application) — conversation cache management
@@ -691,15 +706,14 @@ abp generate-proxy -t csharp -m app -u AlphaAgent.Abp.HttpApi.Client
 - ViewModels load from local SQLite cache first for instant display, then sync from server in background
 - `ChatViewModel` uses `IConversationSyncService.GetCachedConversationsAsync()` → `SyncInBackgroundAsync()` with 30-second throttle
 - `ContactsViewModel` uses `IContactSyncService.GetCachedContactsAsync()` → `SyncInBackgroundAsync()`
-- `SplashViewModel` uses `IAgentConfigService.GetCachedConfigsAsync()` → `SyncFromServerAsync()` → `EnsureDefaultConfigsAsync()` to load agent configs and populate `AgentOptions`
+- `InitializingViewModel` uses `IPostLoginInitializer.InitializeAsync()` which orchestrates SignalR connect, agent config sync + apply, and security sync
 - `ChatDetailViewModel` uses `IMessageCacheService.GetCachedMessagesAsync()` → syncs only if no cache exists
 - Use `SortConversations()` / `UpdateContactBookIfNeeded()` that compare ID sets/order before updating `ObservableCollection` to prevent UI flicker
 - Sync is throttled (`_minSyncInterval`, default 30 seconds) to avoid redundant network calls
 
-### SQLite New Table Migration
-- When adding new cache entities to `SharesDbContext`, add `CREATE TABLE IF NOT EXISTS` statements in `DatabaseInitializer.EnsureNewTablesAsync()`
-- `EnsureCreatedAsync()` only creates tables that didn't exist at initial database creation — it does NOT add new tables to an existing database
-- The `EnsureNewTablesAsync()` method uses raw SQL to handle this gap
+### SQLite Database Initialization
+- App is always reinstalled (no in-place upgrade), so `DatabaseInitializer` uses `EnsureCreatedAsync` only — no migration logic needed
+- If cache tables are missing: delete `alphaagent.db` and restart the app to trigger fresh database creation
 
 ### Build Properties
 - `src/common.props` sets `LangVersion=latest`, `AbpProjectType=app`, and suppresses CS1591 (missing XML doc warnings)
@@ -760,11 +774,11 @@ Migrations must be run with both `--project` (EF Core project) and `--startup-pr
 
 ### Agent System Issues
 - Verify Agent tables exist in SQLite (`AgentSessions`, `AgentMessages`, `AgentTasks`, `AgentConfigCacheItem`) — run `IDatabaseInitializer.InitializeAsync()` or start the ConsoleDevice
-- Check that `TechnicalAnalysisTool` is registered in `RegisterAgentServices()`
+- Check that `TechnicalAnalysisTool` and `SecurityQueryTool` are registered in `RegisterAgentServices()`
 - Verify the agent name matches when calling `IAgentService.StartSessionAsync(agentName)` — sessions are isolated by `userId + agentName`
 - For per-stock sessions: use `IAgentService.StartSessionAsync(agentName, initialContext: "stock:{stockId}:{stockName}")` and `GetActiveSessionByContextAsync(userId, agentName, context)`
 - Use `IAgentService.GetAvailableAgentsAsync()` to list registered agents and their tools
-- Check `AgentOptions` configuration (ModelName, ApiKey, Endpoint) — ApiKey is populated from server config at startup via `SplashViewModel.LoadAgentConfigAsync`
+- Check `AgentOptions` configuration (ModelName, ApiKey, Endpoint) — ApiKey is populated from server config at startup via `PostLoginInitializer` (invoked from `InitializingViewModel`)
 - If `AgentOptions.ApiKey` is empty: ensure the user has an Agent config with a real ApiKey on the server (Blazor admin: `/agent-config-management`), then restart the MAUI client to sync
 - If `AgentFactory.GetAvailableAgents()` throws: the try-catch fallback returns registration metadata (Name, Description) without instantiating the full agent — this is expected when ApiKey is not yet loaded
 - If different agents share chat history: verify `GetActiveSessionAsync` is called with the correct `agentName` parameter
@@ -802,7 +816,7 @@ If Infrastructure is referencing Application:
 
 **appsettings.json JSON parse error after deployment**: GitHub Secrets can contain trailing newlines that corrupt the JSON after token replacement. The workflow applies `.Trim()` to each secret and strips `\r` characters, but if the JSON is still invalid, check the secret values in GitHub Settings → Secrets for hidden whitespace or newlines.
 
-**APK returns 404 on IIS**: IIS does not serve `.apk` files by default. The `build-maui.yml` workflow deploys a `web.config` alongside the APK that adds the MIME type (`application/vnd.android.package-archive`). If the APK is still 404, verify the `web.config` exists in the `/apk` directory on the server and that IIS is not overriding the `staticContent` configuration at the server level.
+**APK returns 404 on IIS**: IIS does not serve `.apk` files by default. The `build-apk.yml` workflow deploys a `web.config` alongside the APK that adds the MIME type (`application/vnd.android.package-archive`). If the APK is still 404, verify the `web.config` exists in the `/apk` directory on the server and that IIS is not overriding the `staticContent` configuration at the server level.
 
 **msdeploy parameter issues**: When calling msdeploy from PowerShell, the `-dest` parameter must be passed as a single string (e.g., `"-dest:$destArg"`), not as a PowerShell array. Splitting the destination arguments into separate parameters causes msdeploy to misinterpret them. The workflow builds the full destination string and passes it as one argument.
 
