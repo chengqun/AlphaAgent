@@ -43,8 +43,21 @@ public class AgentConfigService : IAgentConfigService
                 return await GetCachedConfigsAsync(userId);
             }
 
+            // 全量替换前：保存本地 EnabledTools（服务端不存此字段，避免被清空）
+            var existingItems = await _cacheRepository.GetByUserIdAsync(userId);
+            var localEnabledTools = existingItems
+                .Where(c => c.EnabledTools.Count > 0)
+                .ToDictionary(c => c.AgentName, c => c.EnabledTools);
+
             var serverItems = result.Items;
-            var cacheItems = serverItems.Select(dto => MapToCacheItem(dto, userId)).ToList();
+            var cacheItems = serverItems.Select(dto =>
+            {
+                var item = MapToCacheItem(dto, userId);
+                // 回填本地保存的 EnabledTools
+                if (localEnabledTools.TryGetValue(dto.AgentName, out var tools))
+                    item.EnabledTools = tools;
+                return item;
+            }).ToList();
 
             // 全量替换：先清空旧缓存再写入新数据
             await _cacheRepository.DeleteByUserIdAsync(userId);
