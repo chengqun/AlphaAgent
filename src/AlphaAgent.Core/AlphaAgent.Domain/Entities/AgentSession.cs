@@ -9,10 +9,10 @@ public class AgentSession
     public Guid Id { get; private set; }
     public Guid UserId { get; private set; }
     public string AgentName { get; private set; } = string.Empty;
-    public string? Context { get; private set; }
+    public string? Context { get; set; }
     public DateTime CreatedAt { get; private set; }
     public DateTime LastActiveAt { get; private set; }
-    public AgentSessionStatus Status { get; private set; }
+    public AgentSessionStatus Status { get; set; }
 
     public List<AgentMessage> Messages { get; private set; } = new();
 

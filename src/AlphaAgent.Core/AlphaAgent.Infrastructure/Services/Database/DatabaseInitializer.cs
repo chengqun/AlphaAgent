@@ -2,8 +2,6 @@ using AlphaAgent.Domain.Abstractions;
 using AlphaAgent.Infrastructure.Data;
 using AlphaAgent.Infrastructure.InitData;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Data.Sqlite;
-using System.Collections.Generic;
 using System.Threading.Tasks;
 
 namespace AlphaAgent.Infrastructure.Services.Database;

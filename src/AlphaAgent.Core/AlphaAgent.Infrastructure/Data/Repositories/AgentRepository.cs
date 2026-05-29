@@ -68,6 +68,15 @@ public class AgentRepository : IAgentRepository
     public async Task UpdateSessionAsync(AgentSession session)
     {
         await using var dbContext = await _dbContextFactory.CreateDbContextAsync();
+
+        // 更新 session 实体本身（Context、Status 等标量属性）
+        var existingSession = await dbContext.AgentSessions.FindAsync(session.Id);
+        if (existingSession != null)
+        {
+            existingSession.Context = session.Context;
+            existingSession.Status = session.Status;
+        }
+
         // 获取数据库中已有的消息ID
         var existingMessageIds = await dbContext.AgentMessages
             .Where(m => m.SessionId == session.Id)
