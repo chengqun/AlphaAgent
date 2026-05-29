@@ -16,6 +16,7 @@
             <converters:BooleanToColorConverter x:Key="BooleanToColorConverter" />
             <converters:GreaterThanZeroConverter x:Key="GreaterThanZeroConverter" />
             <converters:InvertedBoolConverter x:Key="InvertedBoolConverter" />
+            <converters:BoolToOpacityConverter x:Key="BoolToOpacityConverter" />
             <converters:RoleToBoolConverter x:Key="RoleToBoolConverter" />
             <converters:UtcToLocalTimeConverter x:Key="UtcToLocalTimeConverter" />
             <converters:IntEqualsConverter x:Key="IntEqualsConverter" />

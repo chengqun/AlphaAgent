@@ -65,7 +65,8 @@
                     <StackLayout Spacing="12" BindableLayout.ItemsSource="{Binding ToolItems}">
                         <BindableLayout.ItemTemplate>
                             <DataTemplate>
-                                <StackLayout Orientation="Horizontal" Spacing="12">
+                                <StackLayout Orientation="Horizontal" Spacing="12"
+                                             Opacity="{Binding IsEnabled, Converter={StaticResource BoolToOpacityConverter}}">
                                     <Switch IsToggled="{Binding IsEnabled}"
                                             HorizontalOptions="Start"
                                             VerticalOptions="Center" />
