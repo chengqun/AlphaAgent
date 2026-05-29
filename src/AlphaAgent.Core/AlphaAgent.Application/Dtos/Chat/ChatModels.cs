@@ -41,6 +41,8 @@ public class Conversation
                     return "windows";
                 if (DeviceType.Contains("macos", StringComparison.OrdinalIgnoreCase))
                     return "macos";
+                if (DeviceType.Contains("claude-bridge", StringComparison.OrdinalIgnoreCase))
+                    return "claude_bridge";
             }
             return null;
         }
