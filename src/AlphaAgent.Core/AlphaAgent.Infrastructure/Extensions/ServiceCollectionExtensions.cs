@@ -161,6 +161,50 @@ public static class ServiceCollectionExtensions
                     chatClient, systemPrompt, opts.Temperature);
             });
 
+            factory.Register(ConcurrentAnalysisWorkflow.Name, ConcurrentAnalysisWorkflow.Description, ConcurrentAnalysisWorkflow.DefaultSystemPrompt, serviceProvider =>
+            {
+                var opts = serviceProvider.GetRequiredService<AgentOptions>();
+                var chatClient = CreateChatClient(opts);
+                var systemPrompt = opts.GetSystemPrompt(ConcurrentAnalysisWorkflow.Name, ConcurrentAnalysisWorkflow.DefaultSystemPrompt);
+                return ConcurrentAnalysisWorkflow.Create(
+                    serviceProvider.GetRequiredService<TechnicalAnalysisTool>(),
+                    serviceProvider.GetRequiredService<SecurityQueryTool>(),
+                    chatClient, systemPrompt, opts.Temperature);
+            });
+
+            factory.Register(GroupChatWorkflow.Name, GroupChatWorkflow.Description, GroupChatWorkflow.DefaultSystemPrompt, serviceProvider =>
+            {
+                var opts = serviceProvider.GetRequiredService<AgentOptions>();
+                var chatClient = CreateChatClient(opts);
+                var systemPrompt = opts.GetSystemPrompt(GroupChatWorkflow.Name, GroupChatWorkflow.DefaultSystemPrompt);
+                return GroupChatWorkflow.Create(
+                    serviceProvider.GetRequiredService<TechnicalAnalysisTool>(),
+                    serviceProvider.GetRequiredService<SecurityQueryTool>(),
+                    chatClient, systemPrompt, opts.Temperature);
+            });
+
+            factory.Register(HandoffWorkflow.Name, HandoffWorkflow.Description, HandoffWorkflow.DefaultSystemPrompt, serviceProvider =>
+            {
+                var opts = serviceProvider.GetRequiredService<AgentOptions>();
+                var chatClient = CreateChatClient(opts);
+                var systemPrompt = opts.GetSystemPrompt(HandoffWorkflow.Name, HandoffWorkflow.DefaultSystemPrompt);
+                return HandoffWorkflow.Create(
+                    serviceProvider.GetRequiredService<TechnicalAnalysisTool>(),
+                    serviceProvider.GetRequiredService<SecurityQueryTool>(),
+                    chatClient, systemPrompt, opts.Temperature);
+            });
+
+            factory.Register(MagenticWorkflow.Name, MagenticWorkflow.Description, MagenticWorkflow.DefaultSystemPrompt, serviceProvider =>
+            {
+                var opts = serviceProvider.GetRequiredService<AgentOptions>();
+                var chatClient = CreateChatClient(opts);
+                var systemPrompt = opts.GetSystemPrompt(MagenticWorkflow.Name, MagenticWorkflow.DefaultSystemPrompt);
+                return MagenticWorkflow.Create(
+                    serviceProvider.GetRequiredService<TechnicalAnalysisTool>(),
+                    serviceProvider.GetRequiredService<SecurityQueryTool>(),
+                    chatClient, systemPrompt, opts.Temperature);
+            });
+
             return factory;
         });
     }

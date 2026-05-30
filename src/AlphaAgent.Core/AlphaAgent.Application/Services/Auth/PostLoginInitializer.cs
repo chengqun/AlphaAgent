@@ -106,7 +106,12 @@ public class PostLoginInitializer : IPostLoginInitializer
 
     private void ApplyAgentConfigs(List<AgentConfigResponseDto> configs)
     {
-        var activeConfig = configs.FirstOrDefault(c => c.IsActive);
+        // 优先选择有非空 ApiKey 的活跃配置，避免选到 Workflow 等未配置 ApiKey 的占位配置
+        var activeConfig = configs
+            .Where(c => c.IsActive && !string.IsNullOrWhiteSpace(c.ApiKey))
+            .FirstOrDefault()
+            ?? configs.FirstOrDefault(c => c.IsActive);
+
         if (activeConfig != null && !string.IsNullOrWhiteSpace(activeConfig.ApiKey))
         {
             _agentOptions.ModelName = activeConfig.ModelName;
