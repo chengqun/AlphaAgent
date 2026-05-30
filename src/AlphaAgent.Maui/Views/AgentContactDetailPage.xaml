@@ -66,11 +66,37 @@
                     <StackLayout Spacing="12" BindableLayout.ItemsSource="{Binding WorkflowSteps}">
                         <BindableLayout.ItemTemplate>
                             <DataTemplate>
-                                <StackLayout Orientation="Horizontal" Spacing="12">
-                                    <Label Text="▶" FontSize="16" Style="{StaticResource LabelPrimary}" VerticalOptions="Center" />
-                                    <StackLayout Spacing="2" HorizontalOptions="FillAndExpand">
-                                        <Label Text="{Binding Name}" FontSize="16" FontAttributes="Bold" Style="{StaticResource LabelPrimary}" />
-                                        <Label Text="{Binding Description}" FontSize="14" Style="{StaticResource LabelSecondary}" />
+                                <StackLayout Spacing="4">
+                                    <!-- 步骤标题行：序号 + 名称 -->
+                                    <StackLayout Orientation="Horizontal" Spacing="8">
+                                        <Border WidthRequest="28" HeightRequest="28"
+                                                StrokeShape="RoundRectangle 14"
+                                                BackgroundColor="{StaticResource InfoColor}"
+                                                HorizontalOptions="Start" VerticalOptions="Center">
+                                            <Label Text="{Binding StepIndex, StringFormat='{}{0}'}"
+                                                   FontSize="13" FontAttributes="Bold"
+                                                   TextColor="{StaticResource TextWhite}"
+                                                   HorizontalOptions="Center" VerticalOptions="Center" />
+                                        </Border>
+                                        <Label Text="{Binding Name}" FontSize="16" FontAttributes="Bold"
+                                               Style="{StaticResource LabelPrimary}" VerticalOptions="Center" />
+                                    </StackLayout>
+                                    <!-- 描述 -->
+                                    <Label Text="{Binding Description}" FontSize="14"
+                                           Style="{StaticResource LabelSecondary}" Margin="36,0,0,0" />
+                                    <!-- 工具列表 -->
+                                    <StackLayout Margin="36,4,0,0" Spacing="4"
+                                                 IsVisible="{Binding HasTools}"
+                                                 BindableLayout.ItemsSource="{Binding Tools}">
+                                        <BindableLayout.ItemTemplate>
+                                            <DataTemplate>
+                                                <StackLayout Orientation="Horizontal" Spacing="6">
+                                                    <Label Text="🔧" FontSize="12" VerticalOptions="Center" />
+                                                    <Label Text="{Binding .}" FontSize="12"
+                                                           Style="{StaticResource LabelSecondary}" />
+                                                </StackLayout>
+                                            </DataTemplate>
+                                        </BindableLayout.ItemTemplate>
                                     </StackLayout>
                                 </StackLayout>
                             </DataTemplate>

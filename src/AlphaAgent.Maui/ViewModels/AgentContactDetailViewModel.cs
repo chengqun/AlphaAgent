@@ -111,16 +111,28 @@ public partial class AgentContactDetailViewModel : ObservableObject, IQueryAttri
                 try
                 {
                     var agent = _agentFactory?.GetAgent(AgentName);
-                    if (agent != null)
+                    if (agent is Infrastructure.Services.AiAgent.WorkflowAgent workflowAgent
+                        && workflowAgent.SubAgents.Count > 0)
                     {
-                        // 工作流的 Description 包含步骤概述
-                        steps.Add(new WorkflowStepItem(agent.Name, agent.Description));
+                        var index = 1;
+                        foreach (var sub in workflowAgent.SubAgents)
+                        {
+                            steps.Add(new WorkflowStepItem(
+                                index++,
+                                sub.DisplayName,
+                                sub.Description,
+                                sub.Tools.Select(t => $"{t.Name}: {t.Description}").ToList()));
+                        }
+                    }
+                    else if (agent != null)
+                    {
+                        steps.Add(new WorkflowStepItem(1, agent.Name, agent.Description, new List<string>()));
                     }
                 }
                 catch
                 {
                     // ApiKey 未配置时无法实例化，用注册信息
-                    steps.Add(new WorkflowStepItem(AgentName, Description));
+                    steps.Add(new WorkflowStepItem(1, AgentName, Description, new List<string>()));
                 }
 
                 WorkflowSteps = steps;
@@ -305,12 +317,26 @@ public partial class ToolToggleItem : ObservableObject
 /// </summary>
 public class WorkflowStepItem
 {
+    /// <summary>步骤序号（从 1 开始）</summary>
+    public int StepIndex { get; }
+
+    /// <summary>子 Agent 显示名称（如 "技术分析专家"）</summary>
     public string Name { get; }
+
+    /// <summary>子 Agent 描述</summary>
     public string Description { get; }
 
-    public WorkflowStepItem(string name, string description)
+    /// <summary>子 Agent 使用的工具列表（如 "CalculateIndicators: 计算股票的技术指标"）</summary>
+    public List<string> Tools { get; }
+
+    /// <summary>是否有工具</summary>
+    public bool HasTools => Tools.Count > 0;
+
+    public WorkflowStepItem(int stepIndex, string name, string description, List<string> tools)
     {
+        StepIndex = stepIndex;
         Name = name;
         Description = description;
+        Tools = tools;
     }
 }

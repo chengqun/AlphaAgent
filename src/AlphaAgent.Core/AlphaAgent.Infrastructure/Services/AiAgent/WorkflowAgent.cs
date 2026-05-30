@@ -31,6 +31,12 @@ public class WorkflowAgent : IAgent
     public AgentMemoryMode MemoryMode { get; } = AgentMemoryMode.Stateless;
     public int MaxHistoryMessages { get; } = 20;
 
+    /// <summary>
+    /// 子 Agent 步骤信息（名称、描述、使用的工具列表）。
+    /// 在 Workflow 工厂类创建时填充，供 UI 展示工作流结构。
+    /// </summary>
+    public List<WorkflowSubAgentInfo> SubAgents { get; } = new();
+
     public WorkflowAgent(
         string name,
         string description,
@@ -266,4 +272,34 @@ public class WorkflowAgent : IAgent
             return new() { ["Result"] = result.ToString() ?? string.Empty };
         }
     }
+}
+
+/// <summary>
+/// 工作流子 Agent 信息，供 UI 展示工作流步骤结构。
+/// </summary>
+public class WorkflowSubAgentInfo
+{
+    /// <summary>子 Agent 名称（如 "TechnicalAnalyst"）</summary>
+    public string Name { get; set; } = string.Empty;
+
+    /// <summary>子 Agent 显示名称（如 "技术分析专家"）</summary>
+    public string DisplayName { get; set; } = string.Empty;
+
+    /// <summary>子 Agent 描述</summary>
+    public string Description { get; set; } = string.Empty;
+
+    /// <summary>子 Agent 使用的工具列表</summary>
+    public List<WorkflowToolInfo> Tools { get; set; } = new();
+}
+
+/// <summary>
+/// 工作流子 Agent 的工具信息。
+/// </summary>
+public class WorkflowToolInfo
+{
+    /// <summary>工具名称</summary>
+    public string Name { get; set; } = string.Empty;
+
+    /// <summary>工具描述</summary>
+    public string Description { get; set; } = string.Empty;
 }

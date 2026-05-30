@@ -4,6 +4,7 @@ using Microsoft.Agents.AI;
 using Microsoft.Agents.AI.Workflows;
 using Microsoft.Extensions.AI;
 using System;
+using System.Collections.Generic;
 using System.Linq;
 
 namespace AlphaAgent.Infrastructure.Services.AiAgent.Workflows;
@@ -20,17 +21,19 @@ public static class SequentialAnalysisWorkflow
         "你是一个专业的股票分析工作流，将依次执行技术指标分析、风险评估和投资建议生成。" +
         "每个阶段的输出将作为下一阶段的输入，最终给出综合分析报告。请用中文回复。";
 
-    private const string TechnicalAnalystPrompt =
-        "你是技术分析专家。根据用户提供的股票信息，使用工具查询行情数据并计算技术指标。" +
-        "输出详细的技术分析结果，包括趋势判断、关键价位、指标信号等。请用中文回复。";
-
-    private const string RiskAssessorPrompt =
-        "你是风险评估专家。基于技术分析结果，评估该股票的风险水平。" +
-        "考虑波动性、趋势稳定性、超买超卖状态等因素，给出风险等级和风险提示。请用中文回复。";
-
-    private const string InvestmentAdvisorPrompt =
-        "你是投资建议专家。综合技术分析结果和风险评估，给出具体的投资建议。" +
-        "包括操作方向（买入/卖出/持有）、仓位建议、止损止盈价位等。请用中文回复。";
+    /// <summary>
+    /// 子 Agent 定义：集中管理名称、描述、工具。增删工具只需改此处。
+    /// </summary>
+    private static readonly SubAgentDef[] SubAgentDefs =
+    [
+        new("TechnicalAnalyst", "技术分析专家", "执行技术指标分析，查询行情数据并计算SMA/EMA/RSI/MACD等指标",
+        [
+            new ToolDef(ToolNames.CalculateIndicators, "计算股票的技术指标"),
+            //new ToolDef(ToolNames.QuerySecurity, "查询证券信息"),
+        ]),
+        new("RiskAssessor", "风险评估专家", "基于技术分析结果评估风险水平，给出风险等级和提示", []),
+        new("InvestmentAdvisor", "投资建议专家", "综合分析和风险评估，给出操作方向、仓位和止损止盈建议", []),
+    ];
 
     public static IAgent Create(
         TechnicalAnalysisTool techAnalysisTool,
@@ -39,60 +42,33 @@ public static class SequentialAnalysisWorkflow
         string systemPrompt,
         float temperature)
     {
-        // 构建技术分析工具（仅第一个子 Agent 需要工具）
-        var analysisTools = new AITool[]
+        // 工具名 → AITool 实例的映射（子 Agent 共享同一个工具池，按定义选取）
+        var toolInstances = new Dictionary<string, AITool>
         {
-            AIFunctionFactory.Create(techAnalysisTool.CalculateIndicators),
-            AIFunctionFactory.Create(securityQueryTool.QuerySecurity),
+            [ToolNames.CalculateIndicators] = AIFunctionFactory.Create(techAnalysisTool.CalculateIndicators),
+            [ToolNames.QuerySecurity] = AIFunctionFactory.Create(securityQueryTool.QuerySecurity),
         };
 
-        // 子 Agent 1：技术分析专家（带工具）
-        var technicalAnalyst = new ChatClientAgent(
+        // 按定义表创建子 Agent
+        var subAgents = SubAgentDefs.Select(def => new ChatClientAgent(
             chatClient,
             new ChatClientAgentOptions
             {
-                Name = "TechnicalAnalyst",
-                Description = "技术分析专家 - 执行技术指标分析",
+                Name = def.Name,
+                Description = $"{def.DisplayName} - {def.Description}",
                 ChatOptions = new ChatOptions
                 {
-                    Tools = analysisTools.ToList(),
+                    Tools = def.ToolNames.Select(name => toolInstances[name]).ToList(),
                     Temperature = temperature,
                 },
-            });
-
-        // 子 Agent 2：风险评估专家（纯文本推理，无工具）
-        var riskAssessor = new ChatClientAgent(
-            chatClient,
-            new ChatClientAgentOptions
-            {
-                Name = "RiskAssessor",
-                Description = "风险评估专家 - 评估股票风险水平",
-                ChatOptions = new ChatOptions
-                {
-                    Temperature = temperature,
-                },
-            });
-
-        // 子 Agent 3：投资建议专家（纯文本推理，无工具）
-        var investmentAdvisor = new ChatClientAgent(
-            chatClient,
-            new ChatClientAgentOptions
-            {
-                Name = "InvestmentAdvisor",
-                Description = "投资建议专家 - 生成投资建议",
-                ChatOptions = new ChatOptions
-                {
-                    Temperature = temperature,
-                },
-            });
+            })).ToArray();
 
         // 构建 Sequential Workflow
         Workflow workflow;
         try
         {
             workflow = AgentWorkflowBuilder.BuildSequential(
-                "SequentialStockAnalysisWorkflow",
-                new[] { technicalAnalyst, riskAssessor, investmentAdvisor });
+                "SequentialStockAnalysisWorkflow", subAgents);
         }
         catch (Exception ex)
         {
@@ -114,8 +90,44 @@ public static class SequentialAnalysisWorkflow
             throw new InvalidOperationException($"Workflow.AsAIAgent() 失败: {ex.Message}", ex);
         }
 
-        // 包装为 WorkflowAgent 适配器
-        return new WorkflowAgent(
+        // 包装为 WorkflowAgent 适配器，从定义表填充 UI 信息
+        var workflowAgent = new WorkflowAgent(
             Name, Description, systemPrompt, workflowAIAgent, temperature);
+
+        foreach (var def in SubAgentDefs)
+        {
+            workflowAgent.SubAgents.Add(new WorkflowSubAgentInfo
+            {
+                Name = def.Name,
+                DisplayName = def.DisplayName,
+                Description = def.Description,
+                Tools = def.ToolDefs.Select(t => new WorkflowToolInfo
+                {
+                    Name = t.Name,
+                    Description = t.Description,
+                }).ToList(),
+            });
+        }
+
+        return workflowAgent;
     }
+
+    /// <summary>
+    /// 子 Agent 定义（名称、显示名、描述、工具列表）。
+    /// 增删子 Agent 或工具只需修改 <see cref="SubAgentDefs"/> 数组。
+    /// </summary>
+    private record SubAgentDef(
+        string Name,
+        string DisplayName,
+        string Description,
+        ToolDef[] ToolDefs)
+    {
+        /// <summary>工具名列表，供创建 ChatClientAgent 时从 toolInstances 选取</summary>
+        public string[] ToolNames => ToolDefs.Select(t => t.Name).ToArray();
+    }
+
+    /// <summary>
+    /// 工具定义（名称 + 描述）。与 <see cref="ToolNames"/> 常量对应。
+    /// </summary>
+    private record ToolDef(string Name, string Description);
 }
