@@ -82,14 +82,31 @@ public partial class AgentChatDetailViewModel : ObservableObject, IQueryAttribut
         var hasStockId = query.TryGetValue("stockId", out var stockId);
         var hasStockName = query.TryGetValue("stockName", out var stockName);
 
+        // 会话 ID（从聊天列表进入时传入，跳过创建）
+        Guid sid = Guid.Empty;
+        var hasSessionId = query.TryGetValue("sessionId", out var sessionId)
+                           && Guid.TryParse(sessionId?.ToString(), out sid);
+
+        // agentName 参数：恢复旧会话时传入会话自身的 AgentName，锁定 Agent
+        var hasAgentName = query.TryGetValue("agentName", out var agentNameParam);
+
         // 先根据传入参数确定模式
         if (hasStockId)
         {
             IsStockMode = true;
             StockId = Uri.UnescapeDataString(stockId?.ToString() ?? string.Empty);
             StockName = Uri.UnescapeDataString(stockName?.ToString() ?? string.Empty);
-            // 从用户设置读取股票模式默认 Agent，不再硬编码
-            AgentName = AiSettingsViewModel.GetStockModeAgentName();
+
+            // 恢复旧会话时，用会话自身的 AgentName（锁定 Agent，不随全局设置变化）
+            // 新建会话时，从全局设置读取用户选择的 Agent
+            if (hasSessionId && hasAgentName)
+            {
+                AgentName = Uri.UnescapeDataString(agentNameParam?.ToString() ?? AiSettingsViewModel.GetStockModeAgentName());
+            }
+            else
+            {
+                AgentName = AiSettingsViewModel.GetStockModeAgentName();
+            }
         }
         else
         {
@@ -104,11 +121,6 @@ public partial class AgentChatDetailViewModel : ObservableObject, IQueryAttribut
         {
             AgentName = Uri.UnescapeDataString(name?.ToString() ?? "股票分析助手");
         }
-
-        // 会话 ID（从聊天列表进入时传入，跳过创建）
-        Guid sid = Guid.Empty;
-        var hasSessionId = query.TryGetValue("sessionId", out var sessionId)
-                           && Guid.TryParse(sessionId?.ToString(), out sid);
 
         // 构造唯一标识，检测参数变化需要重新初始化
         var currentKey = hasSessionId ? sid.ToString() : (IsStockMode ? $"stock:{StockId}" : AgentName);
@@ -201,14 +213,14 @@ public partial class AgentChatDetailViewModel : ObservableObject, IQueryAttribut
                 _currentSessionId = activeSession.Id;
                 _isNewSession = false;
                 // 复用已有会话时也通知列表，确保从通讯录进入的会话出现在聊天列表
-                PublishNewAgentConversation(Type: 4, Name: StockName, Context: context);
+                PublishNewAgentConversation(Type: 4, Name: $"{StockName} · {AgentName}", Context: context);
             }
             else
             {
                 var session = await _agentService.StartSessionAsync(userId, AgentName, context);
                 _currentSessionId = session.Id;
                 _isNewSession = true;
-                PublishNewAgentConversation(Type: 4, Name: StockName, Context: context);
+                PublishNewAgentConversation(Type: 4, Name: $"{StockName} · {AgentName}", Context: context);
             }
         }
         else
@@ -238,6 +250,7 @@ public partial class AgentChatDetailViewModel : ObservableObject, IQueryAttribut
             Type = Type,
             Name = Name,
             Context = Context,
+            AgentName = AgentName,
             LastMessageTime = DateTime.UtcNow
         };
         _eventBusService?.Publish(new NewConversationEvent(conversation));

@@ -478,13 +478,16 @@ public partial class ChatViewModel : ObservableObject, IPageLifecycleAware
                 {
                     var parts = session.Context!.Split(':', 3);
                     var stockName = parts.Length >= 3 ? parts[2] : session.AgentName;
+                    // 股票会话显示 "股票名 · Agent名"，方便区分不同 Agent 的会话
+                    var displayName = $"{stockName} · {session.AgentName}";
 
                     Conversations.Add(new ObservableConversation(new Conversation
                     {
                         Id = session.Id,
                         Type = 4,
-                        Name = stockName,
+                        Name = displayName,
                         Context = session.Context,
+                        AgentName = session.AgentName,
                         LastMessage = session.Messages.LastOrDefault()?.Content,
                         LastMessageTime = session.LastActiveAt
                     }));
@@ -496,6 +499,7 @@ public partial class ChatViewModel : ObservableObject, IPageLifecycleAware
                         Id = session.Id,
                         Type = 3,
                         Name = session.AgentName,
+                        AgentName = session.AgentName,
                         LastMessage = session.Messages.LastOrDefault()?.Content,
                         LastMessageTime = session.LastActiveAt
                     }));
@@ -570,18 +574,21 @@ public partial class ChatViewModel : ObservableObject, IPageLifecycleAware
 
         if (conv.Type == 4)
         {
-            var stockName = conv.Name ?? "股票";
+            // 从 Context 解析 stockId 和 stockName（Context = "stock:{stockId}:{stockName}"）
+            var stockName = "股票";
             var stockId = conv.Id.ToString();
             if (!string.IsNullOrEmpty(conv.Context) && conv.Context.StartsWith("stock:"))
             {
                 var parts = conv.Context.Split(':', 3);
                 if (parts.Length >= 2) stockId = parts[1];
+                if (parts.Length >= 3) stockName = parts[2];
             }
             await Shell.Current.GoToAsync(
                 $"AgentChatDetailPage?" +
                 $"sessionId={conv.Id}&" +
                 $"stockId={Uri.EscapeDataString(stockId)}&" +
-                $"stockName={Uri.EscapeDataString(stockName)}");
+                $"stockName={Uri.EscapeDataString(stockName)}&" +
+                $"agentName={Uri.EscapeDataString(conv.AgentName ?? "指标分析Agent")}");
             return;
         }
 

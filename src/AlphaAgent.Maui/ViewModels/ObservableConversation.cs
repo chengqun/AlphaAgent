@@ -27,6 +27,7 @@ public partial class ObservableConversation : ObservableObject
     public string? DeviceType => _source.DeviceType;
     public int MemberCount => _source.MemberCount;
     public string? Context => _source.Context;
+    public string? AgentName => _source.AgentName;
 
     [ObservableProperty]
     private int _unreadCount;

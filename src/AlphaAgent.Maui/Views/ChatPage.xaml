@@ -41,29 +41,42 @@
                                       ColumnDefinitions="64,*,Auto">
                                     <!-- 头像/图标 -->
                                     <Grid Grid.Column="0" Margin="0,0,16,0">
-                                        <!-- 图标模式 - 有图标时显示 -->
-                                        <Border 
-                                            WidthRequest="48" 
+                                        <!-- 图标模式 - 有图标时显示（设备头像） -->
+                                        <Border
+                                            WidthRequest="48"
                                             HeightRequest="48"
                                             StrokeShape="RoundRectangle 12"
                                             BackgroundColor="{AppThemeBinding Light={StaticResource PageBackgroundLight}, Dark={StaticResource PageBackgroundDark}}"
                                             IsVisible="{Binding IconSource, Converter={StaticResource NullToBooleanConverter}}">
-                                            <Image 
-                                                Source="{Binding IconSource}" 
-                                                WidthRequest="24" 
-                                                HeightRequest="24" 
-                                                HorizontalOptions="Center" 
+                                            <Image
+                                                Source="{Binding IconSource}"
+                                                WidthRequest="24"
+                                                HeightRequest="24"
+                                                HorizontalOptions="Center"
                                                 VerticalOptions="Center" />
                                         </Border>
-                                        <!-- 字母模式 - 没有图标时显示 -->
-                                        <Border 
-                                            WidthRequest="48" 
+                                        <!-- Agent emoji 头像 - Type 3/4 时显示 -->
+                                        <Border
+                                            WidthRequest="48"
                                             HeightRequest="48"
                                             StrokeShape="RoundRectangle 12"
                                             BackgroundColor="{AppThemeBinding Light={StaticResource AvatarBackgroundLight}, Dark={StaticResource AvatarBackgroundDark}}"
-                                            IsVisible="{Binding IconSource, Converter={StaticResource NullToBooleanConverter}, ConverterParameter=inverse}">
-                                            <Label 
-                                                Text="{Binding Initial}" 
+                                            IsVisible="{Binding AgentAvatar, Converter={StaticResource NullToBooleanConverter}}">
+                                            <Label
+                                                Text="{Binding AgentAvatar}"
+                                                FontSize="24"
+                                                HorizontalOptions="Center"
+                                                VerticalOptions="Center" />
+                                        </Border>
+                                        <!-- 字母模式 - 没有图标且不是 Agent 会话时显示 -->
+                                        <Border
+                                            WidthRequest="48"
+                                            HeightRequest="48"
+                                            StrokeShape="RoundRectangle 12"
+                                            BackgroundColor="{AppThemeBinding Light={StaticResource AvatarBackgroundLight}, Dark={StaticResource AvatarBackgroundDark}}"
+                                            IsVisible="{Binding ShowLetterAvatar}">
+                                            <Label
+                                                Text="{Binding Initial}"
                                                 Style="{StaticResource LabelAvatar}"/>
                                         </Border>
                                     </Grid>
