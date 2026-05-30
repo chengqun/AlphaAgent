@@ -81,6 +81,7 @@ public static class MauiProgram
 		builder.Services.AddTransient<AgentContactDetailViewModel>();
 		builder.Services.AddTransient<InitializingViewModel>();
 		builder.Services.AddTransient<DeviceManagementViewModel>();
+			builder.Services.AddTransient<AiSettingsViewModel>();
 
 #if DEBUG
 		builder.Logging.AddDebug();

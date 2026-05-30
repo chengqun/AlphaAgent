@@ -88,7 +88,8 @@ public partial class AgentChatDetailViewModel : ObservableObject, IQueryAttribut
             IsStockMode = true;
             StockId = Uri.UnescapeDataString(stockId?.ToString() ?? string.Empty);
             StockName = Uri.UnescapeDataString(stockName?.ToString() ?? string.Empty);
-            AgentName = "指标分析Agent";
+            // 从用户设置读取股票模式默认 Agent，不再硬编码
+            AgentName = AiSettingsViewModel.GetStockModeAgentName();
         }
         else
         {

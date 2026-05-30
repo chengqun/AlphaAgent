@@ -1,0 +1,92 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:viewmodel="clr-namespace:AlphaAgent.Maui.ViewModels"
+             x:Class="AlphaAgent.Maui.Views.AiSettingsPage"
+             Title="AI设置"
+             Shell.TabBarIsVisible="False"
+             BackgroundColor="{AppThemeBinding Light={StaticResource PageBackgroundLight}, Dark={StaticResource PageBackgroundDark}}">
+
+    <ScrollView BackgroundColor="{AppThemeBinding Light={StaticResource PageBackgroundLight}, Dark={StaticResource PageBackgroundDark}}">
+        <StackLayout Padding="{StaticResource PagePadding}" Spacing="{StaticResource SpacingLarge}">
+
+            <!-- 股票分析助手选择卡片 -->
+            <Border Style="{StaticResource CardBorder}"
+                    StrokeShape="RoundRectangle 20"
+                    Padding="20">
+                <StackLayout Spacing="16">
+                    <!-- 标题行 -->
+                    <StackLayout Orientation="Horizontal" Spacing="12">
+                        <Border WidthRequest="44" HeightRequest="44"
+                                StrokeShape="RoundRectangle 22"
+                                BackgroundColor="{AppThemeBinding Light={StaticResource AvatarBackgroundLight}, Dark={StaticResource AvatarBackgroundDark}}">
+                            <Label Text="📈"
+                                   FontSize="22"
+                                   TextColor="{StaticResource TextWhite}"
+                                   HorizontalOptions="Center"
+                                   VerticalOptions="Center" />
+                        </Border>
+                        <StackLayout VerticalOptions="Center">
+                            <Label Text="股票分析助手"
+                                   FontSize="18"
+                                   FontAttributes="Bold"
+                                   Style="{StaticResource LabelPrimary}" />
+                            <Label Text="选择与股票对话时使用的AI助手"
+                                   FontSize="14"
+                                   Style="{StaticResource LabelSecondary}" />
+                        </StackLayout>
+                    </StackLayout>
+
+                    <!-- Agent 选择器 -->
+                    <Border Style="{StaticResource CardBorder}"
+                            StrokeShape="RoundRectangle 12"
+                            Padding="12"
+                            BackgroundColor="{AppThemeBinding Light=#F5F5F5, Dark=#2A2A2A}">
+                        <StackLayout Spacing="8">
+                            <Label Text="选择Agent或工作流"
+                                   FontSize="14"
+                                   Style="{StaticResource LabelSecondary}" />
+                            <Picker ItemsSource="{Binding AvailableAgents}"
+                                    ItemDisplayBinding="{Binding Name}"
+                                    SelectedIndex="{Binding SelectedAgentIndex}"
+                                    Title="请选择..."
+                                    HorizontalOptions="FillAndExpand" />
+                        </StackLayout>
+                    </Border>
+
+                    <!-- 当前选择说明 -->
+                    <Label Text="{Binding CurrentSelectionText}"
+                           FontSize="13"
+                           Style="{StaticResource LabelSecondary}"
+                           LineBreakMode="WordWrap" />
+                </StackLayout>
+            </Border>
+
+            <!-- 使用说明卡片 -->
+            <Border Style="{StaticResource CardBorder}"
+                    StrokeShape="RoundRectangle 20"
+                    Padding="20">
+                <StackLayout Spacing="8">
+                    <Label Text="💡 使用说明"
+                           FontSize="16"
+                           FontAttributes="Bold"
+                           Style="{StaticResource LabelPrimary}" />
+                    <Label Text="• 在股票详情页点击分析时，将使用上方选择的AI助手"
+                           FontSize="14"
+                           Style="{StaticResource LabelSecondary}"
+                           LineBreakMode="WordWrap" />
+                    <Label Text="• 不同的Agent/Workflow有不同的分析风格和能力"
+                           FontSize="14"
+                           Style="{StaticResource LabelSecondary}"
+                           LineBreakMode="WordWrap" />
+                    <Label Text="• 工作流(Workflow)会依次执行多个分析步骤，结果更全面"
+                           FontSize="14"
+                           Style="{StaticResource LabelSecondary}"
+                           LineBreakMode="WordWrap" />
+                </StackLayout>
+            </Border>
+
+        </StackLayout>
+    </ScrollView>
+
+</ContentPage>

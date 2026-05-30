@@ -114,6 +114,12 @@ public partial class MeViewModel : ObservableObject
         await Shell.Current.GoToAsync("DeviceManagementPage");
     }
 
+    [RelayCommand]
+    private async Task NavigateToAiSettingsAsync()
+    {
+        await Shell.Current.GoToAsync("AiSettingsPage");
+    }
+
     public async Task ToggleThemeAsync(bool isDark)
     {
         try

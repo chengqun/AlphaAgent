@@ -47,6 +47,7 @@ public partial class App : Microsoft.Maui.Controls.Application
         Routing.RegisterRoute("AgentContactDetailPage", typeof(Views.AgentContactDetailPage));
         Routing.RegisterRoute("InitializingPage", typeof(Views.InitializingPage));
         Routing.RegisterRoute("DeviceManagementPage", typeof(Views.DeviceManagementPage));
+        Routing.RegisterRoute("AiSettingsPage", typeof(Views.AiSettingsPage));
 
         return new Window(new AppShell());
     }
