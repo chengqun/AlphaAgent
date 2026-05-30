@@ -39,6 +39,10 @@ public class ContentPart
     public string? ToolName { get; set; }
     public Dictionary<string, object>? ToolInput { get; set; }
     public Dictionary<string, object>? ToolOutput { get; set; }
+    /// <summary>
+    /// 产出此内容片段的 Agent 名称（多 Agent 工作流中使用）。
+    /// </summary>
+    public string? AuthorName { get; set; }
 }
 
 /// <summary>
@@ -47,6 +51,11 @@ public class ContentPart
 public abstract class AgentStreamEvent
 {
     public string Type { get; protected set; } = string.Empty;
+    /// <summary>
+    /// 产出此事件的 Agent 名称（多 Agent 工作流中标识哪个子 Agent 在执行）。
+    /// 单 Agent 场景下为空，UI 应回退到会话级 AgentName。
+    /// </summary>
+    public string? AuthorName { get; set; }
 }
 
 public class AgentTextEvent : AgentStreamEvent

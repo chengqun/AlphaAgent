@@ -1,5 +1,6 @@
 using AlphaAgent.Domain.Abstractions.AiAgent;
 using Microsoft.Agents.AI;
+using Microsoft.Agents.AI.Workflows;
 using Microsoft.Extensions.AI;
 using System;
 using System.Collections.Generic;
@@ -79,7 +80,8 @@ public class WorkflowAgent : IAgent
                 yield return new AgentResponseChunk
                 {
                     Content = update.Text,
-                    IsComplete = false
+                    IsComplete = false,
+                    AuthorName = update.AuthorName
                 };
             }
 
@@ -101,6 +103,7 @@ public class WorkflowAgent : IAgent
                     {
                         Content = string.Empty,
                         IsComplete = false,
+                        AuthorName = update.AuthorName,
                         ToolCall = new ToolCall
                         {
                             Id = functionCall.CallId,
@@ -118,6 +121,7 @@ public class WorkflowAgent : IAgent
                     {
                         Content = string.Empty,
                         IsComplete = false,
+                        AuthorName = update.AuthorName,
                         ToolCall = new ToolCall
                         {
                             Id = functionResult.CallId,

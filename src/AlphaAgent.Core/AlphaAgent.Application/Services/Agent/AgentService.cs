@@ -205,13 +205,17 @@ public class AgentService : IAgentService
         var contentParts = new List<ContentPart>();
         var partIndex = 0;
         var currentTextPartStart = contentBuilder.Length;
+        string? lastAuthorName = null;
 
         await foreach (var chunk in agent.RunStreamingAsync(context))
         {
+            if (chunk.AuthorName != null)
+                lastAuthorName = chunk.AuthorName;
+
             if (!string.IsNullOrEmpty(chunk.Content))
             {
                 contentBuilder.Append(chunk.Content);
-                yield return new AgentTextEvent(chunk.Content);
+                yield return new AgentTextEvent(chunk.Content) { AuthorName = chunk.AuthorName };
             }
 
             if (chunk.ToolCall != null)
@@ -224,7 +228,8 @@ public class AgentService : IAgentService
                     {
                         Type = "text",
                         Index = partIndex++,
-                        Text = textSoFar
+                        Text = textSoFar,
+                        AuthorName = chunk.AuthorName
                     });
                     currentTextPartStart = contentBuilder.Length;
                 }
@@ -239,13 +244,15 @@ public class AgentService : IAgentService
                         Type = "tool_call",
                         Index = partIndex++,
                         ToolName = chunk.ToolCall.ToolName,
-                        ToolInput = chunk.ToolCall.Input
+                        ToolInput = chunk.ToolCall.Input,
+                        AuthorName = chunk.AuthorName
                     });
 
                     yield return new AgentToolCallEvent
                     {
                         ToolName = chunk.ToolCall.ToolName,
-                        Input = chunk.ToolCall.Input
+                        Input = chunk.ToolCall.Input,
+                        AuthorName = chunk.AuthorName
                     };
                 }
                 else if (toolCallMap.TryGetValue(callId, out var existing))
@@ -257,13 +264,15 @@ public class AgentService : IAgentService
                         Type = "tool_result",
                         Index = partIndex++,
                         ToolName = existing.ToolName,
-                        ToolOutput = chunk.ToolCall.Output
+                        ToolOutput = chunk.ToolCall.Output,
+                        AuthorName = chunk.AuthorName
                     });
 
                     yield return new AgentToolResultEvent
                     {
                         ToolName = existing.ToolName,
-                        Output = chunk.ToolCall.Output
+                        Output = chunk.ToolCall.Output,
+                        AuthorName = chunk.AuthorName
                     };
                 }
                 else
@@ -275,13 +284,15 @@ public class AgentService : IAgentService
                         Type = "tool_result",
                         Index = partIndex++,
                         ToolName = chunk.ToolCall.ToolName,
-                        ToolOutput = chunk.ToolCall.Output
+                        ToolOutput = chunk.ToolCall.Output,
+                        AuthorName = chunk.AuthorName
                     });
 
                     yield return new AgentToolResultEvent
                     {
                         ToolName = chunk.ToolCall.ToolName,
-                        Output = chunk.ToolCall.Output
+                        Output = chunk.ToolCall.Output,
+                        AuthorName = chunk.AuthorName
                     };
                 }
             }
@@ -295,7 +306,8 @@ public class AgentService : IAgentService
             {
                 Type = "text",
                 Index = partIndex++,
-                Text = remainingText
+                Text = remainingText,
+                AuthorName = lastAuthorName
             });
         }
 

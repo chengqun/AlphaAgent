@@ -32,7 +32,7 @@
             <StackLayout Padding="4,2">
                 <Border Style="{StaticResource AssistantMessageBorder}">
                     <StackLayout>
-                        <Label Text="{Binding AgentName, Source={RelativeSource AncestorType={x:Type views:AgentChatDetailPage}}}"
+                        <Label Text="{Binding AuthorName}"
                                FontSize="11"
                                TextColor="{AppThemeBinding Light={StaticResource TextSecondaryLight}, Dark={StaticResource TextSecondaryDark}}" />
 
@@ -75,6 +75,9 @@
                         <TapGestureRecognizer Tapped="OnToolCardTapped" />
                     </Border.GestureRecognizers>
                     <StackLayout>
+                        <Label Text="{Binding AuthorName}"
+                               FontSize="11"
+                               TextColor="{AppThemeBinding Light={StaticResource TextSecondaryLight}, Dark={StaticResource TextSecondaryDark}}" />
                         <Label Style="{StaticResource ToolCallText}">
                             <Label.FormattedText>
                                 <FormattedString>
@@ -107,6 +110,9 @@
                         <TapGestureRecognizer Tapped="OnToolCardTapped" />
                     </Border.GestureRecognizers>
                     <StackLayout>
+                        <Label Text="{Binding AuthorName}"
+                               FontSize="11"
+                               TextColor="{AppThemeBinding Light={StaticResource TextSecondaryLight}, Dark={StaticResource TextSecondaryDark}}" />
                         <Label Style="{StaticResource ToolResultText}">
                             <Label.FormattedText>
                                 <FormattedString>
@@ -136,7 +142,7 @@
             <StackLayout Padding="4,2">
                 <Border Style="{StaticResource AssistantMessageBorder}">
                     <StackLayout Orientation="Horizontal" Spacing="6">
-                        <Label Text="{Binding AgentName, Source={RelativeSource AncestorType={x:Type views:AgentChatDetailPage}}}"
+                        <Label Text="{Binding AuthorName}"
                                FontSize="11"
                                TextColor="{AppThemeBinding Light={StaticResource TextSecondaryLight}, Dark={StaticResource TextSecondaryDark}}" />
                         <Label Text="思考中..."

@@ -334,7 +334,7 @@ public partial class AgentChatDetailViewModel : ObservableObject, IQueryAttribut
             : DateTime.SpecifyKind(dt, DateTimeKind.Utc).ToLocalTime();
     }
 
-    private static IEnumerable<ChatMessageItem> ExpandMessage(AgentChatMessageDto msg)
+    private IEnumerable<ChatMessageItem> ExpandMessage(AgentChatMessageDto msg)
     {
         var role = msg.Role?.ToLowerInvariant() ?? "user";
         var timestamp = EnsureLocalTime(msg.Timestamp);
@@ -368,6 +368,7 @@ public partial class AgentChatDetailViewModel : ObservableObject, IQueryAttribut
                                 Role = "assistant",
                                 Content = part.Text,
                                 MarkdownContent = part.Text,
+                                AuthorName = part.AuthorName ?? AgentName,
                                 Timestamp = timestamp
                             };
                         }
@@ -380,6 +381,7 @@ public partial class AgentChatDetailViewModel : ObservableObject, IQueryAttribut
                             Role = "assistant",
                             ToolName = part.ToolName,
                             Input = part.ToolInput ?? new Dictionary<string, object>(),
+                            AuthorName = part.AuthorName ?? AgentName,
                             Timestamp = timestamp
                         };
                         break;
@@ -391,6 +393,7 @@ public partial class AgentChatDetailViewModel : ObservableObject, IQueryAttribut
                             Role = "assistant",
                             ToolName = part.ToolName,
                             Output = part.ToolOutput,
+                            AuthorName = part.AuthorName ?? AgentName,
                             Timestamp = timestamp
                         };
                         break;
@@ -464,6 +467,7 @@ public partial class AgentChatDetailViewModel : ObservableObject, IQueryAttribut
                         Role = "assistant",
                         Content = textEvent.Content,
                         IsStreaming = true,
+                        AuthorName = textEvent.AuthorName ?? AgentName,
                         Timestamp = DateTime.Now
                     };
                     Messages.Add(_currentTextItem);
@@ -471,6 +475,9 @@ public partial class AgentChatDetailViewModel : ObservableObject, IQueryAttribut
                 else
                 {
                     _currentTextItem.Content += textEvent.Content;
+                    // 更新 Agent 名称（子 Agent 切换时）
+                    if (!string.IsNullOrEmpty(textEvent.AuthorName) && _currentTextItem.AuthorName != textEvent.AuthorName)
+                        _currentTextItem.AuthorName = textEvent.AuthorName;
                 }
                 StreamingContentUpdated?.Invoke();
                 break;
@@ -489,6 +496,7 @@ public partial class AgentChatDetailViewModel : ObservableObject, IQueryAttribut
                     Role = "assistant",
                     ToolName = toolCallEvent.ToolName,
                     Input = toolCallEvent.Input,
+                    AuthorName = toolCallEvent.AuthorName ?? AgentName,
                     Timestamp = DateTime.Now
                 });
                 _currentThinkingItem = new ChatMessageItem
@@ -496,6 +504,7 @@ public partial class AgentChatDetailViewModel : ObservableObject, IQueryAttribut
                     Id = $"thinking_{toolCallEvent.ToolName}",
                     ItemType = "thinking",
                     Role = "assistant",
+                    AuthorName = toolCallEvent.AuthorName ?? AgentName,
                     Timestamp = DateTime.Now
                 };
                 Messages.Add(_currentThinkingItem);
@@ -520,6 +529,7 @@ public partial class AgentChatDetailViewModel : ObservableObject, IQueryAttribut
                     Role = "assistant",
                     ToolName = toolResultEvent.ToolName,
                     Output = toolResultEvent.Output,
+                    AuthorName = toolResultEvent.AuthorName ?? AgentName,
                     Timestamp = DateTime.Now
                 });
                 break;

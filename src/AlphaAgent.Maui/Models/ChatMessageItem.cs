@@ -44,6 +44,13 @@ public partial class ChatMessageItem : ObservableObject
     [ObservableProperty]
     private bool _isStreaming;
 
+    /// <summary>
+    /// 产出此消息的 Agent 名称（多 Agent 工作流中标识哪个子 Agent 在执行）。
+    /// 为空时 UI 应回退到会话级 AgentName。
+    /// </summary>
+    [ObservableProperty]
+    private string _authorName = string.Empty;
+
     public bool IsUserText => Role == "user" && ItemType == "text";
     public bool IsAssistantText => Role == "assistant" && ItemType == "text";
     public bool IsToolCall => ItemType == "tool_call";

@@ -69,6 +69,11 @@ public class AgentResponseChunk
     public string Content { get; set; } = string.Empty;
     public bool IsComplete { get; set; } = false;
     public ToolCall? ToolCall { get; set; }
+    /// <summary>
+    /// 产出此 chunk 的 Agent 名称（多 Agent 工作流中标识哪个子 Agent 在执行）。
+    /// 单 Agent 场景下为空，UI 应回退到会话级 AgentName。
+    /// </summary>
+    public string? AuthorName { get; set; }
 }
 
 public enum AgentSessionStatus

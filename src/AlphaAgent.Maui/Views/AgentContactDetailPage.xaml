@@ -56,8 +56,32 @@
                        FontSize="16" />
             </Border>
 
-            <!-- 工具配置 -->
-            <Border BackgroundColor="{AppThemeBinding Light={StaticResource CardBackgroundLight}, Dark={StaticResource CardBackgroundDark}}"
+            <!-- 工作流步骤信息（IsWorkflow=true 时显示） -->
+            <Border IsVisible="{Binding IsWorkflow}"
+                    BackgroundColor="{AppThemeBinding Light={StaticResource CardBackgroundLight}, Dark={StaticResource CardBackgroundDark}}"
+                    StrokeShape="RoundRectangle 12"
+                    Padding="{StaticResource CardPadding}">
+                <StackLayout Spacing="8">
+                    <Label Text="工作流步骤" FontSize="18" FontAttributes="Bold" Style="{StaticResource LabelPrimary}" />
+                    <StackLayout Spacing="12" BindableLayout.ItemsSource="{Binding WorkflowSteps}">
+                        <BindableLayout.ItemTemplate>
+                            <DataTemplate>
+                                <StackLayout Orientation="Horizontal" Spacing="12">
+                                    <Label Text="▶" FontSize="16" Style="{StaticResource LabelPrimary}" VerticalOptions="Center" />
+                                    <StackLayout Spacing="2" HorizontalOptions="FillAndExpand">
+                                        <Label Text="{Binding Name}" FontSize="16" FontAttributes="Bold" Style="{StaticResource LabelPrimary}" />
+                                        <Label Text="{Binding Description}" FontSize="14" Style="{StaticResource LabelSecondary}" />
+                                    </StackLayout>
+                                </StackLayout>
+                            </DataTemplate>
+                        </BindableLayout.ItemTemplate>
+                    </StackLayout>
+                </StackLayout>
+            </Border>
+
+            <!-- 工具配置（IsWorkflow=false 时显示） -->
+            <Border IsVisible="{Binding IsWorkflow, Converter={StaticResource InvertedBoolConverter}}"
+                    BackgroundColor="{AppThemeBinding Light={StaticResource CardBackgroundLight}, Dark={StaticResource CardBackgroundDark}}"
                     StrokeShape="RoundRectangle 12"
                     Padding="{StaticResource CardPadding}">
                 <StackLayout Spacing="8">

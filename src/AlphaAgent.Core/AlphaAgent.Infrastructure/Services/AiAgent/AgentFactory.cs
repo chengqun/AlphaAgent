@@ -53,9 +53,10 @@ public class AgentFactory : IAgentFactory
                     MaxHistoryMessages = agent.MaxHistoryMessages
                 });
             }
-            catch
+            catch (Exception ex)
             {
                 // ApiKey 为空或 IChatClient 创建失败时，返回注册元数据
+                System.Diagnostics.Debug.WriteLine($"[AgentFactory] 实例化 Agent '{name}' 失败: {ex.GetType().Name}: {ex.Message}");
                 infos.Add(new AgentInfo
                 {
                     Name = name,
@@ -79,8 +80,9 @@ public class AgentFactory : IAgentFactory
             var agent = registration.Factory(_serviceProvider);
             return agent.Tools;
         }
-        catch
+        catch (Exception ex)
         {
+            System.Diagnostics.Debug.WriteLine($"[AgentFactory] GetAllTools('{agentName}') 实例化失败: {ex.GetType().Name}: {ex.Message}");
             return Array.Empty<ToolInfo>();
         }
     }

@@ -51,8 +51,8 @@ public static class SequentialAnalysisWorkflow
             chatClient,
             new ChatClientAgentOptions
             {
-                Name = "技术分析专家",
-                Description = "执行技术指标分析",
+                Name = "TechnicalAnalyst",
+                Description = "技术分析专家 - 执行技术指标分析",
                 ChatOptions = new ChatOptions
                 {
                     Tools = analysisTools.ToList(),
@@ -65,8 +65,8 @@ public static class SequentialAnalysisWorkflow
             chatClient,
             new ChatClientAgentOptions
             {
-                Name = "风险评估专家",
-                Description = "评估股票风险水平",
+                Name = "RiskAssessor",
+                Description = "风险评估专家 - 评估股票风险水平",
                 ChatOptions = new ChatOptions
                 {
                     Temperature = temperature,
@@ -78,8 +78,8 @@ public static class SequentialAnalysisWorkflow
             chatClient,
             new ChatClientAgentOptions
             {
-                Name = "投资建议专家",
-                Description = "生成投资建议",
+                Name = "InvestmentAdvisor",
+                Description = "投资建议专家 - 生成投资建议",
                 ChatOptions = new ChatOptions
                 {
                     Temperature = temperature,
@@ -87,16 +87,32 @@ public static class SequentialAnalysisWorkflow
             });
 
         // 构建 Sequential Workflow
-        var workflow = AgentWorkflowBuilder.BuildSequential(
-            "SequentialStockAnalysis",
-            new[] { technicalAnalyst, riskAssessor, investmentAdvisor });
+        Workflow workflow;
+        try
+        {
+            workflow = AgentWorkflowBuilder.BuildSequential(
+                "SequentialStockAnalysisWorkflow",
+                new[] { technicalAnalyst, riskAssessor, investmentAdvisor });
+        }
+        catch (Exception ex)
+        {
+            throw new InvalidOperationException($"构建 Sequential Workflow 失败: {ex.Message}", ex);
+        }
 
         // Workflow 转为 AIAgent
-        var workflowAIAgent = workflow.AsAIAgent(
-            id: "sequential-stock-analysis",
-            name: Name,
-            description: Description,
-            executionEnvironment: InProcessExecution.Default);
+        AIAgent workflowAIAgent;
+        try
+        {
+            workflowAIAgent = workflow.AsAIAgent(
+                id: "SequentialStockAnalysis",
+                name: "SequentialStockAnalysis",
+                description: Description,
+                executionEnvironment: InProcessExecution.OffThread);
+        }
+        catch (Exception ex)
+        {
+            throw new InvalidOperationException($"Workflow.AsAIAgent() 失败: {ex.Message}", ex);
+        }
 
         // 包装为 WorkflowAgent 适配器
         return new WorkflowAgent(

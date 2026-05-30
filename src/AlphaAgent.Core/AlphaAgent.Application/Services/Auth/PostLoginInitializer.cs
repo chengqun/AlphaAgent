@@ -119,10 +119,12 @@ public class PostLoginInitializer : IPostLoginInitializer
         _agentOptions.EnabledTools.Clear();
         foreach (var config in configs.Where(c => c.IsActive))
         {
+            if (string.IsNullOrWhiteSpace(config.AgentName)) continue;
+
             if (!string.IsNullOrWhiteSpace(config.DefaultSystemPrompt))
                 _agentOptions.AgentSystemPrompts[config.AgentName] = config.DefaultSystemPrompt;
 
-            if (config.EnabledTools.Count > 0)
+            if (config.EnabledTools != null && config.EnabledTools.Count > 0)
                 _agentOptions.EnabledTools[config.AgentName] = config.EnabledTools;
         }
     }

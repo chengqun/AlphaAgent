@@ -46,6 +46,18 @@ public partial class AgentContactDetailViewModel : ObservableObject, IQueryAttri
     [ObservableProperty]
     private bool _hasDisabledTools;
 
+    /// <summary>
+    /// 是否为工作流类型（无外部工具，显示步骤信息而非工具开关）。
+    /// </summary>
+    [ObservableProperty]
+    private bool _isWorkflow;
+
+    /// <summary>
+    /// 工作流的子 Agent 步骤列表（仅 IsWorkflow=true 时使用）。
+    /// </summary>
+    [ObservableProperty]
+    private ObservableCollection<WorkflowStepItem> _workflowSteps = new();
+
     private Guid? _cachedUserId;
 
     public AgentContactDetailViewModel(
@@ -88,6 +100,34 @@ public partial class AgentContactDetailViewModel : ObservableObject, IQueryAttri
 
             var allTools = _agentFactory?.GetAllTools(AgentName) ?? Array.Empty<ToolInfo>();
             var enabledToolNames = await GetEnabledToolNamesAsync();
+
+            // 工作流类型：无外部工具，显示步骤信息
+            if (allTools.Count == 0)
+            {
+                IsWorkflow = true;
+                var steps = new ObservableCollection<WorkflowStepItem>();
+
+                // 尝试从 Agent 实例获取子 Agent 信息
+                try
+                {
+                    var agent = _agentFactory?.GetAgent(AgentName);
+                    if (agent != null)
+                    {
+                        // 工作流的 Description 包含步骤概述
+                        steps.Add(new WorkflowStepItem(agent.Name, agent.Description));
+                    }
+                }
+                catch
+                {
+                    // ApiKey 未配置时无法实例化，用注册信息
+                    steps.Add(new WorkflowStepItem(AgentName, Description));
+                }
+
+                WorkflowSteps = steps;
+                return;
+            }
+
+            IsWorkflow = false;
 
             var enabled = new ObservableCollection<ToolToggleItem>();
             var disabled = new ObservableCollection<ToolToggleItem>();
@@ -257,5 +297,20 @@ public partial class ToolToggleItem : ObservableObject
     partial void OnIsEnabledChanged(bool value)
     {
         IsEnabledChanged?.Invoke(this);
+    }
+}
+
+/// <summary>
+/// 工作流步骤展示项（纯显示，无开关）。
+/// </summary>
+public class WorkflowStepItem
+{
+    public string Name { get; }
+    public string Description { get; }
+
+    public WorkflowStepItem(string name, string description)
+    {
+        Name = name;
+        Description = description;
     }
 }
