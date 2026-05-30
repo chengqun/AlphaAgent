@@ -46,10 +46,10 @@ class Program
             return;
         }
 
-        if (string.IsNullOrWhiteSpace(agentConfig.ApiKey))
+        if (string.IsNullOrWhiteSpace(agentConfig.DefaultLlm.ApiKey))
         {
             Console.Write("请输入 Agent API Key: ");
-            agentConfig.ApiKey = Console.ReadLine() ?? "";
+            agentConfig.DefaultLlm.ApiKey = Console.ReadLine() ?? "";
         }
 
         // 构建 DI 容器

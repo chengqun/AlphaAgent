@@ -112,6 +112,16 @@ public static class AbpPermissions
         public const string Delete = Default + ".Delete";
     }
 
+    // LLM配置管理权限
+    public static class LlmConfigs
+    {
+        public const string Default = GroupName + ".LlmConfigs";
+        public const string Manage = Default + ".Manage";
+        public const string Create = Default + ".Create";
+        public const string Update = Default + ".Update";
+        public const string Delete = Default + ".Delete";
+    }
+
     // 应用版本管理权限
     public static class VersionConfigs
     {

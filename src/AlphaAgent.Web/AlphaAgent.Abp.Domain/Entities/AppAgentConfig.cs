@@ -6,30 +6,25 @@ namespace AlphaAgent.Abp.Domain.Entities;
 public class AppAgentConfig : FullAuditedAggregateRoot<Guid>
 {
     public string AgentName { get; set; } = "指标分析Agent";
-    public string ModelName { get; set; } = "deepseek-chat";
-    public string ApiKey { get; set; } = string.Empty;
-    public string Endpoint { get; set; } = "https://api.deepseek.com/v1";
     public string DefaultSystemPrompt { get; set; } = string.Empty;
-    public float Temperature { get; set; } = 0.5f;
     public bool IsActive { get; set; } = true;
+
+    /// <summary>
+    /// 关联的 LLM 配置 ID。null 表示使用默认 LLM 配置（AppLlmConfig.IsDefault=true 的那条）。
+    /// </summary>
+    public Guid? LlmConfigId { get; set; }
 
     public AppAgentConfig() { }
 
     public AppAgentConfig(
         string agentName,
-        string modelName,
-        string apiKey,
-        string endpoint,
         string defaultSystemPrompt,
-        float temperature = 0.5f,
-        bool isActive = true)
+        bool isActive = true,
+        Guid? llmConfigId = null)
     {
         AgentName = agentName;
-        ModelName = modelName;
-        ApiKey = apiKey;
-        Endpoint = endpoint;
         DefaultSystemPrompt = defaultSystemPrompt;
-        Temperature = temperature;
         IsActive = isActive;
+        LlmConfigId = llmConfigId;
     }
 }

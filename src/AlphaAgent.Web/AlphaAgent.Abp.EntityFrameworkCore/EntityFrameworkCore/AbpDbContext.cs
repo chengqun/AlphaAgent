@@ -81,6 +81,9 @@ public class AbpDbContext :
     // Agent 配置
     public virtual DbSet<AppAgentConfig> AgentConfigs { get; set; } = null!;
 
+    // LLM 配置（每个用户可有多条，如 DeepSeek、GPT-4o、本地模型）
+    public virtual DbSet<AppLlmConfig> LlmConfigs { get; set; } = null!;
+
     #endregion
 
     public AbpDbContext(DbContextOptions<AbpDbContext> options)
@@ -215,10 +218,19 @@ public class AbpDbContext :
             b.HasIndex(a => a.CreatorId);
             b.HasIndex(a => new { a.CreatorId, a.AgentName, a.IsActive });
             b.Property(a => a.AgentName).HasMaxLength(64).IsRequired();
-            b.Property(a => a.ModelName).HasMaxLength(128).IsRequired();
-            b.Property(a => a.ApiKey).HasMaxLength(256).IsRequired();
-            b.Property(a => a.Endpoint).HasMaxLength(256).IsRequired();
             b.Property(a => a.DefaultSystemPrompt).HasMaxLength(2000);
+        });
+
+        // 配置 LLM 配置表 - LlmConfigs
+        builder.Entity<AppLlmConfig>(b =>
+        {
+            b.ToTable("AppLlmConfigs");
+            b.HasKey(l => l.Id);
+            b.HasIndex(l => l.CreatorId);
+            b.Property(l => l.Name).HasMaxLength(64).IsRequired();
+            b.Property(l => l.ModelName).HasMaxLength(128).IsRequired();
+            b.Property(l => l.ApiKey).HasMaxLength(256).IsRequired();
+            b.Property(l => l.Endpoint).HasMaxLength(256).IsRequired();
         });
 
 

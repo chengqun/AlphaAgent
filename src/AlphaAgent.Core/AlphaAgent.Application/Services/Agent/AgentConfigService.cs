@@ -1,6 +1,5 @@
 using AlphaAgent.Application.Dtos.Agent;
 using AlphaAgent.Application.Interfaces.Agent;
-using AlphaAgent.Domain.Abstractions.AiAgent;
 using AlphaAgent.Domain.Abstractions.Interfaces;
 using AlphaAgent.Domain.Entities;
 using AlphaAgent.Domain.Interfaces;
@@ -15,15 +14,11 @@ public class AgentConfigService : IAgentConfigService
 {
     private readonly IHttpClientService _httpClientService;
     private readonly IAgentConfigCacheRepository _cacheRepository;
-    private readonly IAgentFactory _agentFactory;
-    private readonly AgentOptions _agentOptions;
 
-    public AgentConfigService(IHttpClientService httpClientService, IAgentConfigCacheRepository cacheRepository, IAgentFactory agentFactory, AgentOptions agentOptions)
+    public AgentConfigService(IHttpClientService httpClientService, IAgentConfigCacheRepository cacheRepository)
     {
         _httpClientService = httpClientService;
         _cacheRepository = cacheRepository;
-        _agentFactory = agentFactory;
-        _agentOptions = agentOptions;
     }
 
     public async Task<List<AgentConfigResponseDto>?> GetCachedConfigsAsync(Guid userId)
@@ -76,49 +71,17 @@ public class AgentConfigService : IAgentConfigService
         await _httpClientService.PostAsync<AgentConfigResponseDto>("api/app/agent-config/set-my-config", new
         {
             agentName = config.AgentName,
-            modelName = config.ModelName,
-            apiKey = config.ApiKey,
-            endpoint = config.Endpoint,
             defaultSystemPrompt = config.DefaultSystemPrompt,
-            temperature = config.Temperature,
-            isActive = config.IsActive
+            isActive = config.IsActive,
+            llmConfigId = config.LlmConfigId
         });
     }
 
     public async Task EnsureDefaultConfigsAsync(Guid userId, List<AgentConfigResponseDto> existingConfigs)
     {
-        var registeredAgents = _agentFactory.GetAvailableAgents();
-        var existingNames = existingConfigs.Select(c => c.AgentName).ToHashSet();
-
-        var missingAgents = registeredAgents.Where(a => !existingNames.Contains(a.Name)).ToList();
-        if (missingAgents.Count == 0) return;
-
-        // 仅补骨架：AgentName + DefaultSystemPrompt + 模型默认参数，不提交 ApiKey
-        foreach (var agent in missingAgents)
-        {
-            var defaultConfig = new AgentConfigResponseDto
-            {
-                AgentName = agent.Name,
-                ModelName = _agentOptions.ModelName,
-                ApiKey = string.Empty,
-                Endpoint = _agentOptions.Endpoint,
-                DefaultSystemPrompt = agent.SystemPrompt ?? _agentOptions.GetSystemPrompt(agent.Name, string.Empty),
-                Temperature = _agentOptions.Temperature,
-                IsActive = true
-            };
-
-            try
-            {
-                await SetConfigAsync(defaultConfig);
-            }
-            catch (Exception ex)
-            {
-                System.Diagnostics.Debug.WriteLine($"[AgentConfigService] 自动创建配置失败 ({agent.Name}): {ex.Message}");
-            }
-        }
-
-        // 重新同步以获取服务端分配的 Id
-        await SyncFromServerAsync(userId);
+        // 不再为缺失的 Agent 创建空 ApiKey 占位配置。
+        // LLM 配置已独立到 AppLlmConfig，Agent 配置仅含 AgentName + DefaultSystemPrompt + LlmConfigId。
+        // 服务端 AgentConfigAppService.SetMyConfigAsync 可按需创建。
     }
 
     private static AgentConfigCacheItem MapToCacheItem(AgentConfigResponseDto dto, Guid userId)
@@ -128,12 +91,9 @@ public class AgentConfigService : IAgentConfigService
             Id = dto.Id != Guid.Empty ? dto.Id : Guid.NewGuid(),
             UserId = userId,
             AgentName = dto.AgentName,
-            ModelName = dto.ModelName,
-            ApiKey = dto.ApiKey,
-            Endpoint = dto.Endpoint,
             DefaultSystemPrompt = dto.DefaultSystemPrompt,
-            Temperature = dto.Temperature,
             IsActive = dto.IsActive,
+            LlmConfigId = dto.LlmConfigId,
             EnabledTools = dto.EnabledTools,
             CachedAt = DateTime.UtcNow
         };
@@ -145,12 +105,9 @@ public class AgentConfigService : IAgentConfigService
         {
             Id = item.Id,
             AgentName = item.AgentName,
-            ModelName = item.ModelName,
-            ApiKey = item.ApiKey,
-            Endpoint = item.Endpoint,
             DefaultSystemPrompt = item.DefaultSystemPrompt,
-            Temperature = item.Temperature,
             IsActive = item.IsActive,
+            LlmConfigId = item.LlmConfigId,
             EnabledTools = item.EnabledTools
         };
     }

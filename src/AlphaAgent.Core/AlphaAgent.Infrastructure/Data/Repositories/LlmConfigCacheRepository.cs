@@ -9,39 +9,36 @@ using Microsoft.EntityFrameworkCore;
 
 namespace AlphaAgent.Infrastructure.Data.Repositories;
 
-public class AgentConfigCacheRepository : IAgentConfigCacheRepository
+public class LlmConfigCacheRepository : ILlmConfigCacheRepository
 {
-    private readonly ConcurrentDictionary<Guid, AgentConfigCacheItem> _memoryCache = new();
+    private readonly ConcurrentDictionary<Guid, LlmConfigCacheItem> _memoryCache = new();
     private readonly IDbContextFactory<SharesDbContext> _dbContextFactory;
 
-    public AgentConfigCacheRepository(IDbContextFactory<SharesDbContext> dbContextFactory)
+    public LlmConfigCacheRepository(IDbContextFactory<SharesDbContext> dbContextFactory)
     {
         _dbContextFactory = dbContextFactory;
     }
 
-    public async Task<List<AgentConfigCacheItem>> GetByUserIdAsync(Guid userId)
+    public async Task<List<LlmConfigCacheItem>> GetByUserIdAsync(Guid userId)
     {
         var cached = _memoryCache.Values.Where(c => c.UserId == userId).ToList();
         if (cached.Count > 0)
-            return cached.OrderByDescending(c => c.IsActive).ThenBy(c => c.AgentName).ToList();
+            return cached.OrderByDescending(c => c.IsDefault).ThenBy(c => c.Name).ToList();
 
         await using var dbContext = await _dbContextFactory.CreateDbContextAsync();
-        var items = await dbContext.AgentConfigCache
+        var items = await dbContext.LlmConfigCache
             .Where(c => c.UserId == userId)
-            .OrderByDescending(c => c.IsActive)
-            .ThenBy(c => c.AgentName)
+            .OrderByDescending(c => c.IsDefault)
+            .ThenBy(c => c.Name)
             .ToListAsync();
 
         foreach (var item in items)
-        {
-            item.DeserializeEnabledTools();
             _memoryCache[item.Id] = item;
-        }
 
         return items;
     }
 
-    public async Task UpsertRangeAsync(IEnumerable<AgentConfigCacheItem> items)
+    public async Task UpsertRangeAsync(IEnumerable<LlmConfigCacheItem> items)
     {
         var itemList = items.ToList();
         var now = DateTime.UtcNow;
@@ -49,7 +46,6 @@ public class AgentConfigCacheRepository : IAgentConfigCacheRepository
         foreach (var item in itemList)
         {
             item.CachedAt = now;
-            item.SerializeEnabledTools();
             _memoryCache[item.Id] = item;
         }
 
@@ -58,21 +54,21 @@ public class AgentConfigCacheRepository : IAgentConfigCacheRepository
             await using var dbContext = await _dbContextFactory.CreateDbContextAsync();
             foreach (var item in itemList)
             {
-                var existing = await dbContext.AgentConfigCache.FindAsync(item.Id);
+                var existing = await dbContext.LlmConfigCache.FindAsync(item.Id);
                 if (existing != null)
                 {
                     UpdateEntity(existing, item);
                 }
                 else
                 {
-                    await dbContext.AgentConfigCache.AddAsync(item);
+                    await dbContext.LlmConfigCache.AddAsync(item);
                 }
             }
             await dbContext.SaveChangesAsync();
         }
         catch (Exception ex)
         {
-            System.Diagnostics.Debug.WriteLine($"[AgentConfigCacheRepository] UpsertRangeAsync 失败: {ex.Message}");
+            System.Diagnostics.Debug.WriteLine($"[LlmConfigCacheRepository] UpsertRangeAsync 失败: {ex.Message}");
         }
     }
 
@@ -84,25 +80,26 @@ public class AgentConfigCacheRepository : IAgentConfigCacheRepository
         try
         {
             await using var dbContext = await _dbContextFactory.CreateDbContextAsync();
-            var items = await dbContext.AgentConfigCache
+            var items = await dbContext.LlmConfigCache
                 .Where(c => c.UserId == userId)
                 .ToListAsync();
-            dbContext.AgentConfigCache.RemoveRange(items);
+            dbContext.LlmConfigCache.RemoveRange(items);
             await dbContext.SaveChangesAsync();
         }
         catch (Exception ex)
         {
-            System.Diagnostics.Debug.WriteLine($"[AgentConfigCacheRepository] DeleteByUserIdAsync 失败: {ex.Message}");
+            System.Diagnostics.Debug.WriteLine($"[LlmConfigCacheRepository] DeleteByUserIdAsync 失败: {ex.Message}");
         }
     }
 
-    private static void UpdateEntity(AgentConfigCacheItem existing, AgentConfigCacheItem source)
+    private static void UpdateEntity(LlmConfigCacheItem existing, LlmConfigCacheItem source)
     {
-        existing.AgentName = source.AgentName;
-        existing.DefaultSystemPrompt = source.DefaultSystemPrompt;
-        existing.IsActive = source.IsActive;
-        existing.LlmConfigId = source.LlmConfigId;
-        existing.EnabledToolsJson = source.EnabledToolsJson;
+        existing.Name = source.Name;
+        existing.ModelName = source.ModelName;
+        existing.ApiKey = source.ApiKey;
+        existing.Endpoint = source.Endpoint;
+        existing.Temperature = source.Temperature;
+        existing.IsDefault = source.IsDefault;
         existing.CachedAt = source.CachedAt;
         existing.UserId = source.UserId;
     }

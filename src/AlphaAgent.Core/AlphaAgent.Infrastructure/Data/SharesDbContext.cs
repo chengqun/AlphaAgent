@@ -19,6 +19,7 @@ public class SharesDbContext : DbContext
     public DbSet<ContactCacheItem> ContactCache { get; set; } = null!;
     public DbSet<SyncMetadata> SyncMetadata { get; set; } = null!;
     public DbSet<AgentConfigCacheItem> AgentConfigCache { get; set; } = null!;
+    public DbSet<LlmConfigCacheItem> LlmConfigCache { get; set; } = null!;
 
     public SharesDbContext(DbContextOptions<SharesDbContext> options) : base(options)
     {
@@ -70,5 +71,8 @@ public class SharesDbContext : DbContext
         modelBuilder.Entity<AgentConfigCacheItem>().HasIndex(a => a.UserId);
         modelBuilder.Entity<AgentConfigCacheItem>().HasIndex(a => new { a.UserId, a.AgentName, a.IsActive });
         modelBuilder.Entity<AgentConfigCacheItem>().Ignore(a => a.EnabledTools);
+
+        modelBuilder.Entity<LlmConfigCacheItem>().HasKey(l => l.Id);
+        modelBuilder.Entity<LlmConfigCacheItem>().HasIndex(l => l.UserId);
     }
 }

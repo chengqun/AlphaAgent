@@ -45,6 +45,7 @@ public static class ServiceCollectionExtensions
         services.AddSingleton<IUpdateService, UpdateService>();
         services.AddSingleton<ISecurityClientSyncService, SecurityClientSyncService>();
         services.AddSingleton<IAgentConfigService, AgentConfigService>();
+        services.AddSingleton<ILlmConfigService, LlmConfigService>();
         services.AddSingleton<IDeviceService, DeviceService>();
 
         // 一次性初始化：每次调用获取新实例

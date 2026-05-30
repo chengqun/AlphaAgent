@@ -23,7 +23,12 @@
     "Permission:AgentConfigs.Create": "Create Agent Config",
     "Permission:AgentConfigs.Update": "Update Agent Config",
     "Permission:AgentConfigs.Delete": "Delete Agent Config",
-    "AgentConfigManagement": "Agent Config Management",
+    "AgentConfigManagement": "AI Config Management",
+    "Permission:LlmConfigs": "LLM Config Management",
+    "Permission:LlmConfigs.Manage": "Manage LLM Configs",
+    "Permission:LlmConfigs.Create": "Create LLM Config",
+    "Permission:LlmConfigs.Update": "Update LLM Config",
+    "Permission:LlmConfigs.Delete": "Delete LLM Config",
     "Welcome": "Welcome",
     "LongWelcomeMessage": "Welcome to the application. This is a startup project based on the ABP framework. For more information, visit abp.io."
   }

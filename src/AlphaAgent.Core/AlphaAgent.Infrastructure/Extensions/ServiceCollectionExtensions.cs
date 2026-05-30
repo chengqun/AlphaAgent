@@ -50,6 +50,7 @@ public static class ServiceCollectionExtensions
         services.AddSingleton<IMomentCacheRepository, MomentCacheRepository>();
         services.AddSingleton<IVideoFeedRepository, VideoFeedRepository>();
         services.AddSingleton<IAgentConfigCacheRepository, AgentConfigCacheRepository>();
+        services.AddSingleton<ILlmConfigCacheRepository, LlmConfigCacheRepository>();
 
         // 一次性使用：每次获取新实例
         services.AddTransient<IDatabaseInitializer, DatabaseInitializer>();
@@ -129,92 +130,99 @@ public static class ServiceCollectionExtensions
             factory.Register(StockAnalystAgent.Name, StockAnalystAgent.Description, StockAnalystAgent.DefaultSystemPrompt, allTools, serviceProvider =>
             {
                 var opts = serviceProvider.GetRequiredService<AgentOptions>();
-                var chatClient = CreateChatClient(opts);
+                var llm = opts.GetLlmConfig(StockAnalystAgent.Name);
+                var chatClient = CreateChatClient(llm);
                 var systemPrompt = opts.GetSystemPrompt(StockAnalystAgent.Name, StockAnalystAgent.DefaultSystemPrompt);
                 var enabledTools = opts.GetEnabledTools(StockAnalystAgent.Name)?.ToArray();
                 return StockAnalystAgent.Create(
                     serviceProvider.GetRequiredService<TechnicalAnalysisTool>(),
                     serviceProvider.GetRequiredService<SecurityQueryTool>(),
-                    chatClient, systemPrompt, opts.Temperature, enabledTools);
+                    chatClient, systemPrompt, llm.Temperature, enabledTools);
             });
 
             factory.Register(StockAnalystNoMemoryAgent.Name, StockAnalystNoMemoryAgent.Description, StockAnalystNoMemoryAgent.DefaultSystemPrompt, allTools, serviceProvider =>
             {
                 var opts = serviceProvider.GetRequiredService<AgentOptions>();
-                var chatClient = CreateChatClient(opts);
+                var llm = opts.GetLlmConfig(StockAnalystNoMemoryAgent.Name);
+                var chatClient = CreateChatClient(llm);
                 var systemPrompt = opts.GetSystemPrompt(StockAnalystNoMemoryAgent.Name, StockAnalystNoMemoryAgent.DefaultSystemPrompt);
                 var enabledTools = opts.GetEnabledTools(StockAnalystNoMemoryAgent.Name)?.ToArray();
                 return StockAnalystNoMemoryAgent.Create(
                     serviceProvider.GetRequiredService<TechnicalAnalysisTool>(),
                     serviceProvider.GetRequiredService<SecurityQueryTool>(),
-                    chatClient, systemPrompt, opts.Temperature, enabledTools);
+                    chatClient, systemPrompt, llm.Temperature, enabledTools);
             });
 
             factory.Register(SequentialAnalysisWorkflow.Name, SequentialAnalysisWorkflow.Description, SequentialAnalysisWorkflow.DefaultSystemPrompt, serviceProvider =>
             {
                 var opts = serviceProvider.GetRequiredService<AgentOptions>();
-                var chatClient = CreateChatClient(opts);
+                var llm = opts.GetLlmConfig(SequentialAnalysisWorkflow.Name);
+                var chatClient = CreateChatClient(llm);
                 var systemPrompt = opts.GetSystemPrompt(SequentialAnalysisWorkflow.Name, SequentialAnalysisWorkflow.DefaultSystemPrompt);
                 return SequentialAnalysisWorkflow.Create(
                     serviceProvider.GetRequiredService<TechnicalAnalysisTool>(),
                     serviceProvider.GetRequiredService<SecurityQueryTool>(),
-                    chatClient, systemPrompt, opts.Temperature);
+                    chatClient, systemPrompt, llm.Temperature);
             });
 
             factory.Register(ConcurrentAnalysisWorkflow.Name, ConcurrentAnalysisWorkflow.Description, ConcurrentAnalysisWorkflow.DefaultSystemPrompt, serviceProvider =>
             {
                 var opts = serviceProvider.GetRequiredService<AgentOptions>();
-                var chatClient = CreateChatClient(opts);
+                var llm = opts.GetLlmConfig(ConcurrentAnalysisWorkflow.Name);
+                var chatClient = CreateChatClient(llm);
                 var systemPrompt = opts.GetSystemPrompt(ConcurrentAnalysisWorkflow.Name, ConcurrentAnalysisWorkflow.DefaultSystemPrompt);
                 return ConcurrentAnalysisWorkflow.Create(
                     serviceProvider.GetRequiredService<TechnicalAnalysisTool>(),
                     serviceProvider.GetRequiredService<SecurityQueryTool>(),
-                    chatClient, systemPrompt, opts.Temperature);
+                    chatClient, systemPrompt, llm.Temperature);
             });
 
             factory.Register(GroupChatWorkflow.Name, GroupChatWorkflow.Description, GroupChatWorkflow.DefaultSystemPrompt, serviceProvider =>
             {
                 var opts = serviceProvider.GetRequiredService<AgentOptions>();
-                var chatClient = CreateChatClient(opts);
+                var llm = opts.GetLlmConfig(GroupChatWorkflow.Name);
+                var chatClient = CreateChatClient(llm);
                 var systemPrompt = opts.GetSystemPrompt(GroupChatWorkflow.Name, GroupChatWorkflow.DefaultSystemPrompt);
                 return GroupChatWorkflow.Create(
                     serviceProvider.GetRequiredService<TechnicalAnalysisTool>(),
                     serviceProvider.GetRequiredService<SecurityQueryTool>(),
-                    chatClient, systemPrompt, opts.Temperature);
+                    chatClient, systemPrompt, llm.Temperature);
             });
 
             factory.Register(HandoffWorkflow.Name, HandoffWorkflow.Description, HandoffWorkflow.DefaultSystemPrompt, serviceProvider =>
             {
                 var opts = serviceProvider.GetRequiredService<AgentOptions>();
-                var chatClient = CreateChatClient(opts);
+                var llm = opts.GetLlmConfig(HandoffWorkflow.Name);
+                var chatClient = CreateChatClient(llm);
                 var systemPrompt = opts.GetSystemPrompt(HandoffWorkflow.Name, HandoffWorkflow.DefaultSystemPrompt);
                 return HandoffWorkflow.Create(
                     serviceProvider.GetRequiredService<TechnicalAnalysisTool>(),
                     serviceProvider.GetRequiredService<SecurityQueryTool>(),
-                    chatClient, systemPrompt, opts.Temperature);
+                    chatClient, systemPrompt, llm.Temperature);
             });
 
             factory.Register(MagenticWorkflow.Name, MagenticWorkflow.Description, MagenticWorkflow.DefaultSystemPrompt, serviceProvider =>
             {
                 var opts = serviceProvider.GetRequiredService<AgentOptions>();
-                var chatClient = CreateChatClient(opts);
+                var llm = opts.GetLlmConfig(MagenticWorkflow.Name);
+                var chatClient = CreateChatClient(llm);
                 var systemPrompt = opts.GetSystemPrompt(MagenticWorkflow.Name, MagenticWorkflow.DefaultSystemPrompt);
                 return MagenticWorkflow.Create(
                     serviceProvider.GetRequiredService<TechnicalAnalysisTool>(),
                     serviceProvider.GetRequiredService<SecurityQueryTool>(),
-                    chatClient, systemPrompt, opts.Temperature);
+                    chatClient, systemPrompt, llm.Temperature);
             });
 
             return factory;
         });
     }
 
-    private static IChatClient CreateChatClient(AgentOptions opts)
+    private static IChatClient CreateChatClient(LlmOptions llm)
     {
         var openAiClient = new OpenAI.OpenAIClient(
-            new ApiKeyCredential(opts.ApiKey),
-            new OpenAI.OpenAIClientOptions { Endpoint = new Uri(opts.Endpoint) }
+            new ApiKeyCredential(llm.ApiKey),
+            new OpenAI.OpenAIClientOptions { Endpoint = new Uri(llm.Endpoint) }
         );
-        return openAiClient.GetChatClient(opts.ModelName).AsIChatClient();
+        return openAiClient.GetChatClient(llm.ModelName).AsIChatClient();
     }
 }

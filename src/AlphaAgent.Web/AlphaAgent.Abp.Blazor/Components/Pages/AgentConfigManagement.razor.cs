@@ -11,6 +11,14 @@ namespace AlphaAgent.Abp.Blazor.Components.Pages;
 
 public partial class AgentConfigManagement : AbpComponentBase
 {
+    // LLM 配置
+    protected List<LlmConfigDto> llmConfigs = new();
+    protected bool isLoadingLlm = false;
+    protected bool showLlmModal = false;
+    protected bool isEditingLlm = false;
+    protected LlmConfigCreateDto editingLlm = new();
+
+    // Agent 配置
     protected List<AgentConfigDto> agentConfigs = new();
     protected long totalCount = 0;
     protected int currentPage = 1;
@@ -18,22 +26,125 @@ public partial class AgentConfigManagement : AbpComponentBase
     protected int totalPages => totalCount > 0 ? (int)Math.Ceiling((double)totalCount / pageSize) : 1;
     protected string jumpPage = string.Empty;
 
-    protected bool isLoading = false;
-    protected bool isSaving = false;
-    protected bool isEditing = false;
-    protected bool showModal = false;
+    protected bool isLoadingAgent = false;
+    protected bool showAgentModal = false;
+    protected bool isEditingAgent = false;
+    protected AgentConfigCreateDto editingAgent = new();
+    protected Guid? editingAgentId = null;
 
-    protected AgentConfigDto editingConfig = new();
-    protected Guid? editingId = null;
+    protected bool isSaving = false;
 
     protected override async Task OnInitializedAsync()
     {
-        await LoadConfigsAsync();
+        await Task.WhenAll(LoadLlmConfigsAsync(), LoadAgentConfigsAsync());
     }
 
-    protected async Task LoadConfigsAsync()
+    #region LLM 配置
+
+    protected async Task LoadLlmConfigsAsync()
     {
-        isLoading = true;
+        isLoadingLlm = true;
+        try
+        {
+            var result = await LlmConfigAppService.GetMyLlmConfigsAsync();
+            llmConfigs = result.Items.ToList();
+        }
+        catch (Exception ex)
+        {
+            await Notify.Error($"加载LLM配置失败: {ex.Message}");
+        }
+        finally
+        {
+            isLoadingLlm = false;
+        }
+    }
+
+    protected void ShowCreateLlmModal()
+    {
+        isEditingLlm = false;
+        editingLlm = new LlmConfigCreateDto();
+        showLlmModal = true;
+    }
+
+    protected void ShowEditLlmModal(LlmConfigDto config)
+    {
+        isEditingLlm = true;
+        editingLlm = new LlmConfigCreateDto
+        {
+            Id = config.Id,
+            Name = config.Name,
+            ModelName = config.ModelName,
+            ApiKey = config.ApiKey,
+            Endpoint = config.Endpoint,
+            Temperature = config.Temperature,
+            IsDefault = config.IsDefault
+        };
+        showLlmModal = true;
+    }
+
+    protected void CloseLlmModal()
+    {
+        showLlmModal = false;
+    }
+
+    protected async Task SaveLlmConfig()
+    {
+        isSaving = true;
+        try
+        {
+            await LlmConfigAppService.SetMyLlmConfigAsync(editingLlm);
+            await Notify.Success(isEditingLlm ? "更新成功" : "创建成功");
+            CloseLlmModal();
+            await LoadLlmConfigsAsync();
+        }
+        catch (Exception ex)
+        {
+            await Notify.Error($"保存失败: {ex.Message}");
+        }
+        finally
+        {
+            isSaving = false;
+        }
+    }
+
+    protected async Task SetDefaultLlm(LlmConfigDto config)
+    {
+        try
+        {
+            await LlmConfigAppService.SetDefaultLlmConfigAsync(config.Id);
+            await Notify.Success("已设为默认");
+            await LoadLlmConfigsAsync();
+        }
+        catch (Exception ex)
+        {
+            await Notify.Error($"设置失败: {ex.Message}");
+        }
+    }
+
+    protected async Task DeleteLlmConfig(LlmConfigDto config)
+    {
+        if (!await JS.InvokeAsync<bool>("confirm", $"确定要删除LLM配置 \"{config.Name}\" 吗？"))
+            return;
+
+        try
+        {
+            await LlmConfigAppService.DeleteLlmConfigAsync(config.Id);
+            await Notify.Success("删除成功");
+            await Task.WhenAll(LoadLlmConfigsAsync(), LoadAgentConfigsAsync());
+        }
+        catch (Exception ex)
+        {
+            await Notify.Error($"删除失败: {ex.Message}");
+        }
+    }
+
+    #endregion
+
+    #region Agent 配置
+
+    protected async Task LoadAgentConfigsAsync()
+    {
+        isLoadingAgent = true;
         try
         {
             var result = await AgentConfigAppService.GetListAsync(
@@ -53,57 +164,50 @@ public partial class AgentConfigManagement : AbpComponentBase
         }
         finally
         {
-            isLoading = false;
+            isLoadingAgent = false;
         }
     }
 
-    protected void ShowCreateModal()
+    protected void ShowCreateAgentModal()
     {
-        isEditing = false;
-        editingId = null;
-        editingConfig = new AgentConfigDto();
-        showModal = true;
+        isEditingAgent = false;
+        editingAgentId = null;
+        editingAgent = new AgentConfigCreateDto();
+        showAgentModal = true;
     }
 
-    protected void ShowEditModal(AgentConfigDto config)
+    protected void ShowEditAgentModal(AgentConfigDto config)
     {
-        isEditing = true;
-        editingId = config.Id;
-        editingConfig = new AgentConfigDto
+        isEditingAgent = true;
+        editingAgentId = config.Id;
+        editingAgent = new AgentConfigCreateDto
         {
-            Id = config.Id,
             AgentName = config.AgentName,
-            ModelName = config.ModelName,
-            ApiKey = config.ApiKey,
-            Endpoint = config.Endpoint,
             DefaultSystemPrompt = config.DefaultSystemPrompt,
-            Temperature = config.Temperature,
-            IsActive = config.IsActive
+            IsActive = config.IsActive,
+            LlmConfigId = config.LlmConfigId
         };
-        showModal = true;
+        showAgentModal = true;
     }
 
-    protected void CloseModal()
+    protected void CloseAgentModal()
     {
-        showModal = false;
+        showAgentModal = false;
     }
 
-    protected async Task SaveConfig()
+    protected async Task SaveAgentConfig()
     {
         isSaving = true;
         try
         {
-            if (isEditing && editingId.HasValue)
+            if (isEditingAgent && editingAgentId.HasValue)
             {
-                await AgentConfigAppService.UpdateAsync(editingId.Value, new AgentConfigUpdateDto
+                await AgentConfigAppService.UpdateAsync(editingAgentId.Value, new AgentConfigUpdateDto
                 {
-                    AgentName = editingConfig.AgentName,
-                    ModelName = editingConfig.ModelName,
-                    ApiKey = editingConfig.ApiKey,
-                    Endpoint = editingConfig.Endpoint,
-                    DefaultSystemPrompt = editingConfig.DefaultSystemPrompt,
-                    Temperature = editingConfig.Temperature,
-                    IsActive = editingConfig.IsActive
+                    AgentName = editingAgent.AgentName,
+                    DefaultSystemPrompt = editingAgent.DefaultSystemPrompt,
+                    IsActive = editingAgent.IsActive,
+                    LlmConfigId = editingAgent.LlmConfigId
                 });
                 await Notify.Success("更新成功");
             }
@@ -111,19 +215,16 @@ public partial class AgentConfigManagement : AbpComponentBase
             {
                 await AgentConfigAppService.CreateAsync(new AgentConfigCreateDto
                 {
-                    AgentName = editingConfig.AgentName,
-                    ModelName = editingConfig.ModelName,
-                    ApiKey = editingConfig.ApiKey,
-                    Endpoint = editingConfig.Endpoint,
-                    DefaultSystemPrompt = editingConfig.DefaultSystemPrompt,
-                    Temperature = editingConfig.Temperature,
-                    IsActive = editingConfig.IsActive
+                    AgentName = editingAgent.AgentName,
+                    DefaultSystemPrompt = editingAgent.DefaultSystemPrompt,
+                    IsActive = editingAgent.IsActive,
+                    LlmConfigId = editingAgent.LlmConfigId
                 });
                 await Notify.Success("创建成功");
             }
 
-            CloseModal();
-            await LoadConfigsAsync();
+            CloseAgentModal();
+            await LoadAgentConfigsAsync();
         }
         catch (Exception ex)
         {
@@ -138,15 +239,13 @@ public partial class AgentConfigManagement : AbpComponentBase
     protected async Task DeleteConfig(AgentConfigDto config)
     {
         if (!await JS.InvokeAsync<bool>("confirm", $"确定要删除配置 \"{config.AgentName}\" 吗？"))
-        {
             return;
-        }
 
         try
         {
             await AgentConfigAppService.DeleteAsync(config.Id);
             await Notify.Success("删除成功");
-            await LoadConfigsAsync();
+            await LoadAgentConfigsAsync();
         }
         catch (Exception ex)
         {
@@ -160,13 +259,15 @@ public partial class AgentConfigManagement : AbpComponentBase
         {
             await AgentConfigAppService.ActivateConfigAsync(config.Id);
             await Notify.Success("激活成功");
-            await LoadConfigsAsync();
+            await LoadAgentConfigsAsync();
         }
         catch (Exception ex)
         {
             await Notify.Error($"激活失败: {ex.Message}");
         }
     }
+
+    #endregion
 
     protected static string MaskApiKey(string? apiKey)
     {
@@ -181,7 +282,7 @@ public partial class AgentConfigManagement : AbpComponentBase
         if (currentPage > 1)
         {
             currentPage--;
-            await LoadConfigsAsync();
+            await LoadAgentConfigsAsync();
         }
     }
 
@@ -190,7 +291,7 @@ public partial class AgentConfigManagement : AbpComponentBase
         if (currentPage < totalPages)
         {
             currentPage++;
-            await LoadConfigsAsync();
+            await LoadAgentConfigsAsync();
         }
     }
 
@@ -199,7 +300,7 @@ public partial class AgentConfigManagement : AbpComponentBase
         if (page >= 1 && page <= totalPages && page != currentPage)
         {
             currentPage = page;
-            await LoadConfigsAsync();
+            await LoadAgentConfigsAsync();
         }
     }
 

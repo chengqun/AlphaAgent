@@ -11,24 +11,18 @@ public class AgentConfigCreateDtoToAgentConfigMapper : MapperBase<AgentConfigCre
         return new AgentConfigEntity
         {
             AgentName = source.AgentName,
-            ModelName = source.ModelName,
-            ApiKey = source.ApiKey,
-            Endpoint = source.Endpoint,
             DefaultSystemPrompt = source.DefaultSystemPrompt,
-            Temperature = source.Temperature,
-            IsActive = source.IsActive
+            IsActive = source.IsActive,
+            LlmConfigId = source.LlmConfigId
         };
     }
 
     public override void Map(AgentConfigCreateDto source, AgentConfigEntity destination)
     {
         destination.AgentName = source.AgentName;
-        destination.ModelName = source.ModelName;
-        destination.ApiKey = source.ApiKey;
-        destination.Endpoint = source.Endpoint;
         destination.DefaultSystemPrompt = source.DefaultSystemPrompt;
-        destination.Temperature = source.Temperature;
         destination.IsActive = source.IsActive;
+        destination.LlmConfigId = source.LlmConfigId;
     }
 }
 
@@ -39,24 +33,18 @@ public class AgentConfigUpdateDtoToAgentConfigMapper : MapperBase<AgentConfigUpd
         return new AgentConfigEntity
         {
             AgentName = source.AgentName,
-            ModelName = source.ModelName,
-            ApiKey = source.ApiKey,
-            Endpoint = source.Endpoint,
             DefaultSystemPrompt = source.DefaultSystemPrompt,
-            Temperature = source.Temperature,
-            IsActive = source.IsActive
+            IsActive = source.IsActive,
+            LlmConfigId = source.LlmConfigId
         };
     }
 
     public override void Map(AgentConfigUpdateDto source, AgentConfigEntity destination)
     {
         destination.AgentName = source.AgentName;
-        destination.ModelName = source.ModelName;
-        destination.ApiKey = source.ApiKey;
-        destination.Endpoint = source.Endpoint;
         destination.DefaultSystemPrompt = source.DefaultSystemPrompt;
-        destination.Temperature = source.Temperature;
         destination.IsActive = source.IsActive;
+        destination.LlmConfigId = source.LlmConfigId;
     }
 }
 
@@ -68,12 +56,9 @@ public class AgentConfigToAgentConfigDtoMapper : MapperBase<AgentConfigEntity, A
         {
             Id = source.Id,
             AgentName = source.AgentName,
-            ModelName = source.ModelName,
-            ApiKey = source.ApiKey,
-            Endpoint = source.Endpoint,
             DefaultSystemPrompt = source.DefaultSystemPrompt,
-            Temperature = source.Temperature,
             IsActive = source.IsActive,
+            LlmConfigId = source.LlmConfigId,
             CreatorId = source.CreatorId
         };
     }
@@ -82,12 +67,9 @@ public class AgentConfigToAgentConfigDtoMapper : MapperBase<AgentConfigEntity, A
     {
         destination.Id = source.Id;
         destination.AgentName = source.AgentName;
-        destination.ModelName = source.ModelName;
-        destination.ApiKey = source.ApiKey;
-        destination.Endpoint = source.Endpoint;
         destination.DefaultSystemPrompt = source.DefaultSystemPrompt;
-        destination.Temperature = source.Temperature;
         destination.IsActive = source.IsActive;
+        destination.LlmConfigId = source.LlmConfigId;
         destination.CreatorId = source.CreatorId;
     }
 }

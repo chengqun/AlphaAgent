@@ -34,10 +34,14 @@ public static class MauiProgram
 		// 配置 LLM Agent
 		var agentOptions = new AgentOptions
 		{
-			ModelName = "deepseek-chat",
-			ApiKey = string.Empty,
-			Endpoint = "https://api.deepseek.com/v1",
-			Temperature = 0.5f
+			DefaultLlm = new LlmOptions
+			{
+				Name = "DeepSeek",
+				ModelName = "deepseek-chat",
+				ApiKey = string.Empty,
+				Endpoint = "https://api.deepseek.com/v1",
+				Temperature = 0.5f
+			}
 		};
 
 		// 使用 Core 项目的服务注册扩展方法，传入自定义 HttpMessageHandler 工厂

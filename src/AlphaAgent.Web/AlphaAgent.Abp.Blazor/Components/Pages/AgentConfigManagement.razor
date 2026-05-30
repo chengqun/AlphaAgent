@@ -3,34 +3,99 @@
 @using AlphaAgent.Abp.Application.Contracts.DTOs.AgentConfig
 @using AlphaAgent.Abp.Application.Contracts.Services.AgentConfig
 @inject IAgentConfigAppService AgentConfigAppService
+@inject ILlmConfigAppService LlmConfigAppService
 @inject IJSRuntime JS
 
-<PageTitle>Agent配置管理</PageTitle>
+<PageTitle>AI配置管理</PageTitle>
 
 <div class="container-fluid py-4">
+    <!-- LLM 配置区域 -->
     <div class="row mb-4">
         <div class="col-md-12">
-            <div class="d-flex justify-content-between align-items-center">
-                <h2 class="mb-0">Agent配置管理</h2>
-                <button type="button" class="btn btn-primary" @onclick="ShowCreateModal">
-                    <i class="fas fa-plus"></i> 新增配置
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <h3 class="mb-0"><i class="fas fa-brain me-2"></i>LLM 配置</h3>
+                <button type="button" class="btn btn-primary" @onclick="ShowCreateLlmModal">
+                    <i class="fas fa-plus"></i> 新增LLM配置
                 </button>
+            </div>
+            <div class="card">
+                <div class="card-body">
+                    @if (isLoadingLlm)
+                    {
+                        <div class="text-center py-3"><div class="spinner-border" role="status"></div></div>
+                    }
+                    else if (llmConfigs.Any())
+                    {
+                        <div class="table-responsive">
+                            <table class="table table-striped table-hover">
+                                <thead>
+                                    <tr>
+                                        <th>名称</th>
+                                        <th>模型</th>
+                                        <th>Endpoint</th>
+                                        <th>ApiKey</th>
+                                        <th>Temperature</th>
+                                        <th>默认</th>
+                                        <th>用户</th>
+                                        <th>操作</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach (var config in llmConfigs)
+                                    {
+                                        <tr>
+                                            <td>@config.Name</td>
+                                            <td>@config.ModelName</td>
+                                            <td style="max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="@config.Endpoint">@config.Endpoint</td>
+                                            <td><code>@MaskApiKey(config.ApiKey)</code></td>
+                                            <td>@config.Temperature</td>
+                                            <td>
+                                                @if (config.IsDefault)
+                                                {
+                                                    <span class="badge badge-success">默认</span>
+                                                }
+                                                else
+                                                {
+                                                    <button type="button" class="btn btn-sm btn-outline-success" @onclick="() => SetDefaultLlm(config)">设为默认</button>
+                                                }
+                                            </td>
+                                            <td>@(config.CreatorUserName ?? config.CreatorId?.ToString() ?? "-")</td>
+                                            <td>
+                                                <button type="button" class="btn btn-sm btn-outline-warning me-1" @onclick="() => ShowEditLlmModal(config)">编辑</button>
+                                                <button type="button" class="btn btn-sm btn-outline-danger" @onclick="() => DeleteLlmConfig(config)">删除</button>
+                                            </td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="text-center text-muted py-3">
+                            <i class="fas fa-plug" style="font-size: 32px;"></i>
+                            <p class="mt-2">暂无LLM配置，请先添加</p>
+                        </div>
+                    }
+                </div>
             </div>
         </div>
     </div>
 
-    <!-- 配置列表 -->
-    <div class="row">
+    <!-- Agent 配置区域 -->
+    <div class="row mb-4">
         <div class="col-md-12">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <h3 class="mb-0"><i class="fas fa-robot me-2"></i>Agent 配置</h3>
+                <button type="button" class="btn btn-primary" @onclick="ShowCreateAgentModal">
+                    <i class="fas fa-plus"></i> 新增Agent配置
+                </button>
+            </div>
             <div class="card">
                 <div class="card-body">
-                    @if (isLoading)
+                    @if (isLoadingAgent)
                     {
-                        <div class="text-center py-4">
-                            <div class="spinner-border" role="status">
-                                <span class="sr-only">加载中...</span>
-                            </div>
-                        </div>
+                        <div class="text-center py-3"><div class="spinner-border" role="status"></div></div>
                     }
                     else if (agentConfigs.Any())
                     {
@@ -39,10 +104,8 @@
                                 <thead>
                                     <tr>
                                         <th>Agent名称</th>
+                                        <th>LLM配置</th>
                                         <th>用户</th>
-                                        <th>模型</th>
-                                        <th>Endpoint</th>
-                                        <th>ApiKey</th>
                                         <th>状态</th>
                                         <th>操作</th>
                                     </tr>
@@ -52,12 +115,18 @@
                                     {
                                         <tr>
                                             <td>@config.AgentName</td>
-                                            <td>@(config.CreatorUserName ?? config.CreatorId?.ToString() ?? "-")</td>
-                                            <td>@config.ModelName</td>
-                                            <td style="max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="@config.Endpoint">@config.Endpoint</td>
                                             <td>
-                                                <code>@MaskApiKey(config.ApiKey)</code>
+                                                @if (config.LlmConfigId.HasValue)
+                                                {
+                                                    var llm = llmConfigs.FirstOrDefault(l => l.Id == config.LlmConfigId.Value);
+                                                    <span>@(llm?.Name ?? config.LlmConfigId.Value.ToString()[..8] + "...")</span>
+                                                }
+                                                else
+                                                {
+                                                    <span class="text-muted">默认</span>
+                                                }
                                             </td>
+                                            <td>@(config.CreatorUserName ?? config.CreatorId?.ToString() ?? "-")</td>
                                             <td>
                                                 @if (config.IsActive)
                                                 {
@@ -73,7 +142,7 @@
                                                 {
                                                     <button type="button" class="btn btn-sm btn-outline-success me-1" @onclick="() => ActivateConfig(config)">激活</button>
                                                 }
-                                                <button type="button" class="btn btn-sm btn-outline-warning me-1" @onclick="() => ShowEditModal(config)">编辑</button>
+                                                <button type="button" class="btn btn-sm btn-outline-warning me-1" @onclick="() => ShowEditAgentModal(config)">编辑</button>
                                                 <button type="button" class="btn btn-sm btn-outline-danger" @onclick="() => DeleteConfig(config)">删除</button>
                                             </td>
                                         </tr>
@@ -108,9 +177,9 @@
                     }
                     else
                     {
-                        <div class="text-center text-muted py-4">
-                            <i class="fas fa-robot" style="font-size: 48px;"></i>
-                            <p class="mt-3">暂无Agent配置数据</p>
+                        <div class="text-center text-muted py-3">
+                            <i class="fas fa-robot" style="font-size: 32px;"></i>
+                            <p class="mt-2">暂无Agent配置数据</p>
                         </div>
                     }
                 </div>
@@ -119,66 +188,99 @@
     </div>
 </div>
 
-<!-- 新增/编辑 Modal -->
-<div class="modal" tabindex="-1" role="dialog" style="display: @(showModal ? "block" : "none");" @onclick="CloseModal">
+<!-- LLM 配置 Modal -->
+<div class="modal" tabindex="-1" role="dialog" style="display: @(showLlmModal ? "block" : "none");" @onclick="CloseLlmModal">
     <div class="modal-dialog" role="document" @onclick:stopPropagation>
         <div class="modal-content">
             <div class="modal-header">
-                <h5 class="modal-title">@(isEditing ? "编辑Agent配置" : "新增Agent配置")</h5>
-                <button type="button" class="close" aria-label="Close" @onclick="CloseModal">
-                    <span aria-hidden="true">&times;</span>
-                </button>
+                <h5 class="modal-title">@(isEditingLlm ? "编辑LLM配置" : "新增LLM配置")</h5>
+                <button type="button" class="close" aria-label="Close" @onclick="CloseLlmModal"><span aria-hidden="true">&times;</span></button>
             </div>
             <div class="modal-body">
                 <div class="form-group">
-                    <label>Agent名称</label>
-                    <input type="text" class="form-control" @bind="editingConfig.AgentName" placeholder="如 指标分析Agent" />
+                    <label>配置名称</label>
+                    <input type="text" class="form-control" @bind="editingLlm.Name" placeholder="如 DeepSeek、GPT-4o" />
                 </div>
                 <div class="form-group">
                     <label>模型名称</label>
-                    <input type="text" class="form-control" @bind="editingConfig.ModelName" placeholder="如 deepseek-chat" />
+                    <input type="text" class="form-control" @bind="editingLlm.ModelName" placeholder="如 deepseek-chat" />
                 </div>
                 <div class="form-group">
                     <label>ApiKey</label>
-                    <input type="text" class="form-control" @bind="editingConfig.ApiKey" placeholder="API密钥" />
+                    <input type="text" class="form-control" @bind="editingLlm.ApiKey" placeholder="API密钥" />
                 </div>
                 <div class="form-group">
                     <label>Endpoint</label>
-                    <input type="text" class="form-control" @bind="editingConfig.Endpoint" placeholder="如 https://api.deepseek.com/v1" />
-                </div>
-                <div class="form-group">
-                    <label>默认系统提示词</label>
-                    <textarea class="form-control" @bind="editingConfig.DefaultSystemPrompt" rows="4" placeholder="Agent系统提示词"></textarea>
+                    <input type="text" class="form-control" @bind="editingLlm.Endpoint" placeholder="如 https://api.deepseek.com/v1" />
                 </div>
                 <div class="form-group">
                     <label>Temperature</label>
-                    <input type="number" class="form-control" @bind="editingConfig.Temperature" step="0.1" min="0" max="2" placeholder="0.5" />
+                    <input type="number" class="form-control" @bind="editingLlm.Temperature" step="0.1" min="0" max="2" placeholder="0.5" />
                 </div>
                 <div class="form-group">
                     <div class="form-check">
-                        <input type="checkbox" class="form-check-input" @bind="editingConfig.IsActive" />
-                        <label class="form-check-label">设为激活配置</label>
+                        <input type="checkbox" class="form-check-input" @bind="editingLlm.IsDefault" />
+                        <label class="form-check-label">设为默认配置</label>
                     </div>
                 </div>
             </div>
             <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" @onclick="CloseModal">取消</button>
-                <button type="button" class="btn btn-primary" @onclick="SaveConfig" disabled="@isSaving">
-                    @if (isSaving)
-                    {
-                        <div class="spinner-border spinner-border-sm" role="status"></div>
-                    }
-                    else
-                    {
-                        <span>保存</span>
-                    }
+                <button type="button" class="btn btn-secondary" @onclick="CloseLlmModal">取消</button>
+                <button type="button" class="btn btn-primary" @onclick="SaveLlmConfig" disabled="@isSaving">
+                    @if (isSaving) { <div class="spinner-border spinner-border-sm" role="status"></div> }
+                    else { <span>保存</span> }
                 </button>
             </div>
         </div>
     </div>
 </div>
 
-@if (showModal)
+<!-- Agent 配置 Modal -->
+<div class="modal" tabindex="-1" role="dialog" style="display: @(showAgentModal ? "block" : "none");" @onclick="CloseAgentModal">
+    <div class="modal-dialog" role="document" @onclick:stopPropagation>
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">@(isEditingAgent ? "编辑Agent配置" : "新增Agent配置")</h5>
+                <button type="button" class="close" aria-label="Close" @onclick="CloseAgentModal"><span aria-hidden="true">&times;</span></button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label>Agent名称</label>
+                    <input type="text" class="form-control" @bind="editingAgent.AgentName" placeholder="如 指标分析Agent" />
+                </div>
+                <div class="form-group">
+                    <label>LLM配置</label>
+                    <select class="form-control" @bind="editingAgent.LlmConfigId">
+                        <option value="">使用默认LLM配置</option>
+                        @foreach (var llm in llmConfigs)
+                        {
+                            <option value="@llm.Id">@llm.Name (@llm.ModelName)</option>
+                        }
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>默认系统提示词</label>
+                    <textarea class="form-control" @bind="editingAgent.DefaultSystemPrompt" rows="4" placeholder="Agent系统提示词"></textarea>
+                </div>
+                <div class="form-group">
+                    <div class="form-check">
+                        <input type="checkbox" class="form-check-input" @bind="editingAgent.IsActive" />
+                        <label class="form-check-label">设为激活配置</label>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" @onclick="CloseAgentModal">取消</button>
+                <button type="button" class="btn btn-primary" @onclick="SaveAgentConfig" disabled="@isSaving">
+                    @if (isSaving) { <div class="spinner-border spinner-border-sm" role="status"></div> }
+                    else { <span>保存</span> }
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@if (showLlmModal || showAgentModal)
 {
     <div class="modal-backdrop fade show"></div>
 }

@@ -79,6 +79,13 @@ public class AbpPermissionDefinitionProvider : PermissionDefinitionProvider
         agentConfigPermission.AddChild(AbpPermissions.AgentConfigs.Update, L("Permission:AgentConfigs.Update"));
         agentConfigPermission.AddChild(AbpPermissions.AgentConfigs.Delete, L("Permission:AgentConfigs.Delete"));
 
+        // LLM配置管理权限
+        var llmConfigPermission = myGroup.AddPermission(AbpPermissions.LlmConfigs.Default, L("Permission:LlmConfigs"));
+        llmConfigPermission.AddChild(AbpPermissions.LlmConfigs.Manage, L("Permission:LlmConfigs.Manage"));
+        llmConfigPermission.AddChild(AbpPermissions.LlmConfigs.Create, L("Permission:LlmConfigs.Create"));
+        llmConfigPermission.AddChild(AbpPermissions.LlmConfigs.Update, L("Permission:LlmConfigs.Update"));
+        llmConfigPermission.AddChild(AbpPermissions.LlmConfigs.Delete, L("Permission:LlmConfigs.Delete"));
+
         // 应用版本管理权限
         var versionConfigPermission = myGroup.AddPermission(AbpPermissions.VersionConfigs.Default, L("Permission:VersionConfigs"));
         versionConfigPermission.AddChild(AbpPermissions.VersionConfigs.Manage, L("Permission:VersionConfigs.Manage"));
