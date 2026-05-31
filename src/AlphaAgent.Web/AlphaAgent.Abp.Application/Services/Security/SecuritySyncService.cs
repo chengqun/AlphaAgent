@@ -8,6 +8,7 @@ using AlphaAgent.Abp.Application.Contracts.Services.Security;
 using AlphaAgent.Abp.Domain.Entities;
 using AlphaAgent.Abp.Domain.Services.Moment;
 using AlphaAgent.Abp.Domain.Services.Securities;
+using AlphaAgent.Abp.Domain.Services.ServiceAccounts;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Volo.Abp.Application.Services;
@@ -21,6 +22,9 @@ public class SecuritySyncService : ApplicationService, ISecuritySyncService
     private readonly ISecurityManager _securityManager;
     private readonly IMomentManager _momentManager;
     private readonly IRepository<AppMoment, Guid> _momentRepository;
+    private readonly IServiceAccountManager _serviceAccountManager;
+    private readonly IServiceAccountPostManager _serviceAccountPostManager;
+    private readonly IRepository<AppServiceAccountPost, Guid> _postRepository;
     private readonly SecuritySyncOptions _options;
 
     public SecuritySyncService(
@@ -28,12 +32,18 @@ public class SecuritySyncService : ApplicationService, ISecuritySyncService
         ISecurityManager securityManager,
         IMomentManager momentManager,
         IRepository<AppMoment, Guid> momentRepository,
+        IServiceAccountManager serviceAccountManager,
+        IServiceAccountPostManager serviceAccountPostManager,
+        IRepository<AppServiceAccountPost, Guid> postRepository,
         IOptions<SecuritySyncOptions> options)
     {
         _httpClientFactory = httpClientFactory;
         _securityManager = securityManager;
         _momentManager = momentManager;
         _momentRepository = momentRepository;
+        _serviceAccountManager = serviceAccountManager;
+        _serviceAccountPostManager = serviceAccountPostManager;
+        _postRepository = postRepository;
         _options = options.Value;
     }
 
@@ -136,6 +146,9 @@ public class SecuritySyncService : ApplicationService, ISecuritySyncService
                 existingContents.Add(content);
             }
 
+            // 发布到"明日策略"服务号
+            await PublishToServiceAccountAsync(strategies, pickingDate);
+
             Logger.LogInformation("StockPickingSync: 同步完成，{Strategies}个策略，发布{Published}条朋友圈，跳过{Skipped}只股票",
                 result.TotalStrategies, result.PublishedMoments, result.SkippedStocks);
 
@@ -145,6 +158,59 @@ public class SecuritySyncService : ApplicationService, ISecuritySyncService
         {
             Logger.LogError(ex, "StockPickingSync: 同步失败 - {Message}", ex.Message);
             return new StockPickingMomentResult();
+        }
+    }
+
+    /// <summary>
+    /// 将选股策略发布到"明日策略"服务号
+    /// </summary>
+    private async Task PublishToServiceAccountAsync(List<StockPickingStrategy> strategies, DateTime pickingDate)
+    {
+        const string serviceAccountName = "明日策略";
+
+        try
+        {
+            // 按名称查找服务号
+            var accounts = await _serviceAccountManager.SearchAsync(serviceAccountName);
+            var serviceAccount = accounts.FirstOrDefault(sa => sa.Name == serviceAccountName);
+            if (serviceAccount == null)
+            {
+                Logger.LogWarning("StockPickingSync: 未找到名为「{Name}」的服务号，跳过服务号发布", serviceAccountName);
+                return;
+            }
+
+            // 查询该服务号同一天已有的文章，用于去重
+            var dateStart = pickingDate.Date;
+            var dateEnd = dateStart.AddDays(1);
+            var existingPosts = await _postRepository.GetListAsync(p =>
+                p.ServiceAccountId == serviceAccount.Id
+                && p.PublishedAt >= dateStart && p.PublishedAt < dateEnd);
+            var existingTitles = existingPosts.Select(p => p.Title).ToHashSet();
+
+            foreach (var strategy in strategies)
+            {
+                var title = strategy.StrategyName;
+
+                // 去重：同一天同名文章已存在则跳过
+                if (existingTitles.Contains(title))
+                {
+                    continue;
+                }
+
+                // 正文：策略名称 + 股票列表
+                var stockList = string.Join("\n", strategy.Stocks.Select(s => $"- {s.StockName}（{s.StockCode}）"));
+                var content = $"## {strategy.StrategyName}\n\n{stockList}";
+                var summary = $"共 {strategy.Stocks.Count} 只股票：{string.Join("、", strategy.Stocks.Take(5).Select(s => s.StockName))}{(strategy.Stocks.Count > 5 ? "等" : "")}";
+
+                await _serviceAccountPostManager.CreatePostAsync(
+                    serviceAccount.Id, title, content, strategy.Date, summary, contentType: "Analysis");
+
+                Logger.LogInformation("StockPickingSync: 已发布服务号文章「{Title}」", title);
+            }
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "StockPickingSync: 发布服务号文章失败 - {Message}", ex.Message);
         }
     }
 

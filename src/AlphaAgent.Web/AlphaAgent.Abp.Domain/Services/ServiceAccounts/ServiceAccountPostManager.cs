@@ -14,6 +14,7 @@ namespace AlphaAgent.Abp.Domain.Services.ServiceAccounts;
 public interface IServiceAccountPostManager
 {
     Task<AppServiceAccountPost> CreatePostAsync(Guid serviceAccountId, string title, string content, string? summary = null, string? coverImageUrl = null, string contentType = "Article");
+        Task<AppServiceAccountPost> CreatePostAsync(Guid serviceAccountId, string title, string content, DateTime publishedAt, string? summary = null, string? coverImageUrl = null, string contentType = "Article");
     Task DeletePostAsync(Guid postId);
     Task<AppServiceAccountPost> GetPostAsync(Guid postId);
     Task<List<AppServiceAccountPost>> GetPostsAsync(Guid serviceAccountId, int limit = 50, int offset = 0);
@@ -37,11 +38,17 @@ public class ServiceAccountPostManager : DomainService, IServiceAccountPostManag
 
     public async Task<AppServiceAccountPost> CreatePostAsync(Guid serviceAccountId, string title, string content, string? summary = null, string? coverImageUrl = null, string contentType = "Article")
     {
+        return await CreatePostAsync(serviceAccountId, title, content, DateTime.UtcNow, summary, coverImageUrl, contentType);
+    }
+
+    public async Task<AppServiceAccountPost> CreatePostAsync(Guid serviceAccountId, string title, string content, DateTime publishedAt, string? summary = null, string? coverImageUrl = null, string contentType = "Article")
+    {
         var id = GuidGenerator.Create();
         var post = new AppServiceAccountPost(id, serviceAccountId, title, content, contentType)
         {
             Summary = summary,
-            CoverImageUrl = coverImageUrl
+            CoverImageUrl = coverImageUrl,
+            PublishedAt = publishedAt
         };
         return await _postRepository.InsertAsync(post);
     }
