@@ -11,8 +11,11 @@ namespace AlphaAgent.Abp.Blazor.Components.Pages;
 public partial class ServiceAccountManagement : AbpComponentBase
 {
     protected List<ServiceAccountDto> serviceAccounts = new();
+    protected List<ServiceAccountPostListItemDto> posts = new();
+    protected ServiceAccountDto? selectedServiceAccount = null;
 
     protected bool isLoading = false;
+    protected bool isLoadingPosts = false;
     protected bool isSaving = false;
     protected bool isEditing = false;
     protected bool showModal = false;
@@ -53,6 +56,82 @@ public partial class ServiceAccountManagement : AbpComponentBase
         }
     }
 
+    // 内容列表
+    protected async Task LoadPostsAsync(ServiceAccountDto sa)
+    {
+        selectedServiceAccount = sa;
+        isLoadingPosts = true;
+        try
+        {
+            posts = await ServiceAccountAppService.GetPostsAsync(sa.Id, 100, 0);
+        }
+        catch (Exception ex)
+        {
+            await Notify.Error($"加载内容列表失败: {ex.Message}");
+        }
+        finally
+        {
+            isLoadingPosts = false;
+        }
+    }
+
+    protected void ClosePostsView()
+    {
+        selectedServiceAccount = null;
+        posts = new();
+    }
+
+    protected async Task PinPost(ServiceAccountPostListItemDto post)
+    {
+        try
+        {
+            await ServiceAccountAppService.PinPostAsync(post.Id);
+            await Notify.Success("已置顶");
+            if (selectedServiceAccount != null)
+                await LoadPostsAsync(selectedServiceAccount);
+        }
+        catch (Exception ex)
+        {
+            await Notify.Error($"置顶失败: {ex.Message}");
+        }
+    }
+
+    protected async Task UnpinPost(ServiceAccountPostListItemDto post)
+    {
+        try
+        {
+            await ServiceAccountAppService.UnpinPostAsync(post.Id);
+            await Notify.Success("已取消置顶");
+            if (selectedServiceAccount != null)
+                await LoadPostsAsync(selectedServiceAccount);
+        }
+        catch (Exception ex)
+        {
+            await Notify.Error($"取消置顶失败: {ex.Message}");
+        }
+    }
+
+    protected async Task DeletePost(ServiceAccountPostListItemDto post)
+    {
+        if (!await JS.InvokeAsync<bool>("confirm", $"确定要删除内容「{post.Title}」吗？"))
+        {
+            return;
+        }
+
+        try
+        {
+            await ServiceAccountAppService.DeletePostAsync(post.Id);
+            await Notify.Success("删除成功");
+            if (selectedServiceAccount != null)
+                await LoadPostsAsync(selectedServiceAccount);
+        }
+        catch (Exception ex)
+        {
+            await Notify.Error($"删除失败: {ex.Message}");
+        }
+    }
+
+    // 服务号 CRUD
     protected void ShowCreateModal()
     {
         isEditing = false;
@@ -137,6 +216,8 @@ public partial class ServiceAccountManagement : AbpComponentBase
         {
             await ServiceAccountAppService.DeleteAsync(item.Id);
             await Notify.Success("删除成功");
+            if (selectedServiceAccount?.Id == item.Id)
+                ClosePostsView();
             await LoadDataAsync();
         }
         catch (Exception ex)
@@ -179,6 +260,9 @@ public partial class ServiceAccountManagement : AbpComponentBase
             });
             await Notify.Success("内容发布成功");
             ClosePostModal();
+            // 如果正在查看该服务号的内容，自动刷新
+            if (selectedServiceAccount?.Id == postServiceAccountId)
+                await LoadPostsAsync(selectedServiceAccount);
         }
         catch (Exception ex)
         {
