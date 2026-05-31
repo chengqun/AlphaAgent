@@ -1,7 +1,9 @@
 using System;
 using System.Collections.Concurrent;
 using System.Diagnostics;
+using System.IO;
 using System.Text;
+using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -12,10 +14,74 @@ public class ClaudeCliService
     private readonly ClaudeCliConfig _config;
     private readonly ConcurrentDictionary<Guid, string> _conversationSessions = new();
     private readonly ConcurrentDictionary<Guid, SemaphoreSlim> _conversationLocks = new();
+    private readonly string _sessionsFilePath;
+    private readonly SemaphoreSlim _saveLock = new(1, 1);
 
     public ClaudeCliService(ClaudeCliConfig config)
     {
         _config = config;
+        _sessionsFilePath = Path.Combine(
+            config.WorkingDirectory ?? AppContext.BaseDirectory,
+            ".claudebridge",
+            "sessions.json");
+        LoadSessions();
+    }
+
+    private void LoadSessions()
+    {
+        try
+        {
+            if (File.Exists(_sessionsFilePath))
+            {
+                var json = File.ReadAllText(_sessionsFilePath);
+                var sessions = JsonSerializer.Deserialize<Dictionary<Guid, string>>(json);
+                if (sessions != null)
+                {
+                    foreach (var (convId, sessionId) in sessions)
+                    {
+                        _conversationSessions[convId] = sessionId;
+                    }
+                    Console.WriteLine($"[信息] 已加载 {sessions.Count} 个会话映射");
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"[警告] 加载会话映射失败: {ex.Message}");
+        }
+    }
+
+    private async Task SaveSessionsAsync()
+    {
+        await _saveLock.WaitAsync();
+        try
+        {
+            var directory = Path.GetDirectoryName(_sessionsFilePath);
+            if (!string.IsNullOrEmpty(directory) && !Directory.Exists(directory))
+            {
+                Directory.CreateDirectory(directory);
+            }
+
+            var sessions = new Dictionary<Guid, string>();
+            foreach (var (convId, sessionId) in _conversationSessions)
+            {
+                sessions[convId] = sessionId;
+            }
+
+            var json = JsonSerializer.Serialize(sessions, new JsonSerializerOptions
+            {
+                WriteIndented = true
+            });
+            await File.WriteAllTextAsync(_sessionsFilePath, json);
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"[警告] 保存会话映射失败: {ex.Message}");
+        }
+        finally
+        {
+            _saveLock.Release();
+        }
     }
 
     public async Task<string> SendMessageAsync(Guid conversationId, string message, CancellationToken cancellationToken = default)
@@ -47,6 +113,7 @@ public class ClaudeCliService
             isFirstMessage = true;
             sessionId = Guid.NewGuid().ToString();
             _conversationSessions[conversationId] = sessionId;
+            _ = SaveSessionsAsync(); // 异步持久化，不阻塞当前请求
         }
 
         var arguments = BuildArguments(message, sessionId, isFirstMessage);
@@ -177,5 +244,6 @@ public class ClaudeCliService
     public void ClearSession(Guid conversationId)
     {
         _conversationSessions.TryRemove(conversationId, out _);
+        _ = SaveSessionsAsync();
     }
 }
