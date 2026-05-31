@@ -108,6 +108,9 @@ public class AbpHttpApiHostModule : AbpModule
         context.Services.AddMapperlyObjectMapper<AbpHttpApiHostModule>();
 
         context.Services.AddSignalR();
+
+        // 注册每日定时同步任务（上海时间 20:01）
+        context.Services.AddHostedService<DailySyncBackgroundService>();
     }
 
     private void ConfigureAuthentication(ServiceConfigurationContext context)
