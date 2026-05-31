@@ -36,21 +36,6 @@
                     <Image Grid.Column="2" Source="right_arrow" WidthRequest="16" HeightRequest="16" />
                 </Grid>
             </Border>
-
-            <!-- 服务号入口 -->
-            <Border BackgroundColor="{AppThemeBinding Light={StaticResource CardBackgroundLight}, Dark={StaticResource CardBackgroundDark}}"
-                    StrokeShape="RoundRectangle 12"
-                    Padding="{StaticResource CardPadding}"
-                    Margin="0,1,0,0">
-                <Border.GestureRecognizers>
-                    <TapGestureRecognizer Command="{Binding GoToServiceAccountsCommand}" />
-                </Border.GestureRecognizers>
-                <Grid ColumnDefinitions="Auto,*,Auto" RowDefinitions="Auto">
-                    <Label Grid.Column="0" Text="S" FontSize="16" FontAttributes="Bold" TextColor="{AppThemeBinding Light={StaticResource TextSecondaryLight}, Dark={StaticResource TextSecondaryDark}}" HorizontalOptions="Center" VerticalOptions="Center" WidthRequest="24" HeightRequest="24" />
-                    <Label Grid.Column="1" Text="服务号" FontSize="16" Style="{StaticResource LabelPrimary}" Margin="12,0,0,0" />
-                    <Image Grid.Column="2" Source="right_arrow" WidthRequest="16" HeightRequest="16" />
-                </Grid>
-            </Border>
         </StackLayout>
     </ScrollView>
 

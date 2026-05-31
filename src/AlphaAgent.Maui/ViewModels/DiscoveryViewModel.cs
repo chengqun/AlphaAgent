@@ -39,10 +39,4 @@ public partial class DiscoveryViewModel : ObservableObject
     {
         await Shell.Current.GoToAsync("VideoChannelsPage");
     }
-
-    [RelayCommand]
-    private async Task GoToServiceAccountsAsync()
-    {
-        await Shell.Current.GoToAsync("ServiceAccountBrowsePage");
-    }
 }

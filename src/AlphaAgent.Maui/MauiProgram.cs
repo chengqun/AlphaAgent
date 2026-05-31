@@ -83,7 +83,6 @@ public static class MauiProgram
 		builder.Services.AddTransient<DeviceManagementViewModel>();
 			builder.Services.AddTransient<AiSettingsViewModel>();
 			builder.Services.AddTransient<ServiceAccountDetailViewModel>();
-			builder.Services.AddTransient<ServiceAccountBrowseViewModel>();
 
 #if DEBUG
 		builder.Logging.AddDebug();

@@ -49,7 +49,6 @@ public partial class App : Microsoft.Maui.Controls.Application
         Routing.RegisterRoute("DeviceManagementPage", typeof(Views.DeviceManagementPage));
         Routing.RegisterRoute("AiSettingsPage", typeof(Views.AiSettingsPage));
         Routing.RegisterRoute("ServiceAccountDetailPage", typeof(Views.ServiceAccountDetailPage));
-        Routing.RegisterRoute("ServiceAccountBrowsePage", typeof(Views.ServiceAccountBrowsePage));
 
         return new Window(new AppShell());
     }
