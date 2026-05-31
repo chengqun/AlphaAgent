@@ -30,6 +30,17 @@
                     }
                     同步期货数据
                 </button>
+                <button type="button" class="btn btn-outline-info" @onclick="SyncStockPickingMoments" disabled="@isSyncingPicking">
+                    @if (isSyncingPicking)
+                    {
+                        <div class="spinner-border spinner-border-sm" role="status"></div>
+                    }
+                    else
+                    {
+                        <i class="fas fa-bullseye"></i>
+                    }
+                    同步选股策略发朋友圈
+                </button>
             </div>
         </div>
     </div>

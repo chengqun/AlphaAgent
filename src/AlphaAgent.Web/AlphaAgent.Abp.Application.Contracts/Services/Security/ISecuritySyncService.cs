@@ -6,4 +6,5 @@ namespace AlphaAgent.Abp.Application.Contracts.Services.Security;
 public interface ISecuritySyncService : IApplicationService
 {
     Task<SecuritySyncResult> SyncFromExternalAsync();
+    Task<StockPickingMomentResult> SyncStockPickingMomentsAsync();
 }

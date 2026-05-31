@@ -23,6 +23,7 @@ public partial class SecurityManagement : AbpComponentBase
     protected bool isLoading = false;
     protected bool isSaving = false;
     protected bool isSyncing = false;
+    protected bool isSyncingPicking = false;
     protected bool isEditing = false;
     protected bool showModal = false;
     protected bool showMomentModal = false;
@@ -53,6 +54,24 @@ public partial class SecurityManagement : AbpComponentBase
         finally
         {
             isSyncing = false;
+        }
+    }
+
+    protected async Task SyncStockPickingMoments()
+    {
+        isSyncingPicking = true;
+        try
+        {
+            var result = await SecuritySyncService.SyncStockPickingMomentsAsync();
+            await Notify.Success($"同步完成：{result.TotalStrategies}个策略，发布{result.PublishedMoments}条朋友圈，跳过{result.SkippedStocks}只股票");
+        }
+        catch (Exception ex)
+        {
+            await Notify.Error($"同步选股策略失败: {ex.Message}");
+        }
+        finally
+        {
+            isSyncingPicking = false;
         }
     }
 

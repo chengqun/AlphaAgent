@@ -8,6 +8,7 @@ namespace AlphaAgent.Abp.Domain.Services.Moment
     {
         Task<AppMoment> CreateMomentAsync(Guid userId, string content, string imageUrl = null, string type = "User", string visibility = "Friends");
         Task<AppMoment> CreateStockMomentAsync(int stockId, string content, string imageUrl = null);
+        Task<AppMoment> CreateStockMomentAsync(int stockId, string content, DateTime createdAt, string imageUrl = null);
         Task<AppMoment> CreateDeviceMomentAsync(string deviceId, string content, string imageUrl = null);
         Task<AppMoment> CreateGroupMomentAsync(string groupId, string content, string imageUrl = null);
         Task DeleteMomentAsync(Guid momentId, Guid currentUserId);

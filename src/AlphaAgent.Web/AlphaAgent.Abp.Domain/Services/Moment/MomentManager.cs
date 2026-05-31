@@ -39,6 +39,11 @@ namespace AlphaAgent.Abp.Domain.Services.Moment
 
         public async Task<AppMoment> CreateStockMomentAsync(int stockId, string content, string imageUrl = null)
         {
+            return await CreateStockMomentAsync(stockId, content, DateTime.UtcNow, imageUrl);
+        }
+
+        public async Task<AppMoment> CreateStockMomentAsync(int stockId, string content, DateTime createdAt, string imageUrl = null)
+        {
             var securities = await _securityManager.GetAllAsync();
             var stock = securities.FirstOrDefault(s => s.Id == stockId);
             if (stock == null)
@@ -50,7 +55,8 @@ namespace AlphaAgent.Abp.Domain.Services.Moment
             {
                 ImageUrl = imageUrl,
                 Type = "Stock",
-                Visibility = "Public"
+                Visibility = "Public",
+                CreatedAt = createdAt
             };
             return await _momentRepository.InsertAsync(moment);
         }
