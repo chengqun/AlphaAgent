@@ -623,6 +623,12 @@ public partial class ChatViewModel : ObservableObject, IPageLifecycleAware
                 {
                     await _agentRepository.DeleteSessionAsync(conversationId);
                 }
+
+                // 同步删除本地缓存，防止下拉刷新时残留条目重新出现
+                if (_conversationSyncService != null)
+                {
+                    await _conversationSyncService.DeleteConversationAsync(conversationId);
+                }
             }
             else if (_chatService != null)
             {
