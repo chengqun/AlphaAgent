@@ -71,6 +71,7 @@ public partial class AddFriendViewModel : ObservableObject
                         "Group" => RelationshipType.Group,
                         "Stock" => RelationshipType.Stock,
                         "Device" => RelationshipType.Device,
+                        "ServiceAccount" => RelationshipType.ServiceAccount,
                         _ => RelationshipType.Friendship
                     };
 
@@ -80,6 +81,7 @@ public partial class AddFriendViewModel : ObservableObject
                         "Group" => "群组",
                         "Stock" => "股票",
                         "Device" => "设备",
+                        "ServiceAccount" => "服务号",
                         _ => target.Type
                     };
 
@@ -156,6 +158,9 @@ public partial class AddFriendViewModel : ObservableObject
                         break;
                     case RelationshipType.Device:
                         successMessage = $"已申请绑定设备 {item.Name}";
+                        break;
+                    case RelationshipType.ServiceAccount:
+                        successMessage = $"已关注服务号 {item.Name}";
                         break;
                 }
                 StatusMessage = successMessage;

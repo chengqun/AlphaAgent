@@ -40,6 +40,7 @@ public class ServiceAccountAppService : ApplicationService, IServiceAccountAppSe
 
     #region 服务号 CRUD（管理员）
 
+    [HttpPost]
     [Authorize(AbpPermissions.ServiceAccounts.Create)]
     public async Task<ServiceAccountDto> CreateAsync(CreateServiceAccountDto input)
     {
@@ -53,6 +54,7 @@ public class ServiceAccountAppService : ApplicationService, IServiceAccountAppSe
         return await MapToDtoAsync(serviceAccount);
     }
 
+    [HttpPut("{id}")]
     [Authorize(AbpPermissions.ServiceAccounts.Update)]
     public async Task<ServiceAccountDto> UpdateAsync(Guid id, UpdateServiceAccountDto input)
     {
@@ -68,12 +70,14 @@ public class ServiceAccountAppService : ApplicationService, IServiceAccountAppSe
         return await MapToDtoAsync(serviceAccount);
     }
 
+    [HttpDelete("{id}")]
     [Authorize(AbpPermissions.ServiceAccounts.Delete)]
     public async Task DeleteAsync(Guid id)
     {
         await _serviceAccountManager.DeleteAsync(id);
     }
 
+    [HttpGet("{id}")]
     [Authorize]
     public async Task<ServiceAccountDto> GetAsync(Guid id)
     {
@@ -81,6 +85,7 @@ public class ServiceAccountAppService : ApplicationService, IServiceAccountAppSe
         return await MapToDtoAsync(serviceAccount);
     }
 
+    [HttpGet("all")]
     [Authorize]
     public async Task<List<ServiceAccountDto>> GetAllAsync()
     {
@@ -93,6 +98,7 @@ public class ServiceAccountAppService : ApplicationService, IServiceAccountAppSe
         return dtos;
     }
 
+    [HttpGet("search")]
     [Authorize]
     public async Task<List<ServiceAccountDto>> SearchAsync(string keyword)
     {
@@ -105,6 +111,7 @@ public class ServiceAccountAppService : ApplicationService, IServiceAccountAppSe
         return dtos;
     }
 
+    [HttpGet("by-category")]
     [Authorize]
     public async Task<List<ServiceAccountDto>> GetByCategoryAsync(string category)
     {
@@ -121,6 +128,7 @@ public class ServiceAccountAppService : ApplicationService, IServiceAccountAppSe
 
     #region 用户关注/取消关注
 
+    [HttpPost("follow/{serviceAccountId}")]
     [Authorize]
     public async Task<ServiceAccountDto> FollowAsync(Guid serviceAccountId)
     {
@@ -129,6 +137,7 @@ public class ServiceAccountAppService : ApplicationService, IServiceAccountAppSe
         return await MapToDtoAsync(serviceAccount);
     }
 
+    [HttpPost("unfollow/{serviceAccountId}")]
     [Authorize]
     public async Task UnfollowAsync(Guid serviceAccountId)
     {
@@ -147,6 +156,7 @@ public class ServiceAccountAppService : ApplicationService, IServiceAccountAppSe
 
     #region 服务号内容管理
 
+    [HttpPost("post")]
     [Authorize(AbpPermissions.ServiceAccounts.Publish)]
     public async Task<ServiceAccountPostDto> PublishPostAsync(CreateServiceAccountPostDto input)
     {
@@ -161,12 +171,14 @@ public class ServiceAccountAppService : ApplicationService, IServiceAccountAppSe
         return await MapPostToDtoAsync(post);
     }
 
+    [HttpDelete("post/{postId}")]
     [Authorize(AbpPermissions.ServiceAccounts.Publish)]
     public async Task DeletePostAsync(Guid postId)
     {
         await _postManager.DeletePostAsync(postId);
     }
 
+    [HttpGet("post/{postId}")]
     [Authorize]
     public async Task<ServiceAccountPostDto> GetPostAsync(Guid postId)
     {
@@ -174,6 +186,7 @@ public class ServiceAccountAppService : ApplicationService, IServiceAccountAppSe
         return await MapPostToDtoAsync(post);
     }
 
+    [HttpGet("{serviceAccountId}/posts")]
     [Authorize]
     public async Task<List<ServiceAccountPostListItemDto>> GetPostsAsync(Guid serviceAccountId, int limit = 50, int offset = 0)
     {
@@ -181,6 +194,7 @@ public class ServiceAccountAppService : ApplicationService, IServiceAccountAppSe
         return await MapPostListItemsAsync(posts);
     }
 
+    [HttpGet("followed-posts")]
     [Authorize]
     public async Task<List<ServiceAccountPostListItemDto>> GetFollowedPostsAsync(int limit = 50, int offset = 0)
     {
@@ -198,12 +212,14 @@ public class ServiceAccountAppService : ApplicationService, IServiceAccountAppSe
         return await MapPostListItemsAsync(posts);
     }
 
+    [HttpPost("post/{postId}/pin")]
     [Authorize(AbpPermissions.ServiceAccounts.Publish)]
     public async Task PinPostAsync(Guid postId)
     {
         await _postManager.PinPostAsync(postId);
     }
 
+    [HttpPost("post/{postId}/unpin")]
     [Authorize(AbpPermissions.ServiceAccounts.Publish)]
     public async Task UnpinPostAsync(Guid postId)
     {
