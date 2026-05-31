@@ -35,6 +35,14 @@
     "Permission:LlmConfigs.Manage": "管理LLM配置",
     "Permission:LlmConfigs.Create": "创建LLM配置",
     "Permission:LlmConfigs.Update": "更新LLM配置",
-    "Permission:LlmConfigs.Delete": "删除LLM配置"
+    "Permission:LlmConfigs.Delete": "删除LLM配置",
+    "ServiceAccountManagement": "服务号管理",
+    "Permission:ServiceAccounts": "服务号管理",
+    "Permission:ServiceAccounts.Manage": "管理服务号",
+    "Permission:ServiceAccounts.Create": "创建服务号",
+    "Permission:ServiceAccounts.Update": "更新服务号",
+    "Permission:ServiceAccounts.Delete": "删除服务号",
+    "Permission:ServiceAccounts.View": "查看服务号",
+    "Permission:ServiceAccounts.Publish": "发布服务号内容"
   }
 }

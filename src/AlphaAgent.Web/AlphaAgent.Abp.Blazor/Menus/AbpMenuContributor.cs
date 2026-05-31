@@ -71,6 +71,17 @@ public class AbpMenuContributor : IMenuContributor
             ));
         }
 
+        // 管理员菜单 - 服务号管理
+        if (await context.IsGrantedAsync("Abp.ServiceAccounts.Manage"))
+        {
+            administration.AddItem(new ApplicationMenuItem(
+                "ServiceAccountManagement",
+                l["ServiceAccountManagement"],
+                url: "/service-account-management",
+                icon: "fas fa-bullhorn"
+            ));
+        }
+
         if (MultiTenancyConsts.IsEnabled)
         {
             administration.SetSubItemOrder(TenantManagementMenuNames.GroupName, 1);
