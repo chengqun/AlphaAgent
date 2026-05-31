@@ -29,6 +29,7 @@ namespace AlphaAgent.Abp.Application.Contracts.DTOs.Relationships
         public List<RelationshipDto> Friends { get; set; } = new List<RelationshipDto>();
         public List<RelationshipDto> Groups { get; set; } = new List<RelationshipDto>();
         public List<RelationshipDto> Stocks { get; set; } = new List<RelationshipDto>();
+        public List<RelationshipDto> ServiceAccounts { get; set; } = new List<RelationshipDto>();
     }
 
     /// <summary>
@@ -41,6 +42,7 @@ namespace AlphaAgent.Abp.Application.Contracts.DTOs.Relationships
         public string Type { get; set; }
         public string Description { get; set; }
         public TargetSecurityInfo? SecurityInfo { get; set; }
+        public TargetServiceAccountInfo? ServiceAccountInfo { get; set; }
     }
 
     /// <summary>
@@ -52,5 +54,14 @@ namespace AlphaAgent.Abp.Application.Contracts.DTOs.Relationships
         public string SecurityType { get; set; } = string.Empty;
         public string Exchange { get; set; } = string.Empty;
         public string BaseCode { get; set; } = string.Empty;
+    }
+
+    /// <summary>
+    /// 搜索结果中的服务号详细信息
+    /// </summary>
+    public class TargetServiceAccountInfo
+    {
+        public string Category { get; set; } = string.Empty;
+        public bool IsVerified { get; set; }
     }
 }

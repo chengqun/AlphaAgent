@@ -8,6 +8,7 @@ public class ContactBookDto
     public List<RelationshipDto> Friends { get; set; } = new List<RelationshipDto>();
     public List<RelationshipDto> Groups { get; set; } = new List<RelationshipDto>();
     public List<RelationshipDto> Stocks { get; set; } = new List<RelationshipDto>();
+    public List<RelationshipDto> ServiceAccounts { get; set; } = new List<RelationshipDto>();
 }
 
 public class ContactItem

@@ -92,6 +92,15 @@ public class AbpPermissionDefinitionProvider : PermissionDefinitionProvider
         versionConfigPermission.AddChild(AbpPermissions.VersionConfigs.Create, L("Permission:VersionConfigs.Create"));
         versionConfigPermission.AddChild(AbpPermissions.VersionConfigs.Update, L("Permission:VersionConfigs.Update"));
         versionConfigPermission.AddChild(AbpPermissions.VersionConfigs.Delete, L("Permission:VersionConfigs.Delete"));
+
+        // 服务号管理权限
+        var serviceAccountPermission = myGroup.AddPermission(AbpPermissions.ServiceAccounts.Default, L("Permission:ServiceAccounts"));
+        serviceAccountPermission.AddChild(AbpPermissions.ServiceAccounts.Manage, L("Permission:ServiceAccounts.Manage"));
+        serviceAccountPermission.AddChild(AbpPermissions.ServiceAccounts.Create, L("Permission:ServiceAccounts.Create"));
+        serviceAccountPermission.AddChild(AbpPermissions.ServiceAccounts.Update, L("Permission:ServiceAccounts.Update"));
+        serviceAccountPermission.AddChild(AbpPermissions.ServiceAccounts.Delete, L("Permission:ServiceAccounts.Delete"));
+        serviceAccountPermission.AddChild(AbpPermissions.ServiceAccounts.View, L("Permission:ServiceAccounts.View"));
+        serviceAccountPermission.AddChild(AbpPermissions.ServiceAccounts.Publish, L("Permission:ServiceAccounts.Publish"));
     }
 
     private static LocalizableString L(string name)

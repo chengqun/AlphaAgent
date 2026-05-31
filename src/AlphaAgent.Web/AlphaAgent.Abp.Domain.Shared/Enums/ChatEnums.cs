@@ -23,7 +23,12 @@ namespace AlphaAgent.Abp.Domain.Shared.Enums
         /// <summary>
         /// 股票
         /// </summary>
-        Stock = 3
+        Stock = 3,
+
+        /// <summary>
+        /// 服务号
+        /// </summary>
+        ServiceAccount = 4
     }
 
     /// <summary>
@@ -49,7 +54,12 @@ namespace AlphaAgent.Abp.Domain.Shared.Enums
         /// <summary>
         /// 股票关系
         /// </summary>
-        Stock = 3
+        Stock = 3,
+
+        /// <summary>
+        /// 服务号关系
+        /// </summary>
+        ServiceAccount = 4
     }
 
     /// <summary>

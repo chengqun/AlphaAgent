@@ -30,6 +30,7 @@ namespace AlphaAgent.Abp.Application.Services.Relationships
         private readonly IRelationshipManager<AppRelationship, AppDevice, Guid> _deviceRelationshipManager;
         private readonly IRelationshipManager<AppRelationship, AppGroup, Guid> _groupRelationshipManager;
         private readonly IRelationshipManager<AppRelationship, AppSecurity, Guid> _stockRelationshipManager;
+        private readonly IRelationshipManager<AppRelationship, AppServiceAccount, Guid> _serviceAccountRelationshipManager;
         private readonly ILogger<RelationshipService> _logger;
 
         public RelationshipService(
@@ -37,12 +38,14 @@ namespace AlphaAgent.Abp.Application.Services.Relationships
             IRelationshipManager<AppRelationship, AppDevice, Guid> deviceRelationshipManager,
             IRelationshipManager<AppRelationship, AppGroup, Guid> groupRelationshipManager,
             IRelationshipManager<AppRelationship, AppSecurity, Guid> stockRelationshipManager,
+            IRelationshipManager<AppRelationship, AppServiceAccount, Guid> serviceAccountRelationshipManager,
             ILogger<RelationshipService> logger)
         {
             _friendshipManager = friendshipManager;
             _deviceRelationshipManager = deviceRelationshipManager;
             _groupRelationshipManager = groupRelationshipManager;
             _stockRelationshipManager = stockRelationshipManager;
+            _serviceAccountRelationshipManager = serviceAccountRelationshipManager;
             _logger = logger;
         }
 
@@ -63,6 +66,7 @@ namespace AlphaAgent.Abp.Application.Services.Relationships
                     RelationshipType.Device => await _deviceRelationshipManager.CreateRelationshipAsync(currentUserId, targetId),
                     RelationshipType.Group => await _groupRelationshipManager.CreateRelationshipAsync(currentUserId, targetId),
                     RelationshipType.Stock => await _stockRelationshipManager.CreateRelationshipAsync(currentUserId, targetId),
+                    RelationshipType.ServiceAccount => await _serviceAccountRelationshipManager.CreateRelationshipAsync(currentUserId, targetId),
                     _ => throw new ArgumentException($"Invalid relationship type: {type}")
                 };
 
@@ -93,6 +97,7 @@ namespace AlphaAgent.Abp.Application.Services.Relationships
                     RelationshipType.Device => await _deviceRelationshipManager.AcceptRelationshipAsync(ConvertToId<Guid>(relationshipId), currentUserId),
                     RelationshipType.Group => await _groupRelationshipManager.AcceptRelationshipAsync(ConvertToId<Guid>(relationshipId), currentUserId),
                     RelationshipType.Stock => await _stockRelationshipManager.AcceptRelationshipAsync(ConvertToId<Guid>(relationshipId), currentUserId),
+                    RelationshipType.ServiceAccount => await _serviceAccountRelationshipManager.AcceptRelationshipAsync(ConvertToId<Guid>(relationshipId), currentUserId),
                     _ => throw new ArgumentException($"Invalid relationship type: {type}")
                 };
 
@@ -123,6 +128,7 @@ namespace AlphaAgent.Abp.Application.Services.Relationships
                     RelationshipType.Device => await _deviceRelationshipManager.RejectRelationshipAsync(ConvertToId<Guid>(relationshipId), currentUserId),
                     RelationshipType.Group => await _groupRelationshipManager.RejectRelationshipAsync(ConvertToId<Guid>(relationshipId), currentUserId),
                     RelationshipType.Stock => await _stockRelationshipManager.RejectRelationshipAsync(ConvertToId<Guid>(relationshipId), currentUserId),
+                    RelationshipType.ServiceAccount => await _serviceAccountRelationshipManager.RejectRelationshipAsync(ConvertToId<Guid>(relationshipId), currentUserId),
                     _ => throw new ArgumentException($"Invalid relationship type: {type}")
                 };
 
@@ -161,6 +167,9 @@ namespace AlphaAgent.Abp.Application.Services.Relationships
                     case RelationshipType.Stock:
                         await _stockRelationshipManager.RemoveRelationshipAsync(ConvertToId<Guid>(relationshipId));
                         break;
+                    case RelationshipType.ServiceAccount:
+                        await _serviceAccountRelationshipManager.RemoveRelationshipAsync(ConvertToId<Guid>(relationshipId));
+                        break;
                     default:
                         throw new ArgumentException($"Invalid relationship type: {type}");
                 }
@@ -197,6 +206,9 @@ namespace AlphaAgent.Abp.Application.Services.Relationships
 
                 var stockTargets = (await _stockRelationshipManager.SearchTargetsAsync(keyword)).Select(t => ConvertSecurityToTargetDto(t));
                 allTargets.AddRange(stockTargets);
+
+                var serviceAccountTargets = (await _serviceAccountRelationshipManager.SearchTargetsAsync(keyword)).Select(t => ConvertServiceAccountToTargetDto(t));
+                allTargets.AddRange(serviceAccountTargets);
 
                 _logger.LogInformation("Found {Count} total targets for keyword: {Keyword}",
                     allTargets.Count, keyword);
@@ -241,8 +253,13 @@ namespace AlphaAgent.Abp.Application.Services.Relationships
                 foreach (var r in stocks)
                     contactBook.Stocks.Add(await ConvertAppRelationshipToDto(r));
 
-                _logger.LogInformation("Retrieved accepted contacts with {DeviceCount} devices, {FriendCount} friends, {GroupCount} groups, {StockCount} stocks",
-                    contactBook.Devices.Count, contactBook.Friends.Count, contactBook.Groups.Count, contactBook.Stocks.Count);
+                var serviceAccounts = await _serviceAccountRelationshipManager.GetUserRelationshipsAsync(currentUserId);
+                contactBook.ServiceAccounts = new List<RelationshipDto>();
+                foreach (var r in serviceAccounts)
+                    contactBook.ServiceAccounts.Add(await ConvertAppRelationshipToDto(r));
+
+                _logger.LogInformation("Retrieved accepted contacts with {DeviceCount} devices, {FriendCount} friends, {GroupCount} groups, {StockCount} stocks, {ServiceAccountCount} serviceAccounts",
+                    contactBook.Devices.Count, contactBook.Friends.Count, contactBook.Groups.Count, contactBook.Stocks.Count, contactBook.ServiceAccounts.Count);
 
                 return contactBook;
             }
@@ -334,6 +351,11 @@ namespace AlphaAgent.Abp.Application.Services.Relationships
                     var group = await groupRepository.GetAsync(Guid.Parse(relationship.TargetId));
                     targetName = group?.Name ?? "";
                     break;
+                case RelationshipType.ServiceAccount:
+                    var saRepository = ServiceProvider.GetRequiredService<IRepository<AppServiceAccount, Guid>>();
+                    var serviceAccount = await saRepository.FirstOrDefaultAsync(sa => sa.Id == Guid.Parse(relationship.TargetId));
+                    targetName = serviceAccount?.Name ?? "";
+                    break;
             }
 
             return new RelationshipDto
@@ -395,6 +417,22 @@ namespace AlphaAgent.Abp.Application.Services.Relationships
                     SecurityType = security.Type,
                     Exchange = security.Exchange,
                     BaseCode = security.BaseCode
+                }
+            };
+        }
+
+        private TargetDto ConvertServiceAccountToTargetDto(AppServiceAccount serviceAccount)
+        {
+            return new TargetDto
+            {
+                Id = serviceAccount.Id.ToString(),
+                Name = serviceAccount.Name,
+                Type = "ServiceAccount",
+                Description = serviceAccount.Description,
+                ServiceAccountInfo = new TargetServiceAccountInfo
+                {
+                    Category = serviceAccount.Category,
+                    IsVerified = serviceAccount.IsVerified
                 }
             };
         }

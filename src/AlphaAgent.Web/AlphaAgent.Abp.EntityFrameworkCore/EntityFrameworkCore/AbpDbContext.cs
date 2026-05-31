@@ -84,6 +84,12 @@ public class AbpDbContext :
     // LLM 配置（每个用户可有多条，如 DeepSeek、GPT-4o、本地模型）
     public virtual DbSet<AppLlmConfig> LlmConfigs { get; set; } = null!;
 
+    // 服务号实体
+    public virtual DbSet<AppServiceAccount> ServiceAccounts { get; set; } = null!;
+
+    // 服务号发布的内容
+    public virtual DbSet<AppServiceAccountPost> ServiceAccountPosts { get; set; } = null!;
+
     #endregion
 
     public AbpDbContext(DbContextOptions<AbpDbContext> options)
@@ -231,6 +237,36 @@ public class AbpDbContext :
             b.Property(l => l.ModelName).HasMaxLength(128).IsRequired();
             b.Property(l => l.ApiKey).HasMaxLength(256).IsRequired();
             b.Property(l => l.Endpoint).HasMaxLength(256).IsRequired();
+        });
+
+        // 配置服务号表 - ServiceAccounts
+        builder.Entity<AppServiceAccount>(b =>
+        {
+            b.ToTable("AppServiceAccounts");
+            b.HasKey(sa => sa.Id);
+            b.HasIndex(sa => sa.OwnerId);
+            b.HasIndex(sa => sa.Category);
+            b.HasIndex(sa => sa.Name);
+            b.Property(sa => sa.Name).HasMaxLength(128).IsRequired();
+            b.Property(sa => sa.AvatarUrl).HasMaxLength(500);
+            b.Property(sa => sa.Description).HasMaxLength(512);
+            b.Property(sa => sa.Category).HasMaxLength(64).IsRequired();
+            b.Property(sa => sa.WelcomeMessage).HasMaxLength(500);
+        });
+
+        // 配置服务号内容表 - ServiceAccountPosts
+        builder.Entity<AppServiceAccountPost>(b =>
+        {
+            b.ToTable("AppServiceAccountPosts");
+            b.HasKey(p => p.Id);
+            b.HasIndex(p => p.ServiceAccountId);
+            b.HasIndex(p => new { p.ServiceAccountId, p.PublishedAt });
+            b.HasIndex(p => p.ContentType);
+            b.Property(p => p.Title).HasMaxLength(200).IsRequired();
+            b.Property(p => p.Summary).HasMaxLength(500);
+            b.Property(p => p.Content).IsRequired();
+            b.Property(p => p.CoverImageUrl).HasMaxLength(500);
+            b.Property(p => p.ContentType).HasMaxLength(32).IsRequired();
         });
 
 

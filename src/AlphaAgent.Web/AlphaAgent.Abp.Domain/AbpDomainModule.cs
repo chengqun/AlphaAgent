@@ -82,6 +82,14 @@ public class AbpDomainModule : AbpModule
             AlphaAgent.Abp.Domain.Services.Relationships.GroupRelationshipManager>();
         context.Services.AddTransient<AlphaAgent.Abp.Domain.Services.Relationships.IRelationshipManager<AlphaAgent.Abp.Domain.Entities.AppRelationship, AlphaAgent.Abp.Domain.Entities.AppSecurity, System.Guid>,
             AlphaAgent.Abp.Domain.Services.Relationships.StockRelationshipManager>();
+        context.Services.AddTransient<AlphaAgent.Abp.Domain.Services.Relationships.IRelationshipManager<AlphaAgent.Abp.Domain.Entities.AppRelationship, AlphaAgent.Abp.Domain.Entities.AppServiceAccount, System.Guid>,
+            AlphaAgent.Abp.Domain.Services.Relationships.ServiceAccountRelationshipManager>();
+
+        // 注册服务号管理服务
+        context.Services.AddTransient<AlphaAgent.Abp.Domain.Services.ServiceAccounts.IServiceAccountManager,
+            AlphaAgent.Abp.Domain.Services.ServiceAccounts.ServiceAccountManager>();
+        context.Services.AddTransient<AlphaAgent.Abp.Domain.Services.ServiceAccounts.IServiceAccountPostManager,
+            AlphaAgent.Abp.Domain.Services.ServiceAccounts.ServiceAccountPostManager>();
         
         // 注册证券管理服务
         context.Services.AddTransient<AlphaAgent.Abp.Domain.Services.Securities.ISecurityManager,

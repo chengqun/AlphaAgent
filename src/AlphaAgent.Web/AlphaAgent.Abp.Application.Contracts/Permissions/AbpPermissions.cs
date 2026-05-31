@@ -131,4 +131,16 @@ public static class AbpPermissions
         public const string Update = Default + ".Update";
         public const string Delete = Default + ".Delete";
     }
+
+    // 服务号管理权限
+    public static class ServiceAccounts
+    {
+        public const string Default = GroupName + ".ServiceAccounts";
+        public const string Manage = Default + ".Manage";
+        public const string Create = Default + ".Create";
+        public const string Update = Default + ".Update";
+        public const string Delete = Default + ".Delete";
+        public const string View = Default + ".View";
+        public const string Publish = Default + ".Publish";
+    }
 }

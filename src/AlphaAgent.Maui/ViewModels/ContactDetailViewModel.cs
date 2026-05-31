@@ -70,6 +70,7 @@ public partial class ContactDetailViewModel : ObservableObject, IQueryAttributab
             "股票" => "stock",
             "设备" => "device",
             "群组" => "group",
+            "服务号" => "serviceaccount",
             _ => "friendship"
         };
 
@@ -91,6 +92,13 @@ public partial class ContactDetailViewModel : ObservableObject, IQueryAttributab
 
         try
         {
+            // 服务号不支持发消息
+            if (ContactType == "服务号")
+            {
+                StatusMessage = "服务号不支持发消息";
+                return;
+            }
+
             // 股票类型走 Agent 通道
             if (ContactType == "股票")
             {
@@ -139,6 +147,7 @@ public partial class ContactDetailViewModel : ObservableObject, IQueryAttributab
             "股票" => (int)RelationshipType.Stock,
             "设备" => (int)RelationshipType.Device,
             "群组" => (int)RelationshipType.Group,
+            "服务号" => (int)RelationshipType.ServiceAccount,
             _ => (int)RelationshipType.Friendship
         };
 

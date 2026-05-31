@@ -43,6 +43,7 @@ public class ContactSyncService : IContactSyncService
             allDtos.AddRange(serverData.Groups);
             allDtos.AddRange(serverData.Devices);
             allDtos.AddRange(serverData.Stocks);
+            allDtos.AddRange(serverData.ServiceAccounts);
 
             var cacheItems = allDtos.Select(dto => MapToCacheItem(dto, userId)).ToList();
 
@@ -78,6 +79,9 @@ public class ContactSyncService : IContactSyncService
                     break;
                 case 3: // Stock
                     book.Stocks.Add(dto);
+                    break;
+                case 4: // ServiceAccount
+                    book.ServiceAccounts.Add(dto);
                     break;
             }
         }

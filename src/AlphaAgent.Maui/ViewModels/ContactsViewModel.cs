@@ -140,6 +140,7 @@ public partial class ContactsViewModel : ObservableObject
         foreach (var g in contacts.Groups) newIds.Add($"group_{g.TargetId}");
         foreach (var d in contacts.Devices) newIds.Add($"device_{d.TargetId}");
         foreach (var s in contacts.Stocks) newIds.Add($"stock_{s.TargetId}");
+        foreach (var sa in contacts.ServiceAccounts) newIds.Add($"serviceaccount_{sa.TargetId}");
 
         if (newIds.SetEquals(_lastRenderedIds))
             return; // 数据没变，不刷新
@@ -158,6 +159,7 @@ public partial class ContactsViewModel : ObservableObject
         foreach (var g in contacts.Groups) newIds.Add($"group_{g.TargetId}");
         foreach (var d in contacts.Devices) newIds.Add($"device_{d.TargetId}");
         foreach (var s in contacts.Stocks) newIds.Add($"stock_{s.TargetId}");
+        foreach (var sa in contacts.ServiceAccounts) newIds.Add($"serviceaccount_{sa.TargetId}");
         _lastRenderedIds = newIds;
 
         ContactGroups.Clear();
@@ -246,6 +248,24 @@ public partial class ContactsViewModel : ObservableObject
                         Name = s.TargetName,
                         Initial = s.Initial,
                         Type = "股票"
+                    }))
+            });
+        }
+
+        var acceptedServiceAccounts = contacts.ServiceAccounts.ToList();
+        if (acceptedServiceAccounts.Count > 0)
+        {
+            ContactGroups.Add(new ContactGroup
+            {
+                Title = $"服务号 ({acceptedServiceAccounts.Count})",
+                Contacts = new ObservableCollection<ContactItem>(
+                    acceptedServiceAccounts.Select(sa => new ContactItem
+                    {
+                        Id = sa.TargetId,
+                        RelationshipId = sa.Id.ToString(),
+                        Name = sa.TargetName,
+                        Initial = sa.Initial,
+                        Type = "服务号"
                     }))
             });
         }
@@ -370,6 +390,13 @@ public partial class ContactsViewModel : ObservableObject
                         $"AgentContactDetailPage?agentName={Uri.EscapeDataString(contact.Name)}");
                     return;
             }
+        }
+
+        // 服务号走详情页
+        if (contact.Type == "服务号")
+        {
+            await Shell.Current.GoToAsync($"ServiceAccountDetailPage?id={Uri.EscapeDataString(contact.Id)}");
+            return;
         }
 
         await Shell.Current.GoToAsync(
