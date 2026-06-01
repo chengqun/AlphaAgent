@@ -37,6 +37,25 @@ public class LlmConfigAppService : ApplicationService, ILlmConfigAppService
                 .ThenBy(c => c.Name)
         );
 
+        // 用户没有 LLM 配置时，回退到 admin 的默认配置
+        if (configs.Count == 0)
+        {
+            var adminRoleUsers = await _userManager.GetUsersInRoleAsync("admin");
+            var adminId = adminRoleUsers.FirstOrDefault()?.Id;
+            if (adminId.HasValue)
+            {
+                var adminConfigs = await AsyncExecuter.ToListAsync(
+                    queryable.Where(c => c.CreatorId == adminId.Value)
+                        .OrderByDescending(c => c.IsDefault)
+                        .ThenBy(c => c.Name)
+                );
+                // 标记为继承的配置，前端可区分
+                return new ListResultDto<LlmConfigDto>(
+                    adminConfigs.Select(MapToDto).ToList()
+                );
+            }
+        }
+
         return new ListResultDto<LlmConfigDto>(
             configs.Select(MapToDto).ToList()
         );

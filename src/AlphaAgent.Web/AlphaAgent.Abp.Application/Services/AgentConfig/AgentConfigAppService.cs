@@ -58,6 +58,23 @@ public class AgentConfigAppService : CrudAppService<
                 .ThenBy(c => c.AgentName)
         );
 
+        // 用户没有 Agent 配置时，回退到 admin 的配置
+        if (configs.Count == 0)
+        {
+            var adminRoleUsers = await _userManager.GetUsersInRoleAsync("admin");
+            var adminId = adminRoleUsers.FirstOrDefault()?.Id;
+            if (adminId.HasValue)
+            {
+                var adminConfigs = await AsyncExecuter.ToListAsync(
+                    queryable.Where(c => c.CreatorId == adminId.Value && c.IsActive)
+                        .OrderBy(c => c.AgentName)
+                );
+                return new ListResultDto<AgentConfigDto>(
+                    adminConfigs.Select(MapToGetOutputDto).ToList()
+                );
+            }
+        }
+
         return new ListResultDto<AgentConfigDto>(
             configs.Select(MapToGetOutputDto).ToList()
         );
@@ -70,6 +87,19 @@ public class AgentConfigAppService : CrudAppService<
         var config = await AsyncExecuter.FirstOrDefaultAsync(
             queryable.Where(c => c.CreatorId == userId && c.AgentName == agentName && c.IsActive)
         );
+
+        // 用户没有配置时，回退到 admin 的配置
+        if (config == null)
+        {
+            var adminRoleUsers = await _userManager.GetUsersInRoleAsync("admin");
+            var adminId = adminRoleUsers.FirstOrDefault()?.Id;
+            if (adminId.HasValue)
+            {
+                config = await AsyncExecuter.FirstOrDefaultAsync(
+                    queryable.Where(c => c.CreatorId == adminId.Value && c.AgentName == agentName && c.IsActive)
+                );
+            }
+        }
 
         if (config == null)
         {
