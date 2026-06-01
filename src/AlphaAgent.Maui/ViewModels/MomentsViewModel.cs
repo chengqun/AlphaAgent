@@ -79,7 +79,7 @@ public partial class MomentsViewModel : ObservableObject
     {
         if (_momentCacheService == null) return;
 
-        var cached = await _momentCacheService.GetCachedMomentsAsync();
+        var cached = await Task.Run(() => _momentCacheService.GetCachedMomentsAsync());
         foreach (var dto in cached)
         {
             if (_displayedMomentIds.Add(dto.Id.ToString()))
@@ -96,32 +96,35 @@ public partial class MomentsViewModel : ObservableObject
         DateTime? since = null;
         if (_momentCacheService != null)
         {
-            since = await _momentCacheService.GetLatestCachedCreatedAtAsync();
+            since = await Task.Run(() => _momentCacheService.GetLatestCachedCreatedAtAsync());
         }
 
-        var response = await _momentService.GetFriendsMomentsAsync(50, 0, since);
-        if (response.Success && response.Data != null && response.Data.Count > 0)
+        (List<MomentDto> newItems, List<MomentDto> allData) = await Task.Run(async () =>
         {
-            var newItems = new List<MomentDto>();
-            foreach (var dto in response.Data)
+            var response = await _momentService.GetFriendsMomentsAsync(50, 0, since);
+            var newDtos = new List<MomentDto>();
+            if (response.Success && response.Data != null && response.Data.Count > 0)
             {
-                if (_displayedMomentIds.Add(dto.Id.ToString()))
+                foreach (var dto in response.Data)
                 {
-                    newItems.Add(dto);
+                    if (_displayedMomentIds.Add(dto.Id.ToString()))
+                    {
+                        newDtos.Add(dto);
+                    }
+                }
+
+                if (_momentCacheService != null)
+                {
+                    await _momentCacheService.UpdateCacheAsync(response.Data);
                 }
             }
+            return (newDtos, response.Data ?? new List<MomentDto>());
+        });
 
-            // 插入到列表前面（新数据比缓存更新）
-            for (int i = newItems.Count - 1; i >= 0; i--)
-            {
-                Moments.Insert(0, ToMomentItem(newItems[i]));
-            }
-
-            // 写入缓存
-            if (_momentCacheService != null)
-            {
-                await _momentCacheService.UpdateCacheAsync(response.Data);
-            }
+        // UI 操作在主线程执行
+        for (int i = newItems.Count - 1; i >= 0; i--)
+        {
+            Moments.Insert(0, ToMomentItem(newItems[i]));
         }
     }
 
@@ -209,26 +212,31 @@ public partial class MomentsViewModel : ObservableObject
                 return;
             }
 
-            var response = await _momentService.CreateMomentAsync(new CreateMomentDto
+            var createDto = new CreateMomentDto
             {
                 Content = content,
                 Type = "Text",
                 Visibility = "Friends"
+            };
+
+            var response = await Task.Run(async () =>
+            {
+                var result = await _momentService.CreateMomentAsync(createDto);
+                if (result.Success && result.Data != null && _momentCacheService != null)
+                {
+                    await _momentCacheService.AddMomentAsync(result.Data);
+                }
+                return result;
             });
 
             if (response.Success && response.Data != null)
             {
                 StatusMessage = "发布成功";
 
-                // 追加到列表 + 写入缓存
+                // 追加到列表（UI 操作在主线程执行）
                 if (_displayedMomentIds.Add(response.Data.Id.ToString()))
                 {
                     Moments.Insert(0, ToMomentItem(response.Data));
-                }
-
-                if (_momentCacheService != null)
-                {
-                    await _momentCacheService.AddMomentAsync(response.Data);
                 }
             }
             else

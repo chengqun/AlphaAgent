@@ -77,7 +77,7 @@ public partial class ServiceAccountDetailViewModel : ObservableObject, IQueryAtt
         try
         {
             // 加载服务号信息
-            var infoResult = await _serviceAccountService.GetAsync(ServiceAccountId);
+            var infoResult = await Task.Run(() => _serviceAccountService.GetAsync(ServiceAccountId));
             if (infoResult.Success && infoResult.Data != null)
             {
                 var info = infoResult.Data;
@@ -98,7 +98,7 @@ public partial class ServiceAccountDetailViewModel : ObservableObject, IQueryAtt
             }
 
             // 加载内容列表
-            var postsResult = await _serviceAccountService.GetPostsAsync(ServiceAccountId);
+            var postsResult = await Task.Run(() => _serviceAccountService.GetPostsAsync(ServiceAccountId));
             if (postsResult.Success && postsResult.Data != null)
             {
                 Posts.Clear();
@@ -128,7 +128,7 @@ public partial class ServiceAccountDetailViewModel : ObservableObject, IQueryAtt
 
         try
         {
-            var result = await _serviceAccountService.FollowAsync(ServiceAccountId);
+            var result = await Task.Run(() => _serviceAccountService.FollowAsync(ServiceAccountId));
             if (result.Success)
             {
                 IsFollowed = true;
@@ -152,7 +152,7 @@ public partial class ServiceAccountDetailViewModel : ObservableObject, IQueryAtt
 
         try
         {
-            var result = await _serviceAccountService.UnfollowAsync(ServiceAccountId);
+            var result = await Task.Run(() => _serviceAccountService.UnfollowAsync(ServiceAccountId));
             if (result.Success)
             {
                 IsFollowed = false;

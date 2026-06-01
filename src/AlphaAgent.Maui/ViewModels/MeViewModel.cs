@@ -52,7 +52,8 @@ public partial class MeViewModel : ObservableObject
     {
         if (_themeManager != null)
         {
-            SelectedThemeMode = await _themeManager.GetSavedThemeAsync();
+            var themeMode = await Task.Run(async () => await _themeManager.GetSavedThemeAsync());
+            SelectedThemeMode = themeMode;
             IsDarkMode = SelectedThemeMode == ThemeMode.Dark;
         }
     }
@@ -64,7 +65,7 @@ public partial class MeViewModel : ObservableObject
         {
             if (_authService != null)
             {
-                var username = await _authService.GetUsernameAsync();
+                var username = await Task.Run(async () => await _authService.GetUsernameAsync());
 
                 Username = !string.IsNullOrEmpty(username) ? username : "未登录";
                 UsernameInitial = !string.IsNullOrEmpty(username) && username.Length > 0
@@ -90,7 +91,7 @@ public partial class MeViewModel : ObservableObject
         {
             if (_authService != null)
             {
-                await _authService.LogoutAsync();
+                await Task.Run(() => _authService.LogoutAsync());
             }
 
             Username = "未登录";

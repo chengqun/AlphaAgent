@@ -60,7 +60,7 @@ public partial class AddFriendViewModel : ObservableObject
             }
 
             // 使用新的搜索接口，只需要 keyword 参数
-            var results = await _relationshipService.SearchAllTargetsAsync(SearchText);
+            var results = await Task.Run(() => _relationshipService.SearchAllTargetsAsync(SearchText));
             if (results.Success && results.Data != null)
             {
                 foreach (var target in results.Data)
@@ -134,7 +134,7 @@ public partial class AddFriendViewModel : ObservableObject
                 return;
             }
 
-            var result = await _relationshipService.CreateRelationshipAsync((int)item.RelationshipType, item.Id);
+            var result = await Task.Run(() => _relationshipService.CreateRelationshipAsync((int)item.RelationshipType, item.Id));
             
             if (result.Success)
             {
@@ -209,14 +209,15 @@ public partial class AddFriendViewModel : ObservableObject
             _logger?.LogInformation("SyncLocalSecurityAsync 同步: Code={Code}, Name={Name}, Type={Type}, Exchange={Exchange}", 
                 item.SecurityInfo.Code, item.Name, item.SecurityInfo.SecurityType, item.SecurityInfo.Exchange);
             
-            await _securityService.UpdateOrAddSecurityAsync(new SecurityDto
+            var securityDto = new SecurityDto
             {
                 Code = item.SecurityInfo.Code,
                 Name = item.Name,
                 Type = item.SecurityInfo.SecurityType,
                 Exchange = item.SecurityInfo.Exchange,
                 BaseCode = item.SecurityInfo.BaseCode
-            });
+            };
+            await Task.Run(() => _securityService.UpdateOrAddSecurityAsync(securityDto));
             
             _logger?.LogInformation("SyncLocalSecurityAsync 成功");
         }

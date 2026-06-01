@@ -90,16 +90,28 @@ public partial class AgentContactDetailViewModel : ObservableObject, IQueryAttri
     {
         try
         {
-            if (_agentService != null)
+            // 将所有 I/O 操作（HTTP + SQLite）放到后台线程
+            string? description = null;
+            List<string>? enabledToolNames = null;
+
+            await Task.Run(async () =>
             {
-                var agents = await _agentService.GetAvailableAgentsAsync();
-                var agent = agents.FirstOrDefault(a => a.Name == AgentName);
-                if (agent != null)
-                    Description = !string.IsNullOrEmpty(agent.Description) ? agent.Description : "暂无描述";
-            }
+                if (_agentService != null)
+                {
+                    var agents = await _agentService.GetAvailableAgentsAsync();
+                    var agent = agents.FirstOrDefault(a => a.Name == AgentName);
+                    if (agent != null)
+                        description = !string.IsNullOrEmpty(agent.Description) ? agent.Description : "暂无描述";
+                }
+
+                enabledToolNames = await GetEnabledToolNamesAsync();
+            });
+
+            // 回到主线程更新 UI
+            if (description != null)
+                Description = description;
 
             var allTools = _agentFactory?.GetAllTools(AgentName) ?? Array.Empty<ToolInfo>();
-            var enabledToolNames = await GetEnabledToolNamesAsync();
 
             // 工作流类型：无外部工具，显示步骤信息
             if (allTools.Count == 0)
@@ -199,19 +211,22 @@ public partial class AgentContactDetailViewModel : ObservableObject, IQueryAttri
 
             if (_configCacheRepository != null)
             {
-                var userId = await ResolveCurrentUserIdAsync();
-                if (userId != null)
+                await Task.Run(async () =>
                 {
-                    var cachedConfigs = await _configCacheRepository.GetByUserIdAsync(userId.Value);
-                    var existingConfig = cachedConfigs.FirstOrDefault(c => c.AgentName == AgentName);
-
-                    if (existingConfig != null)
+                    var userId = await ResolveCurrentUserIdAsync();
+                    if (userId != null)
                     {
-                        existingConfig.EnabledTools = enabledNames;
-                        existingConfig.SerializeEnabledTools();
-                        await _configCacheRepository.UpsertRangeAsync(new[] { existingConfig });
+                        var cachedConfigs = await _configCacheRepository.GetByUserIdAsync(userId.Value);
+                        var existingConfig = cachedConfigs.FirstOrDefault(c => c.AgentName == AgentName);
+
+                        if (existingConfig != null)
+                        {
+                            existingConfig.EnabledTools = enabledNames;
+                            existingConfig.SerializeEnabledTools();
+                            await _configCacheRepository.UpsertRangeAsync(new[] { existingConfig });
+                        }
                     }
-                }
+                });
             }
         }
         catch (Exception ex)

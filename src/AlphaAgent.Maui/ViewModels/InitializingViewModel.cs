@@ -61,7 +61,7 @@ public partial class InitializingViewModel : ObservableObject
             }
         });
 
-        await _postLoginInitializer.InitializeAsync(AppSettings.ServerBaseAddress, progress);
+        await Task.Run(() => _postLoginInitializer.InitializeAsync(AppSettings.ServerBaseAddress, progress));
 
         _globalMessageHandler?.StartListening();
 

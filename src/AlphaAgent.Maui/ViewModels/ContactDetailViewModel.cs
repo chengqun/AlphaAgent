@@ -157,8 +157,8 @@ public partial class ContactDetailViewModel : ObservableObject, IQueryAttributab
         try
         {
             System.Diagnostics.Debug.WriteLine($"[DeleteRelationship] 调用 API - relationshipType: {relationshipType}, relationshipId: {RelationshipId}");
-            
-            var result = await _relationshipService.RemoveRelationshipAsync(relationshipType, RelationshipId);
+
+            var result = await Task.Run(() => _relationshipService.RemoveRelationshipAsync(relationshipType, RelationshipId));
 
             System.Diagnostics.Debug.WriteLine($"[DeleteRelationship] API 返回 - Success: {result.Success}, Error: {result.Error}");
 

@@ -68,12 +68,19 @@ public partial class RegisterViewModel : ObservableObject
         {
             if (_authService != null)
             {
-                var registerResult = await _authService.RegisterAsync(Username, EmailAddress, Password);
-                if (registerResult.Success)
+                var (registerSuccess, registerError, loginSuccess) = await Task.Run(async () =>
                 {
-                    // 注册成功，自动登录
+                    var registerResult = await _authService.RegisterAsync(Username, EmailAddress, Password);
+                    if (!registerResult.Success)
+                        return (false, registerResult.Error, false);
+
                     var loginResult = await _authService.LoginAsync(Username, Password);
-                    if (loginResult.Success && loginResult.Data != null)
+                    return (true, (string?)null, loginResult.Success && loginResult.Data != null);
+                });
+
+                if (registerSuccess)
+                {
+                    if (loginSuccess)
                     {
                         await Shell.Current.GoToAsync("//ChatPage");
                     }
@@ -86,7 +93,7 @@ public partial class RegisterViewModel : ObservableObject
                 }
                 else
                 {
-                    StatusMessage = registerResult.Error ?? "注册失败";
+                    StatusMessage = registerError ?? "注册失败";
                     HasError = true;
                 }
             }

@@ -54,7 +54,7 @@ public partial class LoginViewModel : ObservableObject
         {
             if (_authService != null)
             {
-                var response = await _authService.LoginAsync(Username, Password);
+                var response = await Task.Run(() => _authService.LoginAsync(Username, Password));
                 if (response.Success && response.Data != null)
                 {
                     StatusMessage = "登录成功";

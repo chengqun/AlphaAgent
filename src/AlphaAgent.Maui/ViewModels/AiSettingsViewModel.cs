@@ -56,7 +56,8 @@ public partial class AiSettingsViewModel : ObservableObject
         IsLoading = true;
         try
         {
-            var agents = await _agentService.GetAvailableAgentsAsync();
+            // 将 HTTP + SQLite I/O 放到后台线程
+            var agents = await Task.Run(async () => await _agentService.GetAvailableAgentsAsync());
             AvailableAgents.Clear();
             foreach (var agent in agents)
                 AvailableAgents.Add(agent);

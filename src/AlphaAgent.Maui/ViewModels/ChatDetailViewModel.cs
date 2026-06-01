@@ -123,7 +123,7 @@ public partial class ChatDetailViewModel : ObservableObject, IQueryAttributable,
 
         try
         {
-            _currentUserId = await ResolveCurrentUserIdAsync();
+            _currentUserId = await Task.Run(async () => await ResolveCurrentUserIdAsync());
             System.Diagnostics.Debug.WriteLine($"[ChatDetail] OnAppearing: userId={_currentUserId}, PendingContactId={PendingContactId}, PendingContactType={PendingContactType}, ConversationId={ConversationId}");
             if (version != _loadVersion) { _isAppearing = false; return; }
 
@@ -205,7 +205,7 @@ public partial class ChatDetailViewModel : ObservableObject, IQueryAttributable,
             if (PendingContactType == "群组")
             {
                 var groupId = Guid.Parse(PendingContactId);
-                var groupResponse = await _chatService.GetOrCreateGroupConversationAsync(groupId);
+                var groupResponse = await Task.Run(() => _chatService.GetOrCreateGroupConversationAsync(groupId));
                 if (!groupResponse.Success || groupResponse.Data == null)
                 {
                     ErrorMessage = $"创建群聊会话失败: {groupResponse.Error}";
@@ -218,7 +218,7 @@ public partial class ChatDetailViewModel : ObservableObject, IQueryAttributable,
             {
                 var deviceId = Guid.Parse(PendingContactId);
                 System.Diagnostics.Debug.WriteLine($"[ChatDetail] 创建设备会话: PendingContactId={PendingContactId}, deviceId={deviceId}");
-                var deviceResponse = await _chatService.GetOrCreateDeviceConversationAsync(deviceId);
+                var deviceResponse = await Task.Run(() => _chatService.GetOrCreateDeviceConversationAsync(deviceId));
                 System.Diagnostics.Debug.WriteLine($"[ChatDetail] 设备会话响应: Success={deviceResponse.Success}, ConvId={deviceResponse.Data?.Id}, Error={deviceResponse.Error}");
                 if (!deviceResponse.Success || deviceResponse.Data == null)
                 {
@@ -231,7 +231,7 @@ public partial class ChatDetailViewModel : ObservableObject, IQueryAttributable,
             else
             {
                 var targetUserId = Guid.Parse(PendingContactId);
-                var directResponse = await _chatService.GetOrCreateDirectConversationAsync(targetUserId);
+                var directResponse = await Task.Run(() => _chatService.GetOrCreateDirectConversationAsync(targetUserId));
                 if (!directResponse.Success || directResponse.Data == null)
                 {
                     ErrorMessage = $"创建会话失败: {directResponse.Error}";
@@ -317,7 +317,7 @@ public partial class ChatDetailViewModel : ObservableObject, IQueryAttributable,
     {
         if (_messageCacheService == null) return;
 
-        var cached = await _messageCacheService.GetCachedMessagesAsync(_currentConversationId, MaxMessagesPerLoad);
+        var cached = await Task.Run(() => _messageCacheService.GetCachedMessagesAsync(_currentConversationId, MaxMessagesPerLoad));
         if (version != _loadVersion) return;
         System.Diagnostics.Debug.WriteLine($"[ChatDetail] 缓存消息: convId={_currentConversationId}, count={cached?.Count ?? 0}");
         if (cached == null || !cached.Any()) return;
@@ -396,7 +396,7 @@ public partial class ChatDetailViewModel : ObservableObject, IQueryAttributable,
     {
         if (_chatService == null) return;
 
-        var response = await _chatService.GetMessagesAsync(conversationId, 0, MaxMessagesPerLoad);
+        var response = await Task.Run(() => _chatService.GetMessagesAsync(conversationId, 0, MaxMessagesPerLoad));
         if (version != _loadVersion) return;
         System.Diagnostics.Debug.WriteLine($"[ChatDetail] 网络加载: convId={conversationId}, Success={response.Success}, count={response.Data?.Count ?? 0}");
         if (!response.Success || response.Data == null)
@@ -433,14 +433,14 @@ public partial class ChatDetailViewModel : ObservableObject, IQueryAttributable,
         // 更新本地缓存
         if (_messageCacheService != null && Messages.Any())
         {
-            await _messageCacheService.CacheMessagesAsync(conversationId, Messages.ToList(), MaxMessagesPerLoad);
+            await Task.Run(() => _messageCacheService.CacheMessagesAsync(conversationId, Messages.ToList(), MaxMessagesPerLoad));
         }
     }
 
     private async Task MarkAsReadAndNotifyAsync(Guid conversationId)
     {
         if (_chatService != null)
-            await _chatService.MarkAsReadAsync(conversationId);
+            await Task.Run(() => _chatService.MarkAsReadAsync(conversationId));
 
         _eventBusService?.Publish(new ConversationReadEvent(conversationId));
     }
@@ -476,7 +476,7 @@ public partial class ChatDetailViewModel : ObservableObject, IQueryAttributable,
 
         try
         {
-            await _signalRChatService.JoinConversationAsync(conversationId);
+            await Task.Run(() => _signalRChatService.JoinConversationAsync(conversationId));
         }
         catch (Exception ex)
         {
@@ -506,7 +506,7 @@ public partial class ChatDetailViewModel : ObservableObject, IQueryAttributable,
 
             if (_messageCacheService != null)
             {
-                await _messageCacheService.AppendMessageAsync(conversationId, message);
+                await Task.Run(() => _messageCacheService.AppendMessageAsync(conversationId, message));
             }
 
             await MarkAsReadAndNotifyAsync(conversationId);
@@ -529,7 +529,7 @@ public partial class ChatDetailViewModel : ObservableObject, IQueryAttributable,
             _displayedMessageIds.Clear();
             _lastMessageTime = DateTime.MinValue;
 
-            var response = await _chatService.GetMessagesAsync(conversationId, 0, MaxMessagesPerLoad);
+            var response = await Task.Run(() => _chatService.GetMessagesAsync(conversationId, 0, MaxMessagesPerLoad));
             if (version != _loadVersion) return;
             if (response.Success && response.Data != null)
             {
@@ -542,7 +542,7 @@ public partial class ChatDetailViewModel : ObservableObject, IQueryAttributable,
 
                 if (_messageCacheService != null && Messages.Any())
                 {
-                    await _messageCacheService.CacheMessagesAsync(conversationId, Messages.ToList(), MaxMessagesPerLoad);
+                    await Task.Run(() => _messageCacheService.CacheMessagesAsync(conversationId, Messages.ToList(), MaxMessagesPerLoad));
                 }
             }
 
@@ -571,7 +571,7 @@ public partial class ChatDetailViewModel : ObservableObject, IQueryAttributable,
         try
         {
             System.Diagnostics.Debug.WriteLine($"[ChatDetail] 发送消息: convId={_currentConversationId}, content={content}");
-            var response = await _chatService.SendMessageAsync(_currentConversationId, content);
+            var response = await Task.Run(() => _chatService.SendMessageAsync(_currentConversationId, content));
             System.Diagnostics.Debug.WriteLine($"[ChatDetail] 发送响应: Success={response.Success}, msgId={response.Data?.Id}, Error={response.Error}");
 
             if (response.Success && response.Data != null)
@@ -585,7 +585,7 @@ public partial class ChatDetailViewModel : ObservableObject, IQueryAttributable,
 
                 if (_messageCacheService != null)
                 {
-                    await _messageCacheService.AppendMessageAsync(_currentConversationId, message);
+                    await Task.Run(() => _messageCacheService.AppendMessageAsync(_currentConversationId, message));
                 }
 
                 ErrorMessage = null;
@@ -612,7 +612,7 @@ public partial class ChatDetailViewModel : ObservableObject, IQueryAttributable,
         var version = _loadVersion;
         try
         {
-            var response = await _chatService.GetMessagesAsync(_currentConversationId);
+            var response = await Task.Run(() => _chatService.GetMessagesAsync(_currentConversationId));
             if (version != _loadVersion) return;
             if (!response.Success || response.Data == null) return;
 
@@ -635,7 +635,7 @@ public partial class ChatDetailViewModel : ObservableObject, IQueryAttributable,
             // 补漏的消息也保存到本地缓存
             if (_messageCacheService != null && Messages.Any())
             {
-                await _messageCacheService.CacheMessagesAsync(_currentConversationId, Messages.ToList(), MaxMessagesPerLoad);
+                await Task.Run(() => _messageCacheService.CacheMessagesAsync(_currentConversationId, Messages.ToList(), MaxMessagesPerLoad));
             }
         }
         catch (Exception ex)

@@ -125,7 +125,7 @@ public partial class VideoChannelsViewModel : ObservableObject
                 return;
             }
 
-            var response = await _videoFeedService.GetVideoFeedAsync(20, 0);
+            var response = await Task.Run(() => _videoFeedService.GetVideoFeedAsync(20, 0));
             if (response.Success && response.Data != null && response.Data.Count > 0)
             {
                 _offset = response.Data.Count;
@@ -170,7 +170,7 @@ public partial class VideoChannelsViewModel : ObservableObject
         _isLoadingMore = true;
         try
         {
-            var response = await _videoFeedService.GetMoreVideosAsync(20, _offset);
+            var response = await Task.Run(() => _videoFeedService.GetMoreVideosAsync(20, _offset));
             if (response.Success && response.Data != null && response.Data.Count > 0)
             {
                 _offset += response.Data.Count;

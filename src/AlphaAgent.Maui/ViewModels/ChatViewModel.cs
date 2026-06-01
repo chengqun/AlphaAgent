@@ -166,10 +166,14 @@ public partial class ChatViewModel : ObservableObject, IPageLifecycleAware
     {
         try
         {
-            var userId = await GetCurrentUserIdAsync();
-            var cachedConversations = _conversationSyncService != null
-                ? await _conversationSyncService.GetCachedConversationsAsync(userId)
-                : new List<Conversation>();
+            var (userId, cachedConversations) = await Task.Run(async () =>
+            {
+                var uid = await GetCurrentUserIdAsync();
+                var cached = _conversationSyncService != null
+                    ? await _conversationSyncService.GetCachedConversationsAsync(uid)
+                    : new List<Conversation>();
+                return (uid, cached);
+            });
 
             Conversations.Clear();
 
@@ -198,7 +202,7 @@ public partial class ChatViewModel : ObservableObject, IPageLifecycleAware
         try
         {
             var userId = await GetCurrentUserIdAsync();
-            var serverConversations = await _conversationSyncService.SyncFromServerAsync(userId);
+            var serverConversations = await Task.Run(() => _conversationSyncService.SyncFromServerAsync(userId));
 
             MainThread.BeginInvokeOnMainThread(() =>
             {
@@ -292,7 +296,7 @@ public partial class ChatViewModel : ObservableObject, IPageLifecycleAware
 
         try
         {
-            await _signalRChatService.ConnectAsync(AppSettings.ServerBaseAddress);
+            await Task.Run(() => _signalRChatService.ConnectAsync(AppSettings.ServerBaseAddress));
         }
         catch (Exception ex)
         {
@@ -462,7 +466,7 @@ public partial class ChatViewModel : ObservableObject, IPageLifecycleAware
         try
         {
             var userId = await GetCurrentUserIdAsync();
-            var agentSessions = await _agentRepository.GetUserSessionsAsync(userId);
+            var agentSessions = await Task.Run(() => _agentRepository.GetUserSessionsAsync(userId));
 
             foreach (var session in agentSessions)
             {
@@ -523,7 +527,7 @@ public partial class ChatViewModel : ObservableObject, IPageLifecycleAware
             if (_conversationSyncService != null)
             {
                 var userId = await GetCurrentUserIdAsync();
-                var allConversations = await _conversationSyncService.SyncFromServerAsync(userId);
+                var allConversations = await Task.Run(() => _conversationSyncService.SyncFromServerAsync(userId));
 
                 Conversations.Clear();
                 foreach (var conv in allConversations)
@@ -536,7 +540,7 @@ public partial class ChatViewModel : ObservableObject, IPageLifecycleAware
                 Conversations.Clear();
                 if (_chatService != null)
                 {
-                    var response = await _chatService.GetMyConversationsAsync();
+                    var response = await Task.Run(() => _chatService.GetMyConversationsAsync());
                     if (response.Success && response.Data != null)
                     {
                         foreach (var conv in response.Data)
@@ -621,23 +625,23 @@ public partial class ChatViewModel : ObservableObject, IPageLifecycleAware
             {
                 if (_agentRepository != null)
                 {
-                    await _agentRepository.DeleteSessionAsync(conversationId);
+                    await Task.Run(() => _agentRepository.DeleteSessionAsync(conversationId));
                 }
 
                 // 同步删除本地缓存，防止下拉刷新时残留条目重新出现
                 if (_conversationSyncService != null)
                 {
-                    await _conversationSyncService.DeleteConversationAsync(conversationId);
+                    await Task.Run(() => _conversationSyncService.DeleteConversationAsync(conversationId));
                 }
             }
             else if (_chatService != null)
             {
-                await _chatService.DeleteConversationAsync(conversationId);
+                await Task.Run(() => _chatService.DeleteConversationAsync(conversationId));
 
                 // 同步删除本地缓存
                 if (_conversationSyncService != null)
                 {
-                    await _conversationSyncService.DeleteConversationAsync(conversationId);
+                    await Task.Run(() => _conversationSyncService.DeleteConversationAsync(conversationId));
                 }
             }
 

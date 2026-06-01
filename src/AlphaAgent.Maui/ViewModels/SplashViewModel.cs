@@ -58,14 +58,14 @@ public partial class SplashViewModel : ObservableObject
             await Task.Delay(300);
 
             StatusMessage = "正在初始化数据库...";
-            await _coreInitializer.InitializeAsync();
+            await Task.Run(() => _coreInitializer.InitializeAsync());
             await Task.Delay(300);
 
             StatusMessage = "正在检查登录状态...";
             await Task.Delay(300);
 
             StatusMessage = "正在自动登录...";
-            var autoLoginResult = await _authService.AutoLoginAsync();
+            var autoLoginResult = await Task.Run(() => _authService.AutoLoginAsync());
             isLoggedIn = autoLoginResult.Success;
 
             StatusMessage = "初始化完成";
@@ -96,7 +96,7 @@ public partial class SplashViewModel : ObservableObject
             var platform = GetAppPlatform();
             var versionCode = GetVersionCode();
 
-            var result = await _updateService.CheckUpdateAsync(platform, versionCode);
+            var result = await Task.Run(() => _updateService.CheckUpdateAsync(platform, versionCode));
             if (result.Success && result.Data?.HasUpdate == true)
             {
                 HasUpdate = true;

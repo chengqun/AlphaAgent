@@ -44,7 +44,7 @@ public partial class NewFriendsViewModel : ObservableObject
             }
 
             // 获取待处理请求（服务端已筛选）
-            var contactsResult = await _relationshipService.GetPendingRequestsAsync();
+            var contactsResult = await Task.Run(() => _relationshipService.GetPendingRequestsAsync());
             if (contactsResult.Success && contactsResult.Data != null)
             {
                 var contacts = contactsResult.Data;
@@ -134,7 +134,7 @@ public partial class NewFriendsViewModel : ObservableObject
             var relationshipType = (int)item.RelationshipType;
             System.Diagnostics.Debug.WriteLine($"[AcceptRequest] 调用 API - relationshipType: {relationshipType}, relationshipId: {item.Id}");
 
-            var result = await _relationshipService.AcceptRelationshipAsync(relationshipType, item.Id);
+            var result = await Task.Run(() => _relationshipService.AcceptRelationshipAsync(relationshipType, item.Id));
 
             System.Diagnostics.Debug.WriteLine($"[AcceptRequest] API 返回 - Success: {result.Success}, Error: {result.Error}, Data: {result.Data}");
 
@@ -178,7 +178,7 @@ public partial class NewFriendsViewModel : ObservableObject
             var relationshipType = (int)item.RelationshipType;
             System.Diagnostics.Debug.WriteLine($"[RejectRequest] 调用 API - relationshipType: {relationshipType}, relationshipId: {item.Id}");
 
-            var result = await _relationshipService.RejectRelationshipAsync(relationshipType, item.Id);
+            var result = await Task.Run(() => _relationshipService.RejectRelationshipAsync(relationshipType, item.Id));
 
             System.Diagnostics.Debug.WriteLine($"[RejectRequest] API 返回 - Success: {result.Success}, Error: {result.Error}, Data: {result.Data}");
 

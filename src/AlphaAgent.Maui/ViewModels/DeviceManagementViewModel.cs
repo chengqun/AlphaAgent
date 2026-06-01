@@ -45,7 +45,7 @@ public partial class DeviceManagementViewModel : ObservableObject
             IsLoading = true;
             StatusMessage = "加载中...";
 
-            var response = await _deviceService.GetMyDevicesAsync();
+            var response = await Task.Run(() => _deviceService.GetMyDevicesAsync());
             Devices.Clear();
 
             if (response.Success && response.Data != null)
@@ -80,7 +80,7 @@ public partial class DeviceManagementViewModel : ObservableObject
         try
         {
             IsAdding = true;
-            var response = await _deviceService.CreateDeviceAsync(NewDeviceName, NewDeviceType);
+            var response = await Task.Run(() => _deviceService.CreateDeviceAsync(NewDeviceName, NewDeviceType));
             if (response.Success)
             {
                 NewDeviceName = string.Empty;
@@ -116,7 +116,7 @@ public partial class DeviceManagementViewModel : ObservableObject
 
         try
         {
-            var response = await _relationshipService.CreateRelationshipAsync(1, deviceId);
+            var response = await Task.Run(() => _relationshipService.CreateRelationshipAsync(1, deviceId));
             if (response.Success)
             {
                 var device = Devices.FirstOrDefault(d => d.DeviceId == deviceId);

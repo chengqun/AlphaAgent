@@ -92,7 +92,7 @@ public partial class ContactMomentsViewModel : ObservableObject, IQueryAttributa
     {
         if (_momentCacheService == null || string.IsNullOrEmpty(TargetId)) return;
 
-        var cached = await _momentCacheService.GetCachedMomentsAsync(TargetId);
+        var cached = await Task.Run(() => _momentCacheService.GetCachedMomentsAsync(TargetId));
         foreach (var dto in cached)
         {
             if (_displayedMomentIds.Add(dto.Id.ToString()))
@@ -108,32 +108,37 @@ public partial class ContactMomentsViewModel : ObservableObject, IQueryAttributa
 
         try
         {
-            var response = await _momentService.GetMomentsAsync(TargetId, TargetType, 50, 0);
-            if (response.Success && response.Data != null && response.Data.Count > 0)
+            List<MomentDto> newItems = await Task.Run(async () =>
             {
-                var newItems = new List<MomentDto>();
-                foreach (var dto in response.Data)
-                {
-                    if (_displayedMomentIds.Add(dto.Id.ToString()))
-                    {
-                        newItems.Add(dto);
-                    }
-                }
-
-                for (int i = newItems.Count - 1; i >= 0; i--)
-                {
-                    Moments.Insert(0, ToMomentItem(newItems[i]));
-                }
-
-                if (_momentCacheService != null)
+                var response = await _momentService.GetMomentsAsync(TargetId, TargetType, 50, 0);
+                var newDtos = new List<MomentDto>();
+                if (response.Success && response.Data != null && response.Data.Count > 0)
                 {
                     foreach (var dto in response.Data)
                     {
-                        if (string.IsNullOrEmpty(dto.TargetId))
-                            dto.TargetId = TargetId;
+                        if (_displayedMomentIds.Add(dto.Id.ToString()))
+                        {
+                            newDtos.Add(dto);
+                        }
                     }
-                    await _momentCacheService.UpdateCacheAsync(response.Data);
+
+                    if (_momentCacheService != null)
+                    {
+                        foreach (var dto in response.Data)
+                        {
+                            if (string.IsNullOrEmpty(dto.TargetId))
+                                dto.TargetId = TargetId;
+                        }
+                        await _momentCacheService.UpdateCacheAsync(response.Data);
+                    }
                 }
+                return newDtos;
+            });
+
+            // UI 操作在主线程执行
+            for (int i = newItems.Count - 1; i >= 0; i--)
+            {
+                Moments.Insert(0, ToMomentItem(newItems[i]));
             }
 
             if (Moments.Count == 0)
@@ -190,32 +195,38 @@ public partial class ContactMomentsViewModel : ObservableObject, IQueryAttributa
         try
         {
             if (_momentService == null || string.IsNullOrEmpty(TargetId)) return;
-            var response = await _momentService.GetMomentsAsync(TargetId, TargetType, 50, 0);
-            if (response.Success && response.Data != null && response.Data.Count > 0)
+
+            List<MomentDto> newItems = await Task.Run(async () =>
             {
-                var newItems = new List<MomentDto>();
-                foreach (var dto in response.Data)
-                {
-                    if (_displayedMomentIds.Add(dto.Id.ToString()))
-                    {
-                        newItems.Add(dto);
-                    }
-                }
-
-                for (int i = newItems.Count - 1; i >= 0; i--)
-                {
-                    Moments.Insert(0, ToMomentItem(newItems[i]));
-                }
-
-                if (_momentCacheService != null)
+                var response = await _momentService.GetMomentsAsync(TargetId, TargetType, 50, 0);
+                var newDtos = new List<MomentDto>();
+                if (response.Success && response.Data != null && response.Data.Count > 0)
                 {
                     foreach (var dto in response.Data)
                     {
-                        if (string.IsNullOrEmpty(dto.TargetId))
-                            dto.TargetId = TargetId;
+                        if (_displayedMomentIds.Add(dto.Id.ToString()))
+                        {
+                            newDtos.Add(dto);
+                        }
                     }
-                    await _momentCacheService.UpdateCacheAsync(response.Data);
+
+                    if (_momentCacheService != null)
+                    {
+                        foreach (var dto in response.Data)
+                        {
+                            if (string.IsNullOrEmpty(dto.TargetId))
+                                dto.TargetId = TargetId;
+                        }
+                        await _momentCacheService.UpdateCacheAsync(response.Data);
+                    }
                 }
+                return newDtos;
+            });
+
+            // UI 操作在主线程执行
+            for (int i = newItems.Count - 1; i >= 0; i--)
+            {
+                Moments.Insert(0, ToMomentItem(newItems[i]));
             }
         }
         finally

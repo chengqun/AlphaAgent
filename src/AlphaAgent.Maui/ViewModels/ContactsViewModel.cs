@@ -72,10 +72,14 @@ public partial class ContactsViewModel : ObservableObject
     {
         try
         {
-            var userId = await GetCurrentUserIdAsync();
-            var cachedData = _contactSyncService != null
-                ? await _contactSyncService.GetCachedContactsAsync(userId)
-                : null;
+            var (userId, cachedData) = await Task.Run(async () =>
+            {
+                var uid = await GetCurrentUserIdAsync();
+                var data = _contactSyncService != null
+                    ? await _contactSyncService.GetCachedContactsAsync(uid)
+                    : null;
+                return (uid, data);
+            });
 
             if (cachedData != null)
             {
@@ -101,8 +105,11 @@ public partial class ContactsViewModel : ObservableObject
 
         try
         {
-            var userId = await GetCurrentUserIdAsync();
-            var serverData = await _contactSyncService.SyncFromServerAsync(userId);
+            var serverData = await Task.Run(async () =>
+            {
+                var userId = await GetCurrentUserIdAsync();
+                return await _contactSyncService.SyncFromServerAsync(userId);
+            });
 
             if (serverData != null)
             {
@@ -300,7 +307,7 @@ public partial class ContactsViewModel : ObservableObject
     {
         if (_relationshipService == null) return;
 
-        var response = await _relationshipService.GetAcceptedContactsAsync();
+        var response = await Task.Run(() => _relationshipService.GetAcceptedContactsAsync());
         if (response.Success && response.Data != null)
         {
             RenderContactBook(response.Data);
@@ -318,7 +325,7 @@ public partial class ContactsViewModel : ObservableObject
 
         try
         {
-            var agents = await _agentService.GetAvailableAgentsAsync();
+            var agents = await Task.Run(() => _agentService.GetAvailableAgentsAsync());
             if (agents.Any())
             {
                 ContactGroups.Add(new ContactGroup
@@ -350,8 +357,11 @@ public partial class ContactsViewModel : ObservableObject
         {
             if (_contactSyncService != null)
             {
-                var userId = await GetCurrentUserIdAsync();
-                var data = await _contactSyncService.SyncFromServerAsync(userId);
+                var data = await Task.Run(async () =>
+                {
+                    var userId = await GetCurrentUserIdAsync();
+                    return await _contactSyncService.SyncFromServerAsync(userId);
+                });
                 if (data != null)
                     RenderContactBook(data);
             }
