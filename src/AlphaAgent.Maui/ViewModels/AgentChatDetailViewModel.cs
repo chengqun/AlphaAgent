@@ -164,14 +164,21 @@ public partial class AgentChatDetailViewModel : ObservableObject, IQueryAttribut
             IsLoading = true;
             ErrorMessage = null;
 
-            if (_currentSessionId == null)
+            // 将网络 I/O 移到后台线程池，避免 Android NetworkOnMainThreadException
+            await Task.Run(async () =>
             {
-                await GetOrCreateSessionAsync();
-            }
+                if (_currentSessionId == null)
+                {
+                    await GetOrCreateSessionAsync();
+                }
+            });
 
             if (_streamVersion != version) return; // 会话已切换，停止初始化
 
-            await LoadMessagesAsync();
+            await Task.Run(async () =>
+            {
+                await LoadMessagesAsync();
+            });
 
             if (_streamVersion != version) return;
 
@@ -305,7 +312,8 @@ public partial class AgentChatDetailViewModel : ObservableObject, IQueryAttribut
     }
 
     /// <summary>
-    /// 股票新会话自动查询该股票，复用流式逻辑
+    /// 股票新会话自动查询该股票，复用流式逻辑。
+    /// 在后台线程执行网络 I/O，避免 Android NetworkOnMainThreadException。
     /// </summary>
     private async Task AutoQueryStockAsync()
     {
@@ -314,6 +322,7 @@ public partial class AgentChatDetailViewModel : ObservableObject, IQueryAttribut
         var query = $"分析一下{StockName}";
         MessageText = string.Empty;
         var version = _streamVersion;
+        var sessionId = _currentSessionId.Value;
 
         try
         {
@@ -326,11 +335,14 @@ public partial class AgentChatDetailViewModel : ObservableObject, IQueryAttribut
                 Timestamp = DateTime.Now
             });
 
-            await foreach (var chunk in _agentService.SendMessageStreamingAsync(_currentSessionId.Value, query))
+            await Task.Run(async () =>
             {
-                if (_streamVersion != version) return; // 会话已切换，废弃此流
-                ProcessStreamEvent(chunk);
-            }
+                await foreach (var chunk in _agentService.SendMessageStreamingAsync(sessionId, query))
+                {
+                    if (_streamVersion != version) return; // 会话已切换，废弃此流
+                    ProcessStreamEvent(chunk);
+                }
+            });
 
             if (_streamVersion != version) return;
             FinalizeStreaming();
@@ -580,6 +592,7 @@ public partial class AgentChatDetailViewModel : ObservableObject, IQueryAttribut
         var content = MessageText;
         MessageText = string.Empty;
         var version = _streamVersion;
+        var sessionId = _currentSessionId.Value;
 
         try
         {
@@ -598,11 +611,15 @@ public partial class AgentChatDetailViewModel : ObservableObject, IQueryAttribut
             _currentTextItem = null;
             _currentThinkingItem = null;
 
-            await foreach (var event_ in _agentService.SendMessageStreamingAsync(_currentSessionId.Value, content))
+            // 在后台线程执行网络 I/O，避免 Android NetworkOnMainThreadException
+            await Task.Run(async () =>
             {
-                if (_streamVersion != version) return; // 会话已切换，废弃此流
-                ProcessStreamEvent(event_);
-            }
+                await foreach (var event_ in _agentService.SendMessageStreamingAsync(sessionId, content))
+                {
+                    if (_streamVersion != version) return; // 会话已切换，废弃此流
+                    ProcessStreamEvent(event_);
+                }
+            });
 
             if (_streamVersion != version) return;
             FinalizeStreaming();
